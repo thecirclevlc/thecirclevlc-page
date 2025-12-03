@@ -169,7 +169,7 @@ El proyecto incluye:
 
 ## 📝 Licencia
 
-© 2024 THECIRCLE. Todos los derechos reservados.
+© 2025 THECIRCLE. Todos los derechos reservados.
 
 ## 🤝 Contribuciones
 

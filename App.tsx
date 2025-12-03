@@ -196,7 +196,13 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
 };
 
 // 2. Magnetic Button Component
-const MagneticButton: React.FC<{ children: React.ReactNode; className?: string; type?: "button" | "submit"; disabled?: boolean }> = ({ children, className, type = "button", disabled }) => {
+const MagneticButton: React.FC<{ 
+  children: React.ReactNode; 
+  className?: string; 
+  type?: "button" | "submit"; 
+  disabled?: boolean;
+  onClick?: () => void;
+}> = ({ children, className, type = "button", disabled, onClick }) => {
     const ref = useRef<HTMLButtonElement>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
@@ -219,6 +225,7 @@ const MagneticButton: React.FC<{ children: React.ReactNode; className?: string; 
             type={type}
             disabled={disabled}
             className={className}
+            onClick={onClick}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             animate={{ x: position.x, y: position.y }}
@@ -288,7 +295,7 @@ export default function TheCircleApp() {
       </div>
 
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full p-6 md:p-10 flex justify-between items-center z-50 mix-blend-exclusion transition-opacity duration-1000 ${status === 'destroying' ? 'opacity-0' : 'opacity-100'}`}>
+      <nav className="fixed top-0 w-full p-6 md:p-10 flex justify-between items-center z-50 mix-blend-exclusion opacity-100">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-[#C42121] rounded-full animate-pulse shadow-[0_0_10px_#C42121]" />
           <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] font-bold">LIVE SIGNAL: VALENCIA</span>
@@ -298,7 +305,10 @@ export default function TheCircleApp() {
         </div> */}
         <MagneticButton 
           className="border border-[#C42121] px-6 py-2 rounded-none text-[10px] font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
-          onClick={() => navigate('/form')}
+          onClick={() => {
+            window.scrollTo(0, 0);
+            navigate('/form');
+          }}
         >
           JOIN US
         </MagneticButton>
@@ -430,7 +440,10 @@ export default function TheCircleApp() {
                     <div className="flex justify-center">
                         <MagneticButton 
                             className="group relative bg-[#C42121] text-black font-black text-2xl md:text-3xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] active:animate-glitch transition-colors overflow-hidden pointer-events-auto cursor-pointer"
-                            onClick={() => navigate('/form')}
+                            onClick={() => {
+                              window.scrollTo(0, 0);
+                              navigate('/form');
+                            }}
                         >
                             <span className="relative z-10 flex items-center gap-4">
                                 JOIN US
@@ -447,7 +460,7 @@ export default function TheCircleApp() {
       {/* Footer */}
       <footer className="fixed bottom-0 w-full p-6 flex justify-between items-end z-40 pointer-events-none text-[#C42121] mix-blend-exclusion opacity-50">
         <div className="font-mono text-[10px] md:text-xs">
-          <div>© 2024 THECIRCLE</div>
+          <div>© 2025 THECIRCLE</div>
         </div>
         <div className="text-right font-mono text-[10px] md:text-xs flex flex-col gap-1">
           <div className="pointer-events-auto">

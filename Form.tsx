@@ -192,6 +192,11 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
 export default function FormPage() {
   const navigate = useNavigate();
   const [chaosLevel, setChaosLevel] = useState(0);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [formData, setFormData] = useState({
     fullName: '',
     ageLocation: '',
@@ -201,16 +206,22 @@ export default function FormPage() {
     expectations: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setChaosLevel(0.3); // Subtle chaos effect on submit
+    setSending(true);
+    setChaosLevel(0.2); // Subtle chaos effect on submit
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
     setTimeout(() => {
       console.log('Form submitted:', formData);
       setSubmitted(true);
+      setSending(false);
       setChaosLevel(0);
-    }, 500);
+    }, 1500);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -343,30 +354,70 @@ export default function FormPage() {
               transition={{ repeat: Infinity, duration: 3 }}
               className="w-2 h-2 bg-[#C42121] rounded-full mx-auto mb-10 shadow-[0_0_30px_#C42121]" 
             />
-            <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter leading-[0.8] mix-blend-exclusion">
+            <motion.h1 
+              animate={sending ? { 
+                filter: ['blur(0px)', 'blur(0px)'],
+                opacity: [1, 0.85, 1, 0.9, 1]
+              } : {}}
+              transition={sending ? { 
+                duration: 3.5,
+                repeat: Infinity,
+                ease: [0.45, 0.05, 0.55, 0.95],
+                times: [0, 0.3, 0.5, 0.7, 1]
+              } : {}}
+              className="text-6xl md:text-9xl font-black mb-6 tracking-tighter leading-[0.8] mix-blend-exclusion"
+            >
               JOIN<br/>THE CIRCLE
-            </h1>
-            <div className="w-48 h-[1px] bg-[#C42121] mx-auto my-8 opacity-50" />
-            <p className="text-xs font-mono tracking-[0.5em] opacity-40 uppercase">
+            </motion.h1>
+            <motion.div 
+              animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 0.5, filter: 'blur(0px)' }}
+              transition={{ duration: 0.5 }}
+              className="w-48 h-[1px] bg-[#C42121] mx-auto my-8" 
+            />
+            <motion.p 
+              animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 0.4, filter: 'blur(0px)' }}
+              transition={{ duration: 0.5 }}
+              className="text-xs font-mono tracking-[0.5em] uppercase"
+            >
               Vol. II • Access Request
-            </p>
+            </motion.p>
           </div>
 
           {/* Protocol Box */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            animate={sending ? { 
+              opacity: 0, 
+              filter: 'blur(8px)',
+              scale: 0.95
+            } : { 
+              opacity: 1,
+              filter: 'blur(0px)',
+              scale: 1
+            }}
+            transition={{ delay: sending ? 0 : 0.3, duration: 0.5 }}
             className="mb-12 p-8 border border-[#C42121]/20 bg-black/60 backdrop-blur-sm"
           >
             <p className="text-[10px] font-mono leading-relaxed opacity-60 text-center tracking-widest uppercase">
-              Protocol: No Photos • No Guests • Total Silence<br/>
-              Capacity: 0.1% • Discretion Mandatory
+              Total Silence • Secret Location • Discretion Mandatory
             </p>
           </motion.div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-12">
+          <motion.form 
+            onSubmit={handleSubmit} 
+            className="space-y-12"
+            animate={sending ? { 
+              opacity: 0, 
+              filter: 'blur(12px)',
+              scale: 0.98
+            } : { 
+              opacity: 1,
+              filter: 'blur(0px)',
+              scale: 1
+            }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
             {/* Full Name */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -500,25 +551,34 @@ export default function FormPage() {
               transition={{ delay: 1 }}
               className="flex justify-center pt-12"
             >
-              <button
+              <motion.button
                 type="submit"
-                className="group relative bg-[#C42121] text-black font-black text-lg py-5 px-16 uppercase tracking-[0.3em] overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(196,33,33,0.6)]"
+                disabled={sending}
+                whileTap={{ scale: 0.95 }}
+                animate={sending ? { scale: [1, 1.05, 1] } : {}}
+                transition={sending ? { duration: 0.3 } : {}}
+                className="group relative bg-[#C42121] font-black text-lg py-5 px-16 uppercase tracking-[0.3em] overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(196,33,33,0.6)] disabled:opacity-70"
               >
-                <span className="relative z-10 flex items-center gap-3 mix-blend-difference">
-                  SUBMIT REQUEST
-                  <Send className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+                <span className="relative z-10 text-black">
+                  {sending ? 'SENT :)' : 'DONE'}
                 </span>
                 {/* Animated Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#C42121] via-[#ff3333] to-[#C42121] bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              </button>
+              </motion.button>
             </motion.div>
-          </form>
+          </motion.form>
 
           {/* Footer */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
+            animate={sending ? { 
+              opacity: 0, 
+              filter: 'blur(6px)' 
+            } : { 
+              opacity: 1,
+              filter: 'blur(0px)'
+            }}
+            transition={{ delay: sending ? 0 : 1.2, duration: 0.5 }}
             className="mt-20 space-y-6"
           >
             <p className="text-center text-[9px] font-mono tracking-[0.4em] opacity-30 uppercase">
@@ -529,7 +589,7 @@ export default function FormPage() {
               <span>/</span>
               <span>Vol. II</span>
               <span>/</span>
-              <span>2024</span>
+              <span>2025</span>
             </div>
           </motion.div>
         </motion.div>
@@ -538,7 +598,7 @@ export default function FormPage() {
       {/* Footer */}
       <footer className="fixed bottom-0 w-full p-6 flex justify-between items-end z-40 pointer-events-none mix-blend-difference opacity-40">
         <div className="text-[9px] font-mono tracking-widest uppercase">
-          © 2024 THECIRCLE
+          © 2025 THECIRCLE
         </div>
         <div className="text-[9px] font-mono tracking-widest uppercase">
           <a href="mailto:contact@thecirclevlc.com" className="pointer-events-auto hover:opacity-100 transition-opacity">
