@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useScroll, useTransform, useVelocity, useSpring } from 'framer-motion';
-import { ArrowRight, Lock } from 'lucide-react';
+// Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 
 // --- SHADERS (NATIVE WEBGL) ---
@@ -298,7 +298,7 @@ export default function TheCircleApp() {
       <nav className="fixed top-0 w-full p-6 md:p-10 flex justify-between items-center z-50 mix-blend-exclusion opacity-100">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-[#C42121] rounded-full animate-pulse shadow-[0_0_10px_#C42121]" />
-          <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] font-bold">LIVE SIGNAL: VALENCIA</span>
+          <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] font-bold">Valencia</span>
         </div>
         {/* <div className="hidden md:block text-[10px] font-mono tracking-[0.2em]">
             SYSTEM STATUS: {status === 'idle' ? 'OPERATIONAL' : 'CRITICAL FAILURE'}
@@ -364,46 +364,43 @@ export default function TheCircleApp() {
 
             {/* Central Text */}
             <div className="relative z-20 text-center mix-blend-exclusion pointer-events-none">
-                <h2 className="text-[10vw] md:text-[5vw] font-black tracking-[-0.08em] leading-[0.8]" style={{ color: '#8B1A1A' }}>
+                {/* <h2 className="text-[10vw] md:text-[5vw] font-black tracking-[-0.08em] leading-[0.8]" style={{ color: '#8B1A1A' }}>
                     VOL. II
-                </h2>
+                </h2> */}
                 {/* <p className="mt-4 font-mono text-xs md:text-sm tracking-[0.5em] opacity-80">
                     SILENCE WAS DEAFENING
                 </p> */}
             </div>
 
             {/* Scroll Indicator */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 mix-blend-exclusion">
+            {/* <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 mix-blend-exclusion">
                 <div className="w-[1px] h-16 bg-[#C42121] origin-top animate-pulse" />
                 <span className="font-mono text-[10px] tracking-widest">SCROLL TO BREACH</span>
-            </div>
+            </div> */}
         </section>
 
         {/* Manifesto Section */}
         <section className="relative py-32 px-6 md:px-20 border-t border-[#C42121]/20 backdrop-blur-[2px]">
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="font-mono text-xs leading-relaxed tracking-widest opacity-70 sticky top-32 h-fit">
-                    <p>COORDINATES: 40.7128° N, 74.0060° W</p>
-                    <p>DATE: [REDACTED]</p>
-                    <p>CAPACITY: 0.1%</p>
-                    <br/>
-                    <p>PROTOCOL:</p>
-                    <ul className="list-disc pl-4 space-y-2 mt-2">
-                        <li>NO PHOTOS</li>
-                        <li>NO GUESTS</li>
-                        <li>TOTAL SILENCE</li>
-                    </ul>
+                <div className="text-sm leading-relaxed opacity-80 sticky top-32 h-fit space-y-6">
+                    <p>
+                        The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.
+                    </p>
+                    <p>
+                        Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.
+                    </p>
                 </div>
                 <div>
-                    <h2 className="text-4xl md:text-7xl font-bold leading-[0.9] tracking-tighter mb-12 text-[#C42121]">
-                        THE CIRCLE CLOSES AGAIN.<br/>
-                        <span className="text-[#330000] selection:bg-white selection:text-black">WE SAW YOU IN THE DARK.</span><br/>
-                        NOW WAIT FOR THE LIGHT.
+                    <h2 className="text-4xl md:text-7xl font-bold leading-[0.9] tracking-tighter mb-12">
+                        <span className="text-[#C42121]">MUSIC THAT MOVES UNSEEN<br/>SPACES.</span><br/>
+                        <span className="text-[#330000] selection:bg-white selection:text-black">MOMENTS THAT HAPPEN ONLY<br/>ONCE.</span><br/>
+                        <span className="text-[#C42121]">EXPRESSION WITHOUT<br/>BOUNDARIES.</span>
                     </h2>
-                    <p className="text-lg md:text-xl font-light leading-relaxed max-w-lg">
-                        An ephemeral gathering for the chosen few. Logic dictates you shouldn't be here. 
-                        Desire dictates otherwise.
-                    </p>
+                    <div className="text-lg md:text-xl font-light leading-relaxed max-w-lg">
+                        <p>
+                            An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -417,7 +414,7 @@ export default function TheCircleApp() {
              >
                 {[...Array(12)].map((_, i) => (
                     <span key={i} className="text-3xl md:text-5xl font-black uppercase tracking-tight">
-                        SECRET LOCATION • JOIN US • TOTAL SILENCE •
+                        TOTAL SILENCE • SECRET LOCATION • JOIN US • TOTAL SILENCE • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •
                     </span>
                 ))}
              </motion.div>
@@ -426,15 +423,14 @@ export default function TheCircleApp() {
         {/* Inner Circle Access Form */}
         <section className="relative min-h-screen flex items-center justify-center px-6 py-20">
             <div className="w-full max-w-2xl relative">
-                {/* Decorative brackets */}
-                <div className="absolute -top-10 -left-10 w-20 h-20 border-t-2 border-l-2 border-[#C42121] opacity-50" />
-                <div className="absolute -bottom-10 -right-10 w-20 h-20 border-b-2 border-r-2 border-[#C42121] opacity-50" />
-
                 <div className="bg-black/90 border border-[#C42121]/30 p-8 md:p-20 backdrop-blur-xl shadow-[0_0_50px_rgba(196,33,33,0.1)]">
                     <div className="text-center mb-12">
-                        <Lock className="w-12 h-12 text-[#C42121] mx-auto mb-6 animate-pulse" strokeWidth={1} />
-                        <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">Request Access</h3>
-                        <p className="font-mono text-xs tracking-widest text-[#C42121]/60">ONLY VALIDATED ENTITIES WILL BE CONTACTED</p>
+                        <div className="w-16 h-16 border-2 border-[#C42121] rounded-full mx-auto mb-6" />
+                        <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">JOIN THE NEXT EVENT</h3>
+                        <div className="text-xs tracking-wider text-[#C42121]/60 leading-relaxed space-y-4">
+                            <p>We review every submission carefully. If selected, you will receive the link to the event ticket.</p>
+                            <p>Attendance is limited. Each night is designed to maintain a creative, intimate, and connected community.</p>
+                        </div>
                     </div>
 
                     <div className="flex justify-center">
@@ -445,9 +441,8 @@ export default function TheCircleApp() {
                               navigate('/form');
                             }}
                         >
-                            <span className="relative z-10 flex items-center gap-4">
-                                JOIN US
-                                <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                            <span className="relative z-10">
+                                APPLY
                             </span>
                         </MagneticButton>
                     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, Radio } from 'lucide-react';
+import { ArrowLeft, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // --- WEBGL BACKGROUND (Same as main page) ---
@@ -333,10 +333,6 @@ export default function FormPage() {
           <ArrowLeft className="w-4 h-4" />
           BACK
         </button>
-        <div className="flex items-center gap-2">
-          <Radio className="animate-pulse w-3 h-3" />
-          <span className="text-[10px] font-mono tracking-widest">ENCRYPTED CONNECTION</span>
-        </div>
       </nav>
 
       {/* Form Container */}
@@ -377,9 +373,9 @@ export default function FormPage() {
             <motion.p 
               animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 0.4, filter: 'blur(0px)' }}
               transition={{ duration: 0.5 }}
-              className="text-xs font-mono tracking-[0.5em] uppercase"
+              className="text-xs tracking-[0.5em] uppercase"
             >
-              Vol. II • Access Request
+              VOL. II
             </motion.p>
           </div>
 
@@ -398,8 +394,8 @@ export default function FormPage() {
             transition={{ delay: sending ? 0 : 0.3, duration: 0.5 }}
             className="mb-12 p-8 border border-[#C42121]/20 bg-black/60 backdrop-blur-sm"
           >
-            <p className="text-[10px] font-mono leading-relaxed opacity-60 text-center tracking-widest uppercase">
-              Total Silence • Secret Location • Discretion Mandatory
+            <p className="text-[10px] leading-relaxed opacity-60 text-center tracking-widest uppercase">
+              10.01.2026 - SECRET LOCATION, VALENCIA
             </p>
           </motion.div>
 
@@ -567,40 +563,15 @@ export default function FormPage() {
               </motion.button>
             </motion.div>
           </motion.form>
-
-          {/* Footer */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={sending ? { 
-              opacity: 0, 
-              filter: 'blur(6px)' 
-            } : { 
-              opacity: 1,
-              filter: 'blur(0px)'
-            }}
-            transition={{ delay: sending ? 0 : 1.2, duration: 0.5 }}
-            className="mt-20 space-y-6"
-          >
-            <p className="text-center text-[9px] font-mono tracking-[0.4em] opacity-30 uppercase">
-              Encrypted • Confidential • Verified
-            </p>
-            <div className="flex justify-center gap-6 text-[8px] font-mono tracking-widest opacity-20 uppercase">
-              <span>Valencia</span>
-              <span>/</span>
-              <span>Vol. II</span>
-              <span>/</span>
-              <span>2025</span>
-            </div>
-          </motion.div>
         </motion.div>
       </div>
 
       {/* Footer */}
       <footer className="fixed bottom-0 w-full p-6 flex justify-between items-end z-40 pointer-events-none mix-blend-difference opacity-40">
-        <div className="text-[9px] font-mono tracking-widest uppercase">
+        <div className="text-[9px] tracking-widest uppercase">
           © 2025 THECIRCLE
         </div>
-        <div className="text-[9px] font-mono tracking-widest uppercase">
+        <div className="text-[9px] tracking-widest uppercase">
           <a href="mailto:contact@thecirclevlc.com" className="pointer-events-auto hover:opacity-100 transition-opacity">
             contact@thecirclevlc.com
           </a>
