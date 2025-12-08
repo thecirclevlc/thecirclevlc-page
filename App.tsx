@@ -294,17 +294,34 @@ export default function TheCircleApp() {
            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
       </div>
 
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full p-6 md:p-10 flex justify-between items-center z-50 mix-blend-exclusion opacity-100">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 bg-[#C42121] rounded-full animate-pulse shadow-[0_0_10px_#C42121]" />
-          <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] font-bold">Valencia</span>
-        </div>
-        {/* <div className="hidden md:block text-[10px] font-mono tracking-[0.2em]">
-            SYSTEM STATUS: {status === 'idle' ? 'OPERATIONAL' : 'CRITICAL FAILURE'}
-        </div> */}
+      {/* Sticky Header Bar */}
+      <header className="fixed top-0 w-full bg-black border-b border-[#C42121]/30 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
+        {/* Logo Circle - Small */}
+        <motion.div 
+          style={{ rotate: rotation }}
+          className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer"
+          onClick={() => {
+            window.scrollTo(0, 0);
+            navigate('/');
+          }}
+        >
+          <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <defs>
+              <path id="circlePathSmall" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
+            </defs>
+            <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
+              <textPath href="#circlePathSmall" startOffset="0%">
+                <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
+                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+              </textPath>
+            </text>
+          </svg>
+        </motion.div>
+
+        {/* Join Us Button */}
         <MagneticButton 
-          className="border border-[#C42121] px-6 py-2 rounded-none text-[10px] font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
+          className="border border-[#C42121] px-4 py-2 md:px-8 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
           onClick={() => {
             window.scrollTo(0, 0);
             navigate('/form');
@@ -312,10 +329,10 @@ export default function TheCircleApp() {
         >
           JOIN US
         </MagneticButton>
-      </nav>
+      </header>
 
       {/* Content Container */}
-      <div className="relative z-10 opacity-100">
+      <div className="relative z-10 opacity-100 pt-16 md:pt-20">
 
         {/* Hero Section */}
         <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden perspective-1000">
@@ -333,30 +350,21 @@ export default function TheCircleApp() {
                 }}
                 style={{ 
                   rotate: rotation,
-                  scale: circleScale
+                  scale: circleScale,
+                  x: '-50%',
+                  y: 'calc(-50% - 5vh)'
                 }}
-                className="absolute w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
+                className="absolute top-1/2 left-1/2 w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
             >
                 <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <defs>
-                    <path id="circlePath" d="M 150, 150 m -100, 0 a 100,100 0 1,1 200,0 a 100,100 0 1,1 -200,0" fill="none" />
+                    <path id="circlePath" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
                   </defs>
-                  {/* First THECIRCLE - BOLD */}
-                  <text fill="#C42121" className="uppercase" style={{ fontSize: '42px', fontWeight: 900, letterSpacing: '-0.06em' }}>
-                    <textPath href="#circlePath" startOffset="0%">
-                      THECIRCLE
-                    </textPath>
-                  </text>
-                  {/* Second THECIRCLE - Normal */}
-                  <text fill="#C42121" className="uppercase" style={{ fontSize: '42px', fontWeight: 400, letterSpacing: '-0.06em' }}>
-                    <textPath href="#circlePath" startOffset="33.33%">
-                      THECIRCLE
-                    </textPath>
-                  </text>
-                  {/* Third THECIRCLE - Normal */}
-                  <text fill="#C42121" className="uppercase" style={{ fontSize: '42px', fontWeight: 400, letterSpacing: '-0.06em' }}>
-                    <textPath href="#circlePath" startOffset="66.66%">
-                      THECIRCLE
+                  <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
+                    <textPath href="#circlePath" startOffset="0%" textAnchor="start">
+                      <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
+                      <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+                      <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
                     </textPath>
                   </text>
                 </svg>

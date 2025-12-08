@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Send } from 'lucide-react';
+import { motion, useMotionValue } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // --- WEBGL BACKGROUND (Same as main page) ---
@@ -189,9 +189,68 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;
 };
 
+// Magnetic Button Component
+const MagneticButton: React.FC<{ 
+  children: React.ReactNode; 
+  className?: string; 
+  type?: "button" | "submit"; 
+  disabled?: boolean;
+  onClick?: () => void;
+}> = ({ children, className, type = "button", disabled, onClick }) => {
+    const ref = useRef<HTMLButtonElement>(null);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!ref.current) return;
+        const { clientX, clientY } = e;
+        const { left, top, width, height } = ref.current.getBoundingClientRect();
+        const x = (clientX - (left + width / 2)) * 0.3;
+        const y = (clientY - (top + height / 2)) * 0.3;
+        setPosition({ x, y });
+    };
+
+    const handleMouseLeave = () => {
+        setPosition({ x: 0, y: 0 });
+    };
+
+    return (
+        <motion.button
+            ref={ref}
+            type={type}
+            disabled={disabled}
+            className={className}
+            onClick={onClick}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            animate={{ x: position.x, y: position.y }}
+            transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+        >
+            {children}
+        </motion.button>
+    );
+};
+
 export default function FormPage() {
   const navigate = useNavigate();
+  const rotation = useMotionValue(0);
   const [chaosLevel, setChaosLevel] = useState(0);
+  
+  // Rotation animation
+  useEffect(() => {
+      let lastTime = performance.now();
+      
+      const update = () => {
+          const time = performance.now();
+          const delta = (time - lastTime) / 1000;
+          lastTime = time;
+          const baseSpeed = 0.98;
+          rotation.set(rotation.get() + (baseSpeed * delta));
+          requestAnimationFrame(update);
+      };
+      
+      const animationId = requestAnimationFrame(update);
+      return () => cancelAnimationFrame(animationId);
+  }, [rotation]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -233,8 +292,41 @@ export default function FormPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#050000] text-[#C42121] flex items-center justify-center p-6 relative overflow-hidden cursor-crosshair">
+      <div className="min-h-screen bg-[#050000] text-[#C42121] flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 relative overflow-hidden cursor-crosshair">
         <WebGLBackground chaosLevel={0} />
+        
+        {/* Sticky Header Bar */}
+        <header className="fixed top-0 w-full bg-[#050000] border-b border-[#C42121]/30 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
+          {/* Logo Circle - Small */}
+          <motion.div 
+            style={{ rotate: rotation }}
+            className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <defs>
+                <path id="circlePathSmallSubmit" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
+              </defs>
+              <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
+                <textPath href="#circlePathSmallSubmit" startOffset="0%">
+                  <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
+                  <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+                  <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+                </textPath>
+              </text>
+            </svg>
+          </motion.div>
+
+          {/* Back Button */}
+          <MagneticButton 
+            className="flex items-center gap-1 md:gap-2 border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">BACK</span>
+            <span className="sm:hidden">←</span>
+          </MagneticButton>
+        </header>
         
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -324,19 +416,41 @@ export default function FormPage() {
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-x-hidden">
       <WebGLBackground chaosLevel={chaosLevel} />
 
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full p-6 flex justify-between items-center z-50 mix-blend-difference">
-        <button
+      {/* Sticky Header Bar */}
+      <header className="fixed top-0 w-full bg-[#050000] border-b border-[#C42121]/30 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
+        {/* Logo Circle - Small */}
+        <motion.div 
+          style={{ rotate: rotation }}
+          className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer"
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-xs font-mono tracking-widest hover:opacity-70 transition-opacity uppercase"
         >
-          <ArrowLeft className="w-4 h-4" />
-          BACK
-        </button>
-      </nav>
+          <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <defs>
+              <path id="circlePathSmall" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
+            </defs>
+            <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
+              <textPath href="#circlePathSmall" startOffset="0%">
+                <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
+                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+              </textPath>
+            </text>
+          </svg>
+        </motion.div>
+
+        {/* Back Button */}
+        <MagneticButton 
+          className="flex items-center gap-1 md:gap-2 border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
+          <span className="hidden sm:inline">BACK</span>
+          <span className="sm:hidden">←</span>
+        </MagneticButton>
+      </header>
 
       {/* Form Container */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-6 py-32">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 pb-20">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
