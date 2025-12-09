@@ -4,5 +4,19 @@
  * La mayoría de estilos están en Tailwind CSS y en los componentes
  */
 
+/* Smooth Scroll Global */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Performance Optimization */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Puedes agregar estilos globales personalizados aquí si es necesario */
+
+
+
 

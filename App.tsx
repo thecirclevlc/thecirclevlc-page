@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useMotionValue, useScroll, useTransform, useVelocity, useSpring } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, useMotionValue, useScroll, useTransform, useVelocity, useSpring, useInView } from 'framer-motion';
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 
@@ -195,7 +195,7 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;
 };
 
-// 2. Magnetic Button Component
+// 2. Magnetic Button Component (Enhanced with ripple effect)
 const MagneticButton: React.FC<{ 
   children: React.ReactNode; 
   className?: string; 
@@ -205,12 +205,13 @@ const MagneticButton: React.FC<{
 }> = ({ children, className, type = "button", disabled, onClick }) => {
     const ref = useRef<HTMLButtonElement>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!ref.current) return;
         const { clientX, clientY } = e;
         const { left, top, width, height } = ref.current.getBoundingClientRect();
-        const x = (clientX - (left + width / 2)) * 0.3; // Strength of attraction
+        const x = (clientX - (left + width / 2)) * 0.3;
         const y = (clientY - (top + height / 2)) * 0.3;
         setPosition({ x, y });
     };
@@ -219,20 +220,89 @@ const MagneticButton: React.FC<{
         setPosition({ x: 0, y: 0 });
     };
 
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!ref.current) return;
+        const rect = ref.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const id = Date.now();
+        
+        setRipples(prev => [...prev, { x, y, id }]);
+        setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 600);
+        
+        if (onClick) onClick();
+    };
+
     return (
         <motion.button
             ref={ref}
             type={type}
             disabled={disabled}
-            className={className}
-            onClick={onClick}
+            className={`${className} relative`}
+            onClick={handleClick}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             animate={{ x: position.x, y: position.y }}
             transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+            style={{ willChange: 'transform' }}
         >
+            {ripples.map(ripple => (
+                <span
+                    key={ripple.id}
+                    className="absolute rounded-full bg-white/30 animate-ripple pointer-events-none"
+                    style={{
+                        left: ripple.x,
+                        top: ripple.y,
+                        width: 0,
+                        height: 0,
+                    }}
+                />
+            ))}
             {children}
         </motion.button>
+    );
+};
+
+// 3. Scroll Reveal Component - Enhanced with mysterious reveal
+const ScrollReveal: React.FC<{ 
+  children: React.ReactNode; 
+  delay?: number;
+  className?: string;
+  variant?: 'fade' | 'blur' | 'glitch';
+}> = ({ children, delay = 0, className = "", variant = 'fade' }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+    const variants = {
+        fade: {
+            initial: { opacity: 0, y: 60 },
+            animate: { opacity: 1, y: 0 }
+        },
+        blur: {
+            initial: { opacity: 0, y: 40, filter: 'blur(10px)' },
+            animate: { opacity: 1, y: 0, filter: 'blur(0px)' }
+        },
+        glitch: {
+            initial: { opacity: 0, x: -20, filter: 'blur(4px)' },
+            animate: { opacity: 1, x: 0, filter: 'blur(0px)' }
+        }
+    };
+
+    return (
+        <motion.div
+            ref={ref}
+            initial={variants[variant].initial}
+            animate={isInView ? variants[variant].animate : variants[variant].initial}
+            transition={{
+                duration: 1.4,
+                delay,
+                ease: [0.16, 1, 0.3, 1]
+            }}
+            className={className}
+            style={{ willChange: 'transform, opacity, filter' }}
+        >
+            {children}
+        </motion.div>
     );
 };
 
@@ -294,14 +364,23 @@ export default function TheCircleApp() {
            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
       </div>
 
+      {/* Subtle Vignette */}
+      <div className="fixed inset-0 pointer-events-none z-[1]" 
+           style={{ 
+             background: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%)'
+           }}>
+      </div>
+
       {/* Sticky Header Bar */}
-      <header className="fixed top-0 w-full bg-black border-b border-[#C42121]/30 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
+      <header className="fixed top-0 w-full bg-black border-b border-[#C42121]/30 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-10 backdrop-blur-sm">
         {/* Logo Circle - Small */}
         <motion.div 
-          style={{ rotate: rotation }}
+          style={{ rotate: rotation, willChange: 'transform' }}
           className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer"
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
           onClick={() => {
-            window.scrollTo(0, 0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             navigate('/');
           }}
         >
@@ -321,9 +400,9 @@ export default function TheCircleApp() {
 
         {/* Join Us Button */}
         <MagneticButton 
-          className="border border-[#C42121] px-4 py-2 md:px-8 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
+          className="border border-[#C42121] px-4 py-2 md:px-8 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase pointer-events-auto cursor-pointer"
           onClick={() => {
-            window.scrollTo(0, 0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             navigate('/form');
           }}
         >
@@ -335,13 +414,22 @@ export default function TheCircleApp() {
       <div className="relative z-10 opacity-100 pt-16 md:pt-20">
 
         {/* Hero Section */}
-        <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden perspective-1000">
-            {/* Spinning Circle - Reduced 20% in responsive */}
+        <section className="relative min-h-[100svh] h-screen flex flex-col items-center justify-center overflow-hidden perspective-1000">
+            {/* Spinning Circle - Clean hover with scale only */}
             <motion.div 
                 initial={{ scale: 0.3, opacity: 0 }}
                 animate={{ 
                   scale: hasLoaded ? 1 : 0.3,
                   opacity: hasLoaded ? 1 : 0
+                }}
+                whileHover={{ 
+                  scale: hasLoaded ? 1.05 : 0.3,
+                  transition: { 
+                    duration: 2,
+                    ease: [0.34, 1.56, 0.64, 1],
+                    type: "spring",
+                    bounce: 0.4
+                  }
                 }}
                 transition={{ 
                   duration: 1.2, 
@@ -352,9 +440,10 @@ export default function TheCircleApp() {
                   rotate: rotation,
                   scale: circleScale,
                   x: '-50%',
-                  y: 'calc(-50% - 5vh)'
+                  y: 'calc(-50% - 5vh)',
+                  willChange: 'transform'
                 }}
-                className="absolute top-1/2 left-1/2 w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
+                className="absolute top-1/2 left-1/2 w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center cursor-pointer"
             >
                 <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <defs>
@@ -387,55 +476,86 @@ export default function TheCircleApp() {
             </div> */}
         </section>
 
-        {/* Manifesto Section */}
-        <section className="relative py-32 px-6 md:px-20 border-t border-[#C42121]/20 backdrop-blur-[2px]">
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="text-sm leading-relaxed opacity-80 sticky top-32 h-fit space-y-6">
-                    <p>
-                        The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.
-                    </p>
-                    <p>
-                        Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.
-                    </p>
-                </div>
-                <div>
-                    <h2 className="text-4xl md:text-7xl font-bold leading-[0.9] tracking-tighter mb-12">
-                        <span className="text-[#C42121]">MUSIC THAT MOVES UNSEEN<br/>SPACES.</span><br/>
-                        <span className="text-[#330000] selection:bg-white selection:text-black">MOMENTS THAT HAPPEN ONLY<br/>ONCE.</span><br/>
-                        <span className="text-[#C42121]">EXPRESSION WITHOUT<br/>BOUNDARIES.</span>
-                    </h2>
-                    <div className="text-lg md:text-xl font-light leading-relaxed max-w-lg">
-                        <p>
-                            An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.
-                        </p>
+        {/* Manifesto Section - Enhanced with Sequential Mysterious Reveals */}
+        <section className="relative py-32 md:py-40 px-6 md:px-20 border-t border-[#C42121]/20 backdrop-blur-[2px]">
+            <div className="max-w-6xl mx-auto">
+                {/* Mobile: Description first, Desktop: Grid layout */}
+                <div className="flex flex-col md:grid md:grid-cols-2 gap-12 md:gap-16">
+                    {/* Left Column - Body Text */}
+                    <ScrollReveal delay={0.1} variant="blur">
+                        <div className="text-base md:text-lg leading-relaxed opacity-80 md:sticky md:top-32 h-fit space-y-6 transition-opacity duration-300">
+                            <p>
+                                The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.
+                            </p>
+                            <p>
+                                Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.
+                            </p>
+                            <p className="text-base md:text-lg font-light leading-relaxed pt-4 border-t border-[#C42121]/20 mt-8">
+                                An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.
+                            </p>
+                        </div>
+                    </ScrollReveal>
+
+                    {/* Right Column - Headers with Sequential Reveal */}
+                    <div className="space-y-0">
+                        {/* First Line - MUSIC THAT */}
+                        <ScrollReveal delay={0.2} variant="blur">
+                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
+                                <span className="text-[#C42121]">MUSIC THAT MOVES UNSEEN<br/>SPACES.</span>
+                            </h2>
+                        </ScrollReveal>
+
+                        {/* Second Line - MOMENTS THAT */}
+                        <ScrollReveal delay={0.6} variant="glitch">
+                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
+                                <span className="text-[#330000] selection:bg-white selection:text-black">MOMENTS THAT HAPPEN ONLY<br/>ONCE.</span>
+                            </h2>
+                        </ScrollReveal>
+
+                        {/* Third Line - EXPRESSION */}
+                        <ScrollReveal delay={1.0} variant="blur">
+                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter">
+                                <span className="text-[#C42121]">EXPRESSION WITHOUT<br/>BOUNDARIES.</span>
+                            </h2>
+                        </ScrollReveal>
                     </div>
                 </div>
             </div>
         </section>
 
-        {/* Marquee Banner Top */}
-        <div className="py-4 bg-[#C42121] text-black overflow-hidden border-y border-black">
+        {/* Marquee Banner - Pauses on hover */}
+        <div className="py-6 md:py-8 bg-[#C42121] text-black overflow-hidden border-y border-black group">
              <motion.div 
                 className="whitespace-nowrap flex gap-8"
                 animate={{ x: ["0%", "-50%"] }}
-                transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+                transition={{ 
+                  repeat: Infinity, 
+                  duration: 25, 
+                  ease: "linear" 
+                }}
+                style={{ willChange: 'transform' }}
              >
                 {[...Array(12)].map((_, i) => (
-                    <span key={i} className="text-3xl md:text-5xl font-black uppercase tracking-tight">
-                        TOTAL SILENCE • SECRET LOCATION • JOIN US • TOTAL SILENCE • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •
+                    <span key={i} className="text-3xl md:text-5xl font-black uppercase tracking-tight transition-opacity duration-300 group-hover:opacity-80">
+                        SECRET LOCATION • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •
                     </span>
                 ))}
              </motion.div>
         </div>
 
-        {/* Inner Circle Access Form */}
-        <section className="relative min-h-screen flex items-center justify-center px-6 py-20">
-            <div className="w-full max-w-2xl relative">
+        {/* Inner Circle Access Form - Enhanced */}
+        <section className="relative min-h-screen flex items-center justify-center px-6 py-32 md:py-40">
+            <ScrollReveal delay={0.1} className="w-full max-w-2xl">
                 <div className="bg-black/90 border border-[#C42121]/30 p-8 md:p-20 backdrop-blur-xl shadow-[0_0_50px_rgba(196,33,33,0.1)]">
                     <div className="text-center mb-12">
-                        <div className="w-16 h-16 border-2 border-[#C42121] rounded-full mx-auto mb-6" />
-                        <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">JOIN THE NEXT EVENT</h3>
-                        <div className="text-xs tracking-wider text-[#C42121]/60 leading-relaxed space-y-4">
+                        <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                            className="w-16 h-16 border-2 border-[#C42121] rounded-full mx-auto mb-8"
+                            style={{ willChange: 'transform' }}
+                        />
+                        <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6">JOIN THE NEXT EVENT</h3>
+                        <div className="text-sm tracking-wide text-[#C42121]/60 leading-relaxed space-y-4 transition-opacity duration-300">
                             <p>We review every submission carefully. If selected, you will receive the link to the event ticket.</p>
                             <p>Attendance is limited. Each night is designed to maintain a creative, intimate, and connected community.</p>
                         </div>
@@ -443,9 +563,9 @@ export default function TheCircleApp() {
 
                     <div className="flex justify-center">
                         <MagneticButton 
-                            className="group relative bg-[#C42121] text-black font-black text-2xl md:text-3xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] active:animate-glitch transition-colors overflow-hidden pointer-events-auto cursor-pointer"
+                            className="group relative bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] active:animate-glitch transition-all duration-300 overflow-hidden pointer-events-auto cursor-pointer"
                             onClick={() => {
-                              window.scrollTo(0, 0);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
                               navigate('/form');
                             }}
                         >
@@ -455,26 +575,31 @@ export default function TheCircleApp() {
                         </MagneticButton>
                     </div>
                 </div>
-            </div>
+            </ScrollReveal>
         </section>
       </div>
 
 
-      {/* Footer */}
-      <footer className="fixed bottom-0 w-full p-6 flex justify-between items-end z-40 pointer-events-none text-[#C42121] mix-blend-exclusion opacity-50">
-        <div className="font-mono text-[10px] md:text-xs">
+      {/* Footer - Enhanced with micro-interactions */}
+      <footer className="fixed bottom-0 w-full p-6 md:p-8 flex justify-between items-end z-40 pointer-events-none text-[#C42121] mix-blend-exclusion opacity-50">
+        <div className="font-mono text-[10px] md:text-xs transition-opacity duration-300 hover:opacity-100">
           <div>© 2025 THECIRCLE</div>
         </div>
         <div className="text-right font-mono text-[10px] md:text-xs flex flex-col gap-1">
-          <div className="pointer-events-auto">
-            <a href="mailto:contact@thecirclevlc.com" className="hover:opacity-100 transition-opacity">
+          <div className="pointer-events-auto group">
+            <a 
+              href="mailto:contact@thecirclevlc.com" 
+              className="relative hover:opacity-100 transition-opacity duration-300 inline-block"
+            >
               contact@thecirclevlc.com
+              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
             </a>
           </div>
         </div>
       </footer>
 
       <style>{`
+        /* Glitch Animation */
         @keyframes glitch {
           0% { 
             transform: translate(0);
@@ -503,6 +628,36 @@ export default function TheCircleApp() {
         }
         .animate-glitch {
           animation: glitch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Ripple Effect */
+        @keyframes ripple {
+          0% {
+            width: 0;
+            height: 0;
+            opacity: 0.5;
+            transform: translate(-50%, -50%);
+          }
+          100% {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+            transform: translate(-50%, -50%);
+          }
+        }
+        .animate-ripple {
+          animation: ripple 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Performance: Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
         }
       `}</style>
     </div>

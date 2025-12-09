@@ -27,6 +27,12 @@
     
     <!-- Theme Color -->
     <meta name="theme-color" content="#050000" />
+    
+    <!-- Performance: Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
@@ -40,6 +46,8 @@
         color: #C42121;
         font-family: 'Poppins', sans-serif;
         overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       
       .font-mono {
@@ -55,6 +63,12 @@
       ::-webkit-scrollbar {
         width: 0px;
         background: transparent;
+      }
+      
+      /* Performance: GPU acceleration hint */
+      canvas {
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
       }
     </style>
   <script type="importmap">
