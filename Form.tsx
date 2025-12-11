@@ -1,7 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+// Smooth scroll utility - Extra slow and smooth (50% slower)
+let scrollAnimationId: number | null = null;
+let isScrolling = false;
+
+const smoothScrollTo = (target: number, duration: number = 2250) => {
+  // Cancel any ongoing scroll animation
+  if (scrollAnimationId !== null) {
+    cancelAnimationFrame(scrollAnimationId);
+  }
+
+  const start = window.pageYOffset;
+  const distance = target - start;
+  const startTime = performance.now();
+  isScrolling = true;
+
+  const easeInOutCubic = (t: number): number => {
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  };
+
+  const scroll = (currentTime: number) => {
+    if (!isScrolling) {
+      scrollAnimationId = null;
+      return;
+    }
+
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easing = easeInOutCubic(progress);
+    
+    window.scrollTo(0, start + distance * easing);
+    
+    if (progress < 1) {
+      scrollAnimationId = requestAnimationFrame(scroll);
+    } else {
+      scrollAnimationId = null;
+      isScrolling = false;
+    }
+  };
+
+  scrollAnimationId = requestAnimationFrame(scroll);
+
+  // Cancel animation if user tries to scroll manually
+  const cancelScroll = () => {
+    isScrolling = false;
+    if (scrollAnimationId !== null) {
+      cancelAnimationFrame(scrollAnimationId);
+      scrollAnimationId = null;
+    }
+  };
+
+  // Listen for user scroll attempts
+  const handleUserScroll = (e: WheelEvent | TouchEvent) => {
+    cancelScroll();
+  };
+
+  window.addEventListener('wheel', handleUserScroll, { passive: true, once: true });
+  window.addEventListener('touchmove', handleUserScroll, { passive: true, once: true });
+};
 
 // --- WEBGL BACKGROUND (Same as main page) ---
 const vertexShaderSource = `
@@ -258,29 +318,105 @@ export default function FormPage() {
   }, []);
   const [formData, setFormData] = useState({
     fullName: '',
-    ageLocation: '',
+    age: '',
+    whereFrom: '',
     instagram: '',
+    email: '',
+    artist: '',
     unexpected: '',
     dreamGuest: '',
     expectations: ''
   });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [emptyFields, setEmptyFields] = useState<string[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields (all except artist)
+    const requiredFields = {
+      fullName: 'Full Name',
+      age: 'Age',
+      whereFrom: 'Where are you from',
+      instagram: 'IG account',
+      email: 'E-mail address',
+      unexpected: "What's something people would never expect about you?",
+      dreamGuest: 'Imagine The Circle could bring anyone to the table, who would you want to sit with?',
+      expectations: 'What do you expect from The Circle?'
+    };
+
+    const empty: string[] = [];
+    Object.entries(requiredFields).forEach(([key, label]) => {
+      if (!formData[key as keyof typeof formData].trim()) {
+        empty.push(key);
+      }
+    });
+
+    if (empty.length > 0) {
+      setEmptyFields(empty);
+      setShowError(true);
+      setChaosLevel(0.3);
+      
+      // Scroll to first empty field with extra smooth animation
+      setTimeout(() => {
+        const firstEmptyField = document.querySelector(`[name="${empty[0]}"]`) as HTMLElement;
+        if (firstEmptyField) {
+          const fieldPosition = firstEmptyField.getBoundingClientRect().top + window.pageYOffset - 150;
+          smoothScrollTo(fieldPosition, 1800);
+        }
+      }, 100);
+
+      // Reset error state after animation
+      setTimeout(() => {
+        setShowError(false);
+        setChaosLevel(0);
+      }, 2000);
+      
+      return;
+    }
+
     setSending(true);
-    setChaosLevel(0.2); // Subtle chaos effect on submit
+    setChaosLevel(0.2);
+    setEmptyFields([]);
     
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll to top with extra smooth animation
+    smoothScrollTo(0, 2250);
     
-    setTimeout(() => {
-      console.log('Form submitted:', formData);
-      setSubmitted(true);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("data[Full name ]", formData.fullName.trim());
+      formDataToSend.append("data[Age]", formData.age.trim());
+      formDataToSend.append("data[Where are you from]", formData.whereFrom.trim());
+      formDataToSend.append("data[IG account]", formData.instagram.trim());
+      formDataToSend.append("data[E-mail address]", formData.email.trim());
+      formDataToSend.append("data[Are you an artist? If so, please include the link to your portfolio]", formData.artist.trim());
+      formDataToSend.append("data[What's something people would never expect about you?]", formData.unexpected.trim());
+      formDataToSend.append("data[Imagine The Circle could bring anyone to the table, who would you want to sit with?]", formData.dreamGuest.trim());
+      formDataToSend.append("data[What do you expect from The Circle?]", formData.expectations.trim());
+
+      const response = await fetch('https://sheetdb.io/api/v1/ckttnw3xza586', {
+        method: 'POST',
+        body: formDataToSend
+      });
+
+      if (response.ok) {
+        console.log('Form submitted successfully:', formData);
+        setSubmitted(true);
+      } else {
+        console.error('Error submitting form:', response.statusText);
+        setShowError(true);
+        setTimeout(() => setShowError(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 2000);
+    } finally {
       setSending(false);
       setChaosLevel(0);
-    }, 1500);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -319,12 +455,10 @@ export default function FormPage() {
 
           {/* Back Button */}
           <MagneticButton 
-            className="flex items-center gap-1 md:gap-2 border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
+            className="border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
             onClick={() => navigate('/')}
           >
-            <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
-            <span className="hidden sm:inline">BACK</span>
-            <span className="sm:hidden">←</span>
+            BACK
           </MagneticButton>
         </header>
         
@@ -332,78 +466,88 @@ export default function FormPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="text-center max-w-3xl relative z-10"
+          className="text-center max-w-4xl w-full relative z-10 px-4"
         >
+          {/* Abstract Circle Animation */}
           <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, type: "spring", bounce: 0.4 }}
-            className="mb-12"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ 
+              opacity: [0, 1, 1, 0],
+              scale: [0, 1.2, 1, 0.8],
+              rotate: [0, 180, 360]
+            }}
+            transition={{ 
+              duration: 2,
+              ease: "easeInOut",
+              times: [0, 0.3, 0.7, 1]
+            }}
+            className="mb-8 md:mb-12 flex justify-center"
           >
-            <div className="w-32 h-32 border-2 border-[#C42121] rounded-full mx-auto flex items-center justify-center relative">
+            <div className="relative w-24 h-24 md:w-32 md:h-32">
+              {/* Outer ring */}
               <motion.div 
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="w-4 h-4 bg-[#C42121] rounded-full shadow-[0_0_30px_#C42121]" 
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  rotate: { duration: 2, ease: "linear" },
+                  scale: { duration: 1, repeat: 1 }
+                }}
+                className="absolute inset-0 border-2 border-[#C42121] rounded-full opacity-60"
               />
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                className="absolute inset-0 border-t-2 border-[#C42121] rounded-full"
+              
+              {/* Inner circles */}
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.5, 1],
+                  opacity: [0.8, 0.3, 0.8]
+                }}
+                transition={{ duration: 1, repeat: 1 }}
+                className="absolute inset-4 border border-[#C42121] rounded-full"
+              />
+              
+              {/* Center dot */}
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.3, 1],
+                }}
+                transition={{ duration: 0.8, repeat: 2 }}
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#C42121] rounded-full shadow-[0_0_20px_#C42121]" 
               />
             </div>
           </motion.div>
 
-          <motion.h2 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="text-5xl md:text-8xl font-black mb-6 tracking-tighter leading-[0.85] mix-blend-exclusion"
+            className="mb-12 md:mb-16"
           >
-            SIGNAL<br/>RECEIVED
-          </motion.h2>
-
-          <motion.div 
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
-            className="w-64 h-[1px] bg-[#C42121] mx-auto mb-8"
-          />
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
-            className="space-y-3 mb-10"
-          >
-            <p className="text-lg font-mono tracking-[0.3em] uppercase opacity-80">
-              Your data has been encrypted
-            </p>
-            <p className="text-sm tracking-[0.2em] opacity-50 uppercase font-mono">
-              We will contact you if selected
+            <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight uppercase leading-tight">
+              We will contact you<br className="sm:hidden" /> if selected
             </p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1 }}
-            className="p-6 border border-[#C42121]/20 bg-black/60 backdrop-blur-sm mb-10"
+            transition={{ delay: 0.5 }}
+            className="mb-16 md:mb-20"
           >
-            <p className="text-xs font-mono leading-relaxed opacity-60 tracking-wider">
-              PROTOCOL INITIATED / AWAIT FURTHER INSTRUCTIONS<br/>
-              DO NOT SHARE THIS CONFIRMATION
+            <p className="text-sm md:text-base font-mono tracking-[0.3em] uppercase opacity-60">
+              Do not share
             </p>
           </motion.div>
 
           <motion.button
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.3 }}
+            transition={{ delay: 0.7 }}
             onClick={() => navigate('/')}
             whileHover={{ scale: 1.03, backgroundColor: '#C42121' }}
             whileTap={{ scale: 0.97 }}
-            className="border border-[#C42121] px-10 py-3 text-xs tracking-[0.3em] transition-colors uppercase font-bold mix-blend-exclusion"
+            className="border border-[#C42121] px-10 py-3 text-xs tracking-[0.3em] transition-colors uppercase font-bold mix-blend-exclusion hover:text-black"
           >
             RETURN
           </motion.button>
@@ -438,16 +582,14 @@ export default function FormPage() {
           </svg>
         </motion.div>
 
-        {/* Back Button */}
-        <MagneticButton 
-          className="flex items-center gap-1 md:gap-2 border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
-          <span className="hidden sm:inline">BACK</span>
-          <span className="sm:hidden">←</span>
-        </MagneticButton>
-      </header>
+          {/* Back Button */}
+          <MagneticButton 
+            className="border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            BACK
+          </MagneticButton>
+        </header>
 
       {/* Form Container */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 pb-20">
@@ -487,7 +629,7 @@ export default function FormPage() {
             <motion.p 
               animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 0.4, filter: 'blur(0px)' }}
               transition={{ duration: 0.5 }}
-              className="text-xs tracking-[0.5em] uppercase"
+              className="text-xs tracking-[0.5em] uppercase font-mono"
             >
               VOL. II
             </motion.p>
@@ -508,7 +650,7 @@ export default function FormPage() {
             transition={{ delay: sending ? 0 : 0.3, duration: 0.5 }}
             className="mb-12 p-8 border border-[#C42121]/20 bg-black/60 backdrop-blur-sm"
           >
-            <p className="text-[10px] leading-relaxed opacity-60 text-center tracking-widest uppercase">
+            <p className="text-xs leading-relaxed opacity-60 text-center tracking-widest uppercase font-mono">
               10.01.2026 - SECRET LOCATION, VALENCIA
             </p>
           </motion.div>
@@ -531,83 +673,307 @@ export default function FormPage() {
             {/* Full Name */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
+              animate={emptyFields.includes('fullName') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('fullName') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.4
+              } : { delay: 0.4 }}
               className="group"
             >
-              <label className="block text-[10px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
+              <motion.label 
+                animate={emptyFields.includes('fullName') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('fullName') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
                 Full Name
-              </label>
-              <input
+              </motion.label>
+              <motion.input
                 type="text"
                 name="fullName"
                 required
                 value={formData.fullName}
                 onChange={handleChange}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-lg font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-sm"
+                animate={emptyFields.includes('fullName') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('fullName') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
                 placeholder="Your complete name"
               />
             </motion.div>
 
-            {/* Age & Location */}
+            {/* Age */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
+              animate={emptyFields.includes('age') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('age') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.5
+              } : { delay: 0.5 }}
               className="group"
             >
-              <label className="block text-[10px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
-                Your age & where are you from?
-              </label>
-              <input
+              <motion.label 
+                animate={emptyFields.includes('age') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('age') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
+                Age
+              </motion.label>
+              <motion.input
                 type="text"
-                name="ageLocation"
+                name="age"
                 required
-                value={formData.ageLocation}
+                value={formData.age}
                 onChange={handleChange}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-lg font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-sm"
-                placeholder="e.g., 28, Valencia"
+                animate={emptyFields.includes('age') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('age') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                placeholder="Your age"
+              />
+            </motion.div>
+
+            {/* Where are you from */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={emptyFields.includes('whereFrom') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('whereFrom') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.55
+              } : { delay: 0.55 }}
+              className="group"
+            >
+              <motion.label 
+                animate={emptyFields.includes('whereFrom') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('whereFrom') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
+                Where are you from
+              </motion.label>
+              <motion.input
+                type="text"
+                name="whereFrom"
+                required
+                value={formData.whereFrom}
+                onChange={handleChange}
+                animate={emptyFields.includes('whereFrom') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('whereFrom') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                placeholder="e.g., Valencia"
               />
             </motion.div>
 
             {/* Instagram */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
+              animate={emptyFields.includes('instagram') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('instagram') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.6
+              } : { delay: 0.6 }}
               className="group"
             >
-              <label className="block text-[10px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
-                Your Instagram Account
-              </label>
-              <input
+              <motion.label 
+                animate={emptyFields.includes('instagram') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('instagram') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
+                IG account
+              </motion.label>
+              <motion.input
                 type="text"
                 name="instagram"
                 required
                 value={formData.instagram}
                 onChange={handleChange}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-lg font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-sm"
+                animate={emptyFields.includes('instagram') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('instagram') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
                 placeholder="@username"
               />
             </motion.div>
 
-            {/* Unexpected */}
+            {/* Email */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={emptyFields.includes('email') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('email') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.65
+              } : { delay: 0.65 }}
+              className="group"
+            >
+              <motion.label 
+                animate={emptyFields.includes('email') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('email') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
+                E-mail address
+              </motion.label>
+              <motion.input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                animate={emptyFields.includes('email') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('email') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                placeholder="your@email.com"
+              />
+            </motion.div>
+
+            {/* Artist Portfolio */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7 }}
               className="group"
             >
-              <label className="block text-[10px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
-                What's something people would never expect about you?
+              <label className="block text-[13px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
+                Are you an artist? If so, please include the link to your portfolio (optional)
               </label>
-              <textarea
+              <input
+                type="text"
+                name="artist"
+                value={formData.artist}
+                onChange={handleChange}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                placeholder="Portfolio link (optional)"
+              />
+            </motion.div>
+
+            {/* Unexpected */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={emptyFields.includes('unexpected') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('unexpected') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.75
+              } : { delay: 0.75 }}
+              className="group"
+            >
+              <motion.label 
+                animate={emptyFields.includes('unexpected') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('unexpected') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
+                What's something people would never expect about you?
+              </motion.label>
+              <motion.textarea
                 name="unexpected"
                 required
                 value={formData.unexpected}
                 onChange={handleChange}
                 rows={3}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-lg font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-sm resize-none"
+                animate={emptyFields.includes('unexpected') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('unexpected') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -615,20 +981,47 @@ export default function FormPage() {
             {/* Dream Guest */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8 }}
+              animate={emptyFields.includes('dreamGuest') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('dreamGuest') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.8
+              } : { delay: 0.8 }}
               className="group"
             >
-              <label className="block text-[10px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
+              <motion.label 
+                animate={emptyFields.includes('dreamGuest') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('dreamGuest') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
                 Imagine The Circle could bring anyone to the table, who would you want to sit with?
-              </label>
-              <textarea
+              </motion.label>
+              <motion.textarea
                 name="dreamGuest"
                 required
                 value={formData.dreamGuest}
                 onChange={handleChange}
                 rows={3}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-lg font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-sm resize-none"
+                animate={emptyFields.includes('dreamGuest') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('dreamGuest') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -636,20 +1029,47 @@ export default function FormPage() {
             {/* Expectations */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.9 }}
+              animate={emptyFields.includes('expectations') ? {
+                opacity: 1,
+                x: 0,
+                borderColor: ['#C42121', '#ff0000', '#C42121']
+              } : {
+                opacity: 1,
+                x: 0
+              }}
+              transition={emptyFields.includes('expectations') ? {
+                borderColor: { duration: 0.5, repeat: 3 },
+                delay: 0.85
+              } : { delay: 0.85 }}
               className="group"
             >
-              <label className="block text-[10px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
+              <motion.label 
+                animate={emptyFields.includes('expectations') ? {
+                  opacity: [0.5, 1, 0.5],
+                  color: ['#C42121', '#ff0000', '#C42121']
+                } : { opacity: 0.5 }}
+                transition={emptyFields.includes('expectations') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+              >
                 What do you expect from The Circle?
-              </label>
-              <textarea
+              </motion.label>
+              <motion.textarea
                 name="expectations"
                 required
                 value={formData.expectations}
                 onChange={handleChange}
                 rows={3}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-lg font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-sm resize-none"
+                animate={emptyFields.includes('expectations') ? {
+                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
+                } : {}}
+                transition={emptyFields.includes('expectations') ? {
+                  duration: 0.5,
+                  repeat: 3
+                } : {}}
+                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -658,19 +1078,29 @@ export default function FormPage() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
+              transition={{ delay: 0.9 }}
               className="flex justify-center pt-12"
             >
               <motion.button
                 type="submit"
                 disabled={sending}
                 whileTap={{ scale: 0.95 }}
-                animate={sending ? { scale: [1, 1.05, 1] } : {}}
-                transition={sending ? { duration: 0.3 } : {}}
+                animate={showError ? { 
+                  scale: [1, 1.05, 1, 1.05, 1],
+                  backgroundColor: ['#C42121', '#ff0000', '#C42121', '#ff0000', '#C42121']
+                } : sending ? { 
+                  scale: [1, 1.05, 1] 
+                } : {}}
+                transition={showError ? { 
+                  duration: 1.5,
+                  ease: "easeInOut"
+                } : sending ? { 
+                  duration: 0.3 
+                } : {}}
                 className="group relative bg-[#C42121] font-black text-lg py-5 px-16 uppercase tracking-[0.3em] overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(196,33,33,0.6)] disabled:opacity-70"
               >
                 <span className="relative z-10 text-black">
-                  {sending ? 'SENT :)' : 'DONE'}
+                  {showError ? 'ERROR' : sending ? 'SENT :)' : 'DONE'}
                 </span>
                 {/* Animated Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#C42121] via-[#ff3333] to-[#C42121] bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

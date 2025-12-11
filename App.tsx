@@ -3,6 +3,67 @@ import { motion, useMotionValue, useScroll, useTransform, useVelocity, useSpring
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 
+// Smooth scroll utility - Extra slow and smooth (50% slower)
+let scrollAnimationId: number | null = null;
+let isScrolling = false;
+
+const smoothScrollTo = (target: number, duration: number = 2250) => {
+  // Cancel any ongoing scroll animation
+  if (scrollAnimationId !== null) {
+    cancelAnimationFrame(scrollAnimationId);
+  }
+
+  const start = window.pageYOffset;
+  const distance = target - start;
+  const startTime = performance.now();
+  isScrolling = true;
+
+  const easeInOutCubic = (t: number): number => {
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  };
+
+  const scroll = (currentTime: number) => {
+    if (!isScrolling) {
+      scrollAnimationId = null;
+      return;
+    }
+
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easing = easeInOutCubic(progress);
+    
+    window.scrollTo(0, start + distance * easing);
+    
+    if (progress < 1) {
+      scrollAnimationId = requestAnimationFrame(scroll);
+    } else {
+      scrollAnimationId = null;
+      isScrolling = false;
+    }
+  };
+
+  scrollAnimationId = requestAnimationFrame(scroll);
+
+  // Cancel animation if user tries to scroll manually
+  const cancelScroll = () => {
+    isScrolling = false;
+    if (scrollAnimationId !== null) {
+      cancelAnimationFrame(scrollAnimationId);
+      scrollAnimationId = null;
+    }
+  };
+
+  // Listen for user scroll attempts
+  const handleUserScroll = (e: WheelEvent | TouchEvent) => {
+    cancelScroll();
+  };
+
+  window.addEventListener('wheel', handleUserScroll, { passive: true, once: true });
+  window.addEventListener('touchmove', handleUserScroll, { passive: true, once: true });
+};
+
 // --- SHADERS (NATIVE WEBGL) ---
 // Vertex Shader: Standard Fullscreen Quad
 const vertexShaderSource = `
@@ -380,7 +441,7 @@ export default function TheCircleApp() {
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            smoothScrollTo(0, 2250);
             navigate('/');
           }}
         >
@@ -402,7 +463,7 @@ export default function TheCircleApp() {
         <MagneticButton 
           className="border border-[#C42121] px-4 py-2 md:px-8 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase pointer-events-auto cursor-pointer"
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            smoothScrollTo(0, 2250);
             navigate('/form');
           }}
         >
@@ -415,21 +476,12 @@ export default function TheCircleApp() {
 
         {/* Hero Section */}
         <section className="relative min-h-[100svh] h-screen flex flex-col items-center justify-center overflow-hidden perspective-1000">
-            {/* Spinning Circle - Clean hover with scale only */}
+            {/* Spinning Circle - No hover effect */}
             <motion.div 
                 initial={{ scale: 0.3, opacity: 0 }}
                 animate={{ 
                   scale: hasLoaded ? 1 : 0.3,
                   opacity: hasLoaded ? 1 : 0
-                }}
-                whileHover={{ 
-                  scale: hasLoaded ? 1.05 : 0.3,
-                  transition: { 
-                    duration: 2,
-                    ease: [0.34, 1.56, 0.64, 1],
-                    type: "spring",
-                    bounce: 0.4
-                  }
                 }}
                 transition={{ 
                   duration: 1.2, 
@@ -443,7 +495,7 @@ export default function TheCircleApp() {
                   y: 'calc(-50% - 5vh)',
                   willChange: 'transform'
                 }}
-                className="absolute top-1/2 left-1/2 w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center cursor-pointer"
+                className="absolute top-1/2 left-1/2 w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
             >
                 <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <defs>
@@ -565,7 +617,7 @@ export default function TheCircleApp() {
                         <MagneticButton 
                             className="group relative bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] active:animate-glitch transition-all duration-300 overflow-hidden pointer-events-auto cursor-pointer"
                             onClick={() => {
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              smoothScrollTo(0, 2250);
                               navigate('/form');
                             }}
                         >
