@@ -522,21 +522,13 @@ export default function FormPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="mb-12 md:mb-16"
+            className="mb-16 md:mb-20 max-w-3xl mx-auto"
           >
-            <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight uppercase leading-tight">
-              We will contact you<br className="sm:hidden" /> if selected
+            <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight mb-6 uppercase">
+              WE HAVE RECEIVED YOUR INFORMATION.
             </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-16 md:mb-20"
-          >
-            <p className="text-sm md:text-base font-mono tracking-[0.3em] uppercase opacity-60">
-              Do not share
+            <p className="text-lg sm:text-xl md:text-2xl font-light tracking-tight leading-relaxed opacity-80">
+              If your vibes match the spirit of the event, we will reach out with more details!
             </p>
           </motion.div>
 

@@ -253,7 +253,12 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
     }
   }, [chaosLevel]);
 
-  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;
+  return (
+    <canvas 
+      ref={canvasRef} 
+      className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" 
+    />
+  );
 };
 
 // 2. Magnetic Button Component (Enhanced with ripple effect)
@@ -373,6 +378,8 @@ export default function TheCircleApp() {
   const { scrollY } = useScroll();
   const rotation = useMotionValue(0);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
   
   // Scroll-based animations
   const scrollVelocity = useVelocity(scrollY);
@@ -386,6 +393,29 @@ export default function TheCircleApp() {
   // Initial load animation
   useEffect(() => {
     setHasLoaded(true);
+  }, []);
+
+  // Hide grid after 3 seconds automatically
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowGrid(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Detect when user scrolls to bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrolledToBottom = windowHeight + scrollTop >= documentHeight - 100;
+      setIsAtBottom(scrolledToBottom);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
   // Rotation with scroll influence - 40% faster base speed + scroll boost
@@ -418,7 +448,12 @@ export default function TheCircleApp() {
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-hidden">
       
       {/* Background Layer */}
-      <WebGLBackground chaosLevel={0} />
+      <motion.div
+        animate={{ opacity: showGrid ? 1 : 0 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+      >
+        <WebGLBackground chaosLevel={0} />
+      </motion.div>
       
       {/* Noise Overlay (CSS) */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[1] mix-blend-overlay" 
@@ -441,8 +476,8 @@ export default function TheCircleApp() {
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
           onClick={() => {
-            smoothScrollTo(0, 2250);
-            navigate('/');
+            window.scrollTo(0, 0);
+            setTimeout(() => navigate('/'), 50);
           }}
         >
           <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -463,8 +498,8 @@ export default function TheCircleApp() {
         <MagneticButton 
           className="border border-[#C42121] px-4 py-2 md:px-8 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase pointer-events-auto cursor-pointer"
           onClick={() => {
-            smoothScrollTo(0, 2250);
-            navigate('/form');
+            window.scrollTo(0, 0);
+            setTimeout(() => navigate('/form'), 50);
           }}
         >
           JOIN US
@@ -617,8 +652,8 @@ export default function TheCircleApp() {
                         <MagneticButton 
                             className="group relative bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] active:animate-glitch transition-all duration-300 overflow-hidden pointer-events-auto cursor-pointer"
                             onClick={() => {
-                              smoothScrollTo(0, 2250);
-                              navigate('/form');
+                              window.scrollTo(0, 0);
+                              setTimeout(() => navigate('/form'), 50);
                             }}
                         >
                             <span className="relative z-10">
@@ -632,23 +667,55 @@ export default function TheCircleApp() {
       </div>
 
 
-      {/* Footer - Enhanced with micro-interactions */}
-      <footer className="fixed bottom-0 w-full p-6 md:p-8 flex justify-between items-end z-40 pointer-events-none text-[#C42121] mix-blend-exclusion opacity-50">
-        <div className="font-mono text-[10px] md:text-xs transition-opacity duration-300 hover:opacity-100">
-          <div>© 2025 THECIRCLE</div>
-        </div>
-        <div className="text-right font-mono text-[10px] md:text-xs flex flex-col gap-1">
-          <div className="pointer-events-auto group">
+      {/* Footer - Only visible at bottom */}
+      <motion.footer 
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: isAtBottom ? 1 : 0
+        }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="relative w-full p-6 md:p-8 z-40 text-[#C42121] mix-blend-exclusion"
+      >
+        {/* Desktop Layout */}
+        <div className="hidden md:flex justify-between items-center font-mono text-[10px] md:text-xs opacity-50">
+          <div className="transition-opacity duration-300 hover:opacity-100">
+            © 2025 THECIRCLE
+          </div>
+          <div className="transition-opacity duration-300 hover:opacity-100">
+            BY ALIA STUDIO
+          </div>
+          <div className="text-right pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
             <a 
               href="mailto:contact@thecirclevlc.com" 
-              className="relative hover:opacity-100 transition-opacity duration-300 inline-block"
+              className="relative inline-block"
             >
               contact@thecirclevlc.com
               <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
             </a>
           </div>
         </div>
-      </footer>
+
+        {/* Mobile Layout */}
+        <div className="md:hidden font-mono text-[10px] opacity-50 space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="transition-opacity duration-300">
+              © 2025 THECIRCLE
+            </div>
+            <div className="text-right pointer-events-auto group transition-opacity duration-300">
+              <a 
+                href="mailto:contact@thecirclevlc.com" 
+                className="relative inline-block"
+              >
+                contact@thecirclevlc.com
+                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
+              </a>
+            </div>
+          </div>
+          <div className="text-center transition-opacity duration-300">
+            BY ALIA STUDIO
+          </div>
+        </div>
+      </motion.footer>
 
       <style>{`
         /* Glitch Animation */
