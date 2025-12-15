@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 // Smooth scroll utility - Extra slow and smooth (50% slower)
 let scrollAnimationId: number | null = null;
@@ -331,6 +332,9 @@ export default function FormPage() {
   const [sending, setSending] = useState(false);
   const [showError, setShowError] = useState(false);
   const [emptyFields, setEmptyFields] = useState<string[]>([]);
+  const [captchaValue, setCaptchaValue] = useState<string | null>(null);
+  const [showCaptchaError, setShowCaptchaError] = useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -377,6 +381,28 @@ export default function FormPage() {
       return;
     }
 
+    // Validate CAPTCHA
+    if (!captchaValue) {
+      setShowCaptchaError(true);
+      setChaosLevel(0.3);
+      
+      // Scroll to captcha
+      setTimeout(() => {
+        const captchaElement = document.querySelector('.recaptcha-container') as HTMLElement;
+        if (captchaElement) {
+          const captchaPosition = captchaElement.getBoundingClientRect().top + window.pageYOffset - 150;
+          smoothScrollTo(captchaPosition, 1800);
+        }
+      }, 100);
+
+      setTimeout(() => {
+        setShowCaptchaError(false);
+        setChaosLevel(0);
+      }, 2000);
+      
+      return;
+    }
+
     setSending(true);
     setChaosLevel(0.2);
     setEmptyFields([]);
@@ -385,6 +411,47 @@ export default function FormPage() {
     smoothScrollTo(0, 2250);
     
     try {
+      // Step 1: Verify CAPTCHA with our server (only in production)
+      const isProduction = import.meta.env.PROD;
+      
+      if (isProduction) {
+        const captchaVerification = await fetch('/api/verify-captcha', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ captchaToken: captchaValue }),
+        });
+
+        const captchaResult = await captchaVerification.json();
+
+        if (!captchaResult.success) {
+          console.error('Captcha verification failed:', captchaResult.error);
+          setShowError(true);
+          setShowCaptchaError(true);
+          
+          // Reset captcha
+          if (recaptchaRef.current) {
+            recaptchaRef.current.reset();
+          }
+          setCaptchaValue(null);
+          
+          setTimeout(() => {
+            setShowError(false);
+            setShowCaptchaError(false);
+            setChaosLevel(0);
+          }, 2000);
+          
+          setSending(false);
+          return;
+        }
+      } else {
+        // In development, just log that we would verify
+        console.log('🔧 Development mode: Skipping server-side CAPTCHA verification');
+        console.log('✅ In production, the CAPTCHA will be verified server-side');
+      }
+
+      // Step 2: CAPTCHA verified, now submit form data
       const formDataToSend = new FormData();
       formDataToSend.append("data[Full name ]", formData.fullName.trim());
       formDataToSend.append("data[Age]", formData.age.trim());
@@ -404,19 +471,38 @@ export default function FormPage() {
       if (response.ok) {
         console.log('Form submitted successfully:', formData);
         setSubmitted(true);
+        // Reset captcha
+        if (recaptchaRef.current) {
+          recaptchaRef.current.reset();
+        }
       } else {
         console.error('Error submitting form:', response.statusText);
         setShowError(true);
         setTimeout(() => setShowError(false), 2000);
+        // Reset captcha on error
+        if (recaptchaRef.current) {
+          recaptchaRef.current.reset();
+        }
+        setCaptchaValue(null);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       setShowError(true);
       setTimeout(() => setShowError(false), 2000);
+      // Reset captcha on error
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+      setCaptchaValue(null);
     } finally {
       setSending(false);
       setChaosLevel(0);
     }
+  };
+
+  const handleCaptchaChange = (value: string | null) => {
+    setCaptchaValue(value);
+    setShowCaptchaError(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -528,7 +614,7 @@ export default function FormPage() {
               WE HAVE RECEIVED YOUR INFORMATION.
             </p>
             <p className="text-lg sm:text-xl md:text-2xl font-light tracking-tight leading-relaxed opacity-80">
-              If your vibes match the spirit of the event, we will reach out with more details!
+              If your vibe matches the spirit of the event, we will reach out with more details!
             </p>
           </motion.div>
 
@@ -1064,6 +1150,42 @@ export default function FormPage() {
                 className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
                 placeholder="Your answer"
               />
+            </motion.div>
+
+            {/* CAPTCHA */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.85 }}
+              className="flex flex-col items-center recaptcha-container"
+            >
+              <motion.div
+                animate={showCaptchaError ? {
+                  scale: [1, 1.05, 1, 1.05, 1],
+                  opacity: [1, 0.7, 1, 0.7, 1]
+                } : {}}
+                transition={showCaptchaError ? {
+                  duration: 1.5,
+                  ease: "easeInOut"
+                } : {}}
+                className="transform scale-90 md:scale-100 origin-center"
+              >
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                  onChange={handleCaptchaChange}
+                  theme="dark"
+                />
+              </motion.div>
+              {showCaptchaError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-[#ff0000] text-sm font-mono mt-4 tracking-wider uppercase"
+                >
+                  Please complete the security verification
+                </motion.p>
+              )}
             </motion.div>
 
             {/* Submit Button with Gradient Animation */}

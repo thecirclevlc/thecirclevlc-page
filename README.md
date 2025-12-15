@@ -9,6 +9,7 @@ Una landing page exclusiva e inmersiva con WebGL, animaciones avanzadas con Fram
 - 🎨 **Diseño Moderno**: Paleta de colores rojo oscuro (#C42121) sobre negro profundo
 - 📱 **Responsive**: Optimizado para todos los dispositivos
 - ⚡ **Performance**: Construido con Vite para máxima velocidad
+- 🔒 **Seguridad**: Formulario protegido con Google reCAPTCHA v2
 
 ## 🛠️ Stack Tecnológico
 
@@ -19,6 +20,7 @@ Una landing page exclusiva e inmersiva con WebGL, animaciones avanzadas con Fram
 - **Tailwind CSS** - Estilos (CDN)
 - **Lucide React** - Iconos
 - **WebGL** - Gráficos 3D nativos
+- **React Google reCAPTCHA** - Protección de formularios
 
 ## 📦 Instalación Local
 
@@ -40,11 +42,16 @@ Una landing page exclusiva e inmersiva con WebGL, animaciones avanzadas con Fram
    npm install
    ```
 
-3. **Configurar variables de entorno (opcional)**
+3. **Configurar variables de entorno**
    ```bash
-   cp .env.example .env.local
-   # Edita .env.local si necesitas usar la API de Gemini
+   # Crea un archivo .env en la raíz del proyecto
+   echo "VITE_RECAPTCHA_SITE_KEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" > .env
    ```
+   
+   ⚠️ **IMPORTANTE**: La clave incluida es solo para desarrollo local. 
+   Para producción, necesitas obtener tus propias claves de Google reCAPTCHA.
+   
+   👉 **[Ver instrucciones detalladas de configuración](./CAPTCHA-SETUP.md)**
 
 4. **Ejecutar en desarrollo**
    ```bash
@@ -83,9 +90,14 @@ Una landing page exclusiva e inmersiva con WebGL, animaciones avanzadas con Fram
    - Vercel detectará automáticamente que es un proyecto Vite
    - Click en "Deploy"
 
-3. **Configurar variables de entorno (si es necesario)**
+3. **Configurar variables de entorno**
    - En tu proyecto de Vercel, ve a Settings → Environment Variables
-   - Agrega `GEMINI_API_KEY` si planeas usar funcionalidades de IA
+   - Agrega las siguientes variables:
+     - `VITE_RECAPTCHA_SITE_KEY`: Tu Site Key de Google reCAPTCHA
+   
+   ⚠️ **IMPORTANTE**: Debes obtener tus propias claves de reCAPTCHA para producción.
+   
+   👉 **[Ver instrucciones completas](./CAPTCHA-SETUP.md)**
 
 ### Opción 2: Deploy con Vercel CLI
 
@@ -113,9 +125,11 @@ Una landing page exclusiva e inmersiva con WebGL, animaciones avanzadas con Fram
 
 ### Variables de Entorno
 
-El proyecto soporta las siguientes variables de entorno:
+El proyecto requiere las siguientes variables de entorno:
 
-- `GEMINI_API_KEY`: (Opcional) API key para funcionalidades futuras con IA
+- `VITE_RECAPTCHA_SITE_KEY`: **Requerido** - Site Key de Google reCAPTCHA para protección del formulario
+
+📖 **[Ver guía completa de configuración de CAPTCHA](./CAPTCHA-SETUP.md)**
 
 ### Personalización
 
@@ -128,6 +142,7 @@ El proyecto soporta las siguientes variables de entorno:
 ```
 thecircle/
 ├── App.tsx              # Componente principal con WebGL y UI
+├── Form.tsx             # Componente de formulario con CAPTCHA
 ├── index.tsx            # Entry point de React
 ├── types.ts             # Definiciones de TypeScript
 ├── index.html           # HTML base
@@ -136,6 +151,7 @@ thecircle/
 ├── tsconfig.json        # Configuración de TypeScript
 ├── vercel.json          # Configuración de Vercel
 ├── package.json         # Dependencias
+├── CAPTCHA-SETUP.md     # Guía de configuración de reCAPTCHA
 └── README.md            # Este archivo
 ```
 
@@ -166,6 +182,12 @@ El proyecto incluye:
 ### Tailwind no carga estilos
 
 - El proyecto usa Tailwind CDN, si necesitas más control, instala Tailwind localmente
+
+### El CAPTCHA no aparece o no funciona
+
+- Verifica que hayas configurado la variable `VITE_RECAPTCHA_SITE_KEY` correctamente
+- Asegúrate de que el dominio esté registrado en Google reCAPTCHA Admin Console
+- Lee la [guía de configuración completa](./CAPTCHA-SETUP.md)
 
 ## 📝 Licencia
 

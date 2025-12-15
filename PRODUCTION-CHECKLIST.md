@@ -210,3 +210,7 @@ _Preparado el: Diciembre 3, 2025_
 _Node.js: v18+_
 _Framework: Vite + React 19_
 
+
+
+
+
