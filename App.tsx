@@ -678,11 +678,27 @@ export default function TheCircleApp() {
       >
         {/* Desktop Layout */}
         <div className="hidden md:flex justify-between items-center font-mono text-[10px] md:text-xs opacity-50">
-          <div className="transition-opacity duration-300 hover:opacity-100">
-            © 2025 THECIRCLE
+          <div className="text-left pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
+            <a 
+              href="https://www.instagram.com/thecirclevlc" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative inline-block"
+            >
+              © 2025 THECIRCLE
+              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
+            </a>
           </div>
-          <div className="transition-opacity duration-300 hover:opacity-100">
-            BY ALIA STUDIO
+          <div className="pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
+            <a 
+              href="https://www.aliastudio.cc/" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative inline-block"
+            >
+              BY ALIA STUDIO
+              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
+            </a>
           </div>
           <div className="text-right pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
             <a 
@@ -698,10 +714,18 @@ export default function TheCircleApp() {
         {/* Mobile Layout */}
         <div className="md:hidden font-mono text-[10px] opacity-50 space-y-4">
           <div className="flex justify-between items-center">
-            <div className="transition-opacity duration-300">
-              © 2025 THECIRCLE
+            <div className="pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
+              <a 
+                href="https://www.instagram.com/thecirclevlc" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative inline-block"
+              >
+                © 2025 THECIRCLE
+                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
+              </a>
             </div>
-            <div className="text-right pointer-events-auto group transition-opacity duration-300">
+            <div className="text-right pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
               <a 
                 href="mailto:contact@thecirclevlc.com" 
                 className="relative inline-block"
@@ -711,8 +735,16 @@ export default function TheCircleApp() {
               </a>
             </div>
           </div>
-          <div className="text-center transition-opacity duration-300">
-            BY ALIA STUDIO
+          <div className="text-center pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
+            <a 
+              href="https://www.aliastudio.cc/" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative inline-block"
+            >
+              BY ALIA STUDIO
+              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
+            </a>
           </div>
         </div>
       </motion.footer>
