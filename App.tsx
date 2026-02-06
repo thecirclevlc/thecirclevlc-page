@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useMotionValue, useScroll, useTransform, useVelocity, useSpring, useInView } from 'framer-motion';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
+import { StandardHeader } from './StandardHeader';
+import { CustomCursor } from './CustomCursor';
+
+// Register GSAP plugins
+gsap.registerPlugin(ScrollTrigger);
 
 // Smooth scroll utility - Extra slow and smooth (50% slower)
 let scrollAnimationId: number | null = null;
@@ -372,6 +379,116 @@ const ScrollReveal: React.FC<{
     );
 };
 
+// Manifesto Section with Subtle GSAP Scroll Animations
+const ManifestoSection: React.FC = () => {
+    const sectionRef = useRef<HTMLDivElement>(null);
+    const leftColRef = useRef<HTMLDivElement>(null);
+    const p1Ref = useRef<HTMLParagraphElement>(null);
+    const p2Ref = useRef<HTMLParagraphElement>(null);
+    const p3Ref = useRef<HTMLParagraphElement>(null);
+
+    useEffect(() => {
+        const leftCol = leftColRef.current;
+        const p1 = p1Ref.current;
+        const p2 = p2Ref.current;
+        const p3 = p3Ref.current;
+
+        if (!leftCol || !p1 || !p2 || !p3) return;
+
+        // Very subtle fade in and slide up for each paragraph
+        [p1, p2, p3].forEach((p, index) => {
+            gsap.fromTo(p,
+                {
+                    opacity: 0,
+                    y: 30,
+                    filter: 'blur(4px)'
+                },
+                {
+                    opacity: 0.8,
+                    y: 0,
+                    filter: 'blur(0px)',
+                    duration: 1.2,
+                    ease: 'power2.out',
+                    scrollTrigger: {
+                        trigger: p,
+                        start: 'top 85%',
+                        end: 'top 50%',
+                        toggleActions: 'play none none none'
+                    },
+                    delay: index * 0.15
+                }
+            );
+        });
+
+        // Very subtle parallax on left column (only on desktop)
+        const mm = gsap.matchMedia();
+
+        mm.add("(min-width: 768px)", () => {
+            gsap.to(leftCol, {
+                y: -30,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: 1
+                }
+            });
+        });
+
+        // Cleanup
+        return () => {
+            ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+        };
+    }, []);
+
+    return (
+        <section ref={sectionRef} className="relative py-32 md:py-40 px-6 md:px-20 border-t border-[#C42121]/20 backdrop-blur-[2px]">
+            <div className="max-w-6xl mx-auto">
+                {/* Mobile: Description first, Desktop: Grid layout */}
+                <div className="flex flex-col md:grid md:grid-cols-2 gap-12 md:gap-16">
+                    {/* Left Column - Larger Text (Desktop Only) */}
+                    <div ref={leftColRef} className="md:sticky md:top-32 h-fit space-y-8 md:space-y-10">
+                        <p ref={p1Ref} className="text-lg md:text-3xl leading-relaxed opacity-80">
+                            The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.
+                        </p>
+                        <p ref={p2Ref} className="text-lg md:text-3xl leading-relaxed opacity-80">
+                            Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.
+                        </p>
+                        <p ref={p3Ref} className="text-base md:text-2xl font-light leading-relaxed pt-4 md:pt-6 border-t border-[#C42121]/20 opacity-80">
+                            An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.
+                        </p>
+                    </div>
+
+                    {/* Right Column - Headers (Unchanged) */}
+                    <div className="space-y-0">
+                        {/* First Line - MUSIC THAT */}
+                        <ScrollReveal delay={0.2} variant="blur">
+                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
+                                <span className="text-[#C42121]">MUSIC THAT MOVES UNSEEN<br/>SPACES.</span>
+                            </h2>
+                        </ScrollReveal>
+
+                        {/* Second Line - MOMENTS THAT */}
+                        <ScrollReveal delay={0.6} variant="glitch">
+                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
+                                <span className="text-[#330000] selection:bg-white selection:text-black">MOMENTS THAT HAPPEN ONLY<br/>ONCE.</span>
+                            </h2>
+                        </ScrollReveal>
+
+                        {/* Third Line - EXPRESSION */}
+                        <ScrollReveal delay={1.0} variant="blur">
+                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter">
+                                <span className="text-[#C42121]">EXPRESSION WITHOUT<br/>BOUNDARIES.</span>
+                            </h2>
+                        </ScrollReveal>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
 // --- Main App ---
 export default function TheCircleApp() {
   const navigate = useNavigate();
@@ -446,7 +563,8 @@ export default function TheCircleApp() {
 
   return (
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-hidden">
-      
+      <CustomCursor />
+
       {/* Background Layer */}
       <motion.div
         animate={{ opacity: showGrid ? 1 : 0 }}
@@ -467,50 +585,13 @@ export default function TheCircleApp() {
            }}>
       </div>
 
-      {/* Sticky Header Bar */}
-      <header className="fixed top-0 w-full bg-black border-b border-[#C42121]/30 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-10 backdrop-blur-sm">
-        {/* Logo Circle - Small */}
-        <motion.div 
-          style={{ rotate: rotation, willChange: 'transform' }}
-          className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer"
-          whileHover={{ scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          onClick={() => {
-            window.scrollTo(0, 0);
-            setTimeout(() => navigate('/'), 50);
-          }}
-        >
-          <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            <defs>
-              <path id="circlePathSmall" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
-            </defs>
-            <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
-              <textPath href="#circlePathSmall" startOffset="0%">
-                <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
-                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-              </textPath>
-            </text>
-          </svg>
-        </motion.div>
-
-        {/* Join Us Button */}
-        <MagneticButton 
-          className="border border-[#C42121] px-4 py-2 md:px-8 md:py-3 rounded-none text-[10px] md:text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase pointer-events-auto cursor-pointer"
-          onClick={() => {
-            window.scrollTo(0, 0);
-            setTimeout(() => navigate('/form'), 50);
-          }}
-        >
-          JOIN US
-        </MagneticButton>
-      </header>
+      <StandardHeader />
 
       {/* Content Container */}
       <div className="relative z-10 opacity-100 pt-16 md:pt-20">
 
         {/* Hero Section */}
-        <section className="relative min-h-[100svh] h-screen flex flex-col items-center justify-center overflow-hidden perspective-1000">
+        <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
             {/* Spinning Circle - No hover effect */}
             <motion.div 
                 initial={{ scale: 0.3, opacity: 0 }}
@@ -523,14 +604,14 @@ export default function TheCircleApp() {
                   ease: [0.34, 1.56, 0.64, 1],
                   delay: 0.2
                 }}
-                style={{ 
+                style={{
                   rotate: rotation,
                   scale: circleScale,
                   x: '-50%',
                   y: 'calc(-50% - 5vh)',
                   willChange: 'transform'
                 }}
-                className="absolute top-1/2 left-1/2 w-[144vw] h-[144vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
+                className="absolute top-1/2 left-1/2 w-[85vw] h-[85vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
             >
                 <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <defs>
@@ -563,52 +644,8 @@ export default function TheCircleApp() {
             </div> */}
         </section>
 
-        {/* Manifesto Section - Enhanced with Sequential Mysterious Reveals */}
-        <section className="relative py-32 md:py-40 px-6 md:px-20 border-t border-[#C42121]/20 backdrop-blur-[2px]">
-            <div className="max-w-6xl mx-auto">
-                {/* Mobile: Description first, Desktop: Grid layout */}
-                <div className="flex flex-col md:grid md:grid-cols-2 gap-12 md:gap-16">
-                    {/* Left Column - Body Text */}
-                    <ScrollReveal delay={0.1} variant="blur">
-                        <div className="text-base md:text-lg leading-relaxed opacity-80 md:sticky md:top-32 h-fit space-y-6 transition-opacity duration-300">
-                            <p>
-                                The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.
-                            </p>
-                            <p>
-                                Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.
-                            </p>
-                            <p className="text-base md:text-lg font-light leading-relaxed pt-4 border-t border-[#C42121]/20 mt-8">
-                                An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.
-                            </p>
-                        </div>
-                    </ScrollReveal>
-
-                    {/* Right Column - Headers with Sequential Reveal */}
-                    <div className="space-y-0">
-                        {/* First Line - MUSIC THAT */}
-                        <ScrollReveal delay={0.2} variant="blur">
-                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
-                                <span className="text-[#C42121]">MUSIC THAT MOVES UNSEEN<br/>SPACES.</span>
-                            </h2>
-                        </ScrollReveal>
-
-                        {/* Second Line - MOMENTS THAT */}
-                        <ScrollReveal delay={0.6} variant="glitch">
-                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
-                                <span className="text-[#330000] selection:bg-white selection:text-black">MOMENTS THAT HAPPEN ONLY<br/>ONCE.</span>
-                            </h2>
-                        </ScrollReveal>
-
-                        {/* Third Line - EXPRESSION */}
-                        <ScrollReveal delay={1.0} variant="blur">
-                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter">
-                                <span className="text-[#C42121]">EXPRESSION WITHOUT<br/>BOUNDARIES.</span>
-                            </h2>
-                        </ScrollReveal>
-                    </div>
-                </div>
-            </div>
-        </section>
+        {/* Manifesto Section - With Subtle GSAP Animations */}
+        <ManifestoSection />
 
         {/* Marquee Banner - Pauses on hover */}
         <div className="py-6 md:py-8 bg-[#C42121] text-black overflow-hidden border-y border-black group">
@@ -631,7 +668,7 @@ export default function TheCircleApp() {
         </div>
 
         {/* Inner Circle Access Form - Enhanced */}
-        <section className="relative min-h-screen flex items-center justify-center px-6 py-32 md:py-40">
+        <section className="relative md:min-h-screen flex items-center justify-center px-6 pt-14 pb-12 md:py-40">
             <ScrollReveal delay={0.1} className="w-full max-w-2xl">
                 <div className="bg-black/90 border border-[#C42121]/30 p-8 md:p-20 backdrop-blur-xl shadow-[0_0_50px_rgba(196,33,33,0.1)]">
                     <div className="text-center mb-12">
@@ -667,87 +704,27 @@ export default function TheCircleApp() {
       </div>
 
 
-      {/* Footer - Only visible at bottom */}
-      <motion.footer 
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: isAtBottom ? 1 : 0
-        }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative w-full p-6 md:p-8 z-40 text-[#C42121] mix-blend-exclusion"
-      >
-        {/* Desktop Layout */}
-        <div className="hidden md:flex justify-between items-center font-mono text-[10px] md:text-xs opacity-50">
-          <div className="text-left pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
-            <a 
-              href="https://www.instagram.com/thecirclevlc" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative inline-block"
-            >
-              © 2025 THECIRCLE
-              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
-            </a>
-          </div>
-          <div className="pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
-            <a 
-              href="https://www.aliastudio.cc/" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative inline-block"
-            >
-              BY ALIA STUDIO
-              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
-            </a>
-          </div>
-          <div className="text-right pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
-            <a 
-              href="mailto:contact@thecirclevlc.com" 
-              className="relative inline-block"
-            >
-              contact@thecirclevlc.com
-              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
-            </a>
-          </div>
+      {/* Footer */}
+      <footer className="relative w-full p-8 md:p-12 flex justify-between items-center z-40 text-[#C42121] mt-8 md:mt-12">
+        <div className="text-base md:text-lg tracking-wider uppercase font-mono">
+          © 2026 THE CIRCLE
         </div>
-
-        {/* Mobile Layout */}
-        <div className="md:hidden font-mono text-[10px] opacity-50 space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
-              <a 
-                href="https://www.instagram.com/thecirclevlc" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative inline-block"
-              >
-                © 2025 THECIRCLE
-                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
-              </a>
-            </div>
-            <div className="text-right pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
-              <a 
-                href="mailto:contact@thecirclevlc.com" 
-                className="relative inline-block"
-              >
-                contact@thecirclevlc.com
-                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
-              </a>
-            </div>
-          </div>
-          <div className="text-center pointer-events-auto group transition-opacity duration-300 hover:opacity-100">
-            <a 
-              href="https://www.aliastudio.cc/" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative inline-block"
-            >
-              BY ALIA STUDIO
-              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#C42121] group-hover:w-full transition-all duration-500 ease-out" />
-            </a>
-          </div>
+        <div className="text-base md:text-lg tracking-wider uppercase font-mono">
+          <a
+            href="https://www.aliastudio.cc/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[#ff4444] transition-colors"
+          >
+            BY ALIA
+          </a>
         </div>
-      </motion.footer>
+        <div className="text-base md:text-lg tracking-wider uppercase font-mono">
+          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#ff4444] transition-colors">
+            CONTACT
+          </a>
+        </div>
+      </footer>
 
       <style>{`
         /* Glitch Animation */

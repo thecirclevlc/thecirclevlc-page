@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { gsap } from 'gsap';
+import { HamburgerMenu } from './HamburgerMenu';
+import { CustomCursor } from './CustomCursor';
 
 // Smooth scroll utility - Extra slow and smooth (50% slower)
 let scrollAnimationId: number | null = null;
@@ -291,6 +294,108 @@ const MagneticButton: React.FC<{
     );
 };
 
+// Animated Title Component with subtle wave glow effect
+const AnimatedTitle: React.FC<{ sending: boolean }> = ({ sending }) => {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (!titleRef.current) return;
+    const letters = titleRef.current.querySelectorAll('.letter');
+
+    const handleMouseEnter = () => {
+      // Subtle floating wave - very elegant
+      gsap.to(letters, {
+        y: -8,
+        duration: 1.2,
+        ease: 'power1.inOut',
+        stagger: {
+          each: 0.025,
+          from: 'start',
+          yoyo: true,
+          repeat: 1,
+        },
+      });
+
+      // Gentle glow effect
+      gsap.to(letters, {
+        textShadow: '0 0 20px rgba(255, 68, 68, 0.6), 0 0 40px rgba(255, 68, 68, 0.3)',
+        scale: 1.02,
+        duration: 1,
+        ease: 'power1.inOut',
+        stagger: {
+          each: 0.025,
+          from: 'start',
+        },
+      });
+    };
+
+    const handleMouseLeave = () => {
+      gsap.to(letters, {
+        y: 0,
+        textShadow: '0 0 0px rgba(255, 68, 68, 0)',
+        scale: 1,
+        duration: 1,
+        ease: 'power1.out',
+        stagger: {
+          each: 0.015,
+          from: 'start',
+        },
+      });
+    };
+
+    const title = titleRef.current;
+    title.addEventListener('mouseenter', handleMouseEnter);
+    title.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      title.removeEventListener('mouseenter', handleMouseEnter);
+      title.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
+  return (
+    <motion.h1
+      ref={titleRef}
+      animate={
+        sending
+          ? {
+              filter: ['blur(0px)', 'blur(0px)'],
+              opacity: [1, 0.85, 1, 0.9, 1],
+            }
+          : {}
+      }
+      transition={
+        sending
+          ? {
+              duration: 3.5,
+              repeat: Infinity,
+              ease: [0.45, 0.05, 0.55, 0.95],
+              times: [0, 0.3, 0.5, 0.7, 1],
+            }
+          : {}
+      }
+      className="text-6xl md:text-9xl font-black mb-6 tracking-tighter leading-[0.8] cursor-pointer"
+    >
+      {'JOIN'.split('').map((char, i) => (
+        <span key={`join-${i}`} className="letter inline-block">
+          {char}
+        </span>
+      ))}
+      <br />
+      {'THE'.split('').map((char, i) => (
+        <span key={`the-${i}`} className="letter inline-block">
+          {char}
+        </span>
+      ))}{' '}
+      {'CIRCLE'.split('').map((char, i) => (
+        <span key={`circle-${i}`} className="letter inline-block">
+          {char}
+        </span>
+      ))}
+    </motion.h1>
+  );
+};
+
 export default function FormPage() {
   const navigate = useNavigate();
   const rotation = useMotionValue(0);
@@ -325,7 +430,6 @@ export default function FormPage() {
     email: '',
     artist: '',
     unexpected: '',
-    dreamGuest: '',
     expectations: ''
   });
   const [submitted, setSubmitted] = useState(false);
@@ -347,7 +451,6 @@ export default function FormPage() {
       instagram: 'IG account',
       email: 'E-mail address',
       unexpected: "What's something people would never expect about you?",
-      dreamGuest: 'Imagine The Circle could bring anyone to the table, who would you want to sit with?',
       expectations: 'What do you expect from The Circle?'
     };
 
@@ -451,21 +554,27 @@ export default function FormPage() {
         console.log('✅ In production, the CAPTCHA will be verified server-side');
       }
 
-      // Step 2: CAPTCHA verified, now submit form data
-      const formDataToSend = new FormData();
-      formDataToSend.append("data[Full name ]", formData.fullName.trim());
-      formDataToSend.append("data[Age]", formData.age.trim());
-      formDataToSend.append("data[Where are you from]", formData.whereFrom.trim());
-      formDataToSend.append("data[IG account]", formData.instagram.trim());
-      formDataToSend.append("data[E-mail address]", formData.email.trim());
-      formDataToSend.append("data[Are you an artist? If so, please include the link to your portfolio]", formData.artist.trim());
-      formDataToSend.append("data[What's something people would never expect about you?]", formData.unexpected.trim());
-      formDataToSend.append("data[Imagine The Circle could bring anyone to the table, who would you want to sit with?]", formData.dreamGuest.trim());
-      formDataToSend.append("data[What do you expect from The Circle?]", formData.expectations.trim());
+      // Step 2: CAPTCHA verified, now submit form data to SheetDB
+      const sheetDBData = {
+        data: {
+          "Full name ": formData.fullName.trim(),
+          "Age": formData.age.trim(),
+          "Where are you from": formData.whereFrom.trim(),
+          "IG account": formData.instagram.trim(),
+          "E-mail address": formData.email.trim(),
+          "Are you an artist? If so, please include the link to your portfolio": formData.artist.trim(),
+          "What's something people would never expect about you?": formData.unexpected.trim(),
+          "What do you expect from The Circle?": formData.expectations.trim()
+        }
+      };
 
-      const response = await fetch('https://sheetdb.io/api/v1/ckttnw3xza586', {
+      const response = await fetch('https://sheetdb.io/api/v1/s9gnm8drcah1w', {
         method: 'POST',
-        body: formDataToSend
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(sheetDBData)
       });
 
       if (response.ok) {
@@ -515,6 +624,7 @@ export default function FormPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-[#050000] text-[#C42121] flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 relative overflow-hidden cursor-crosshair">
+        <CustomCursor />
         <WebGLBackground chaosLevel={0} />
         
         {/* Sticky Header Bar */}
@@ -539,13 +649,7 @@ export default function FormPage() {
             </svg>
           </motion.div>
 
-          {/* Back Button */}
-          <MagneticButton 
-            className="border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
-            onClick={() => navigate('/')}
-          >
-            BACK
-          </MagneticButton>
+          <HamburgerMenu />
         </header>
         
         <motion.div
@@ -636,6 +740,7 @@ export default function FormPage() {
 
   return (
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-x-hidden">
+      <CustomCursor />
       <WebGLBackground chaosLevel={chaosLevel} />
 
       {/* Sticky Header Bar */}
@@ -660,17 +765,11 @@ export default function FormPage() {
           </svg>
         </motion.div>
 
-          {/* Back Button */}
-          <MagneticButton 
-            className="border border-[#C42121] px-4 py-2 md:px-6 md:py-3 rounded-none text-xs font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-colors uppercase pointer-events-auto cursor-pointer"
-            onClick={() => navigate('/')}
-          >
-            BACK
-          </MagneticButton>
+          <HamburgerMenu />
         </header>
 
       {/* Form Container */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 pb-20">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 md:p-6 pt-20 md:pt-32 pb-8 md:pb-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -679,37 +778,23 @@ export default function FormPage() {
         >
           {/* Title Section */}
           <div className="text-center mb-16">
-            <motion.div 
+            <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ repeat: Infinity, duration: 3 }}
-              className="w-2 h-2 bg-[#C42121] rounded-full mx-auto mb-10 shadow-[0_0_30px_#C42121]" 
+              className="w-2 h-2 bg-[#C42121] rounded-full mx-auto mb-10 shadow-[0_0_30px_#C42121]"
             />
-            <motion.h1 
-              animate={sending ? { 
-                filter: ['blur(0px)', 'blur(0px)'],
-                opacity: [1, 0.85, 1, 0.9, 1]
-              } : {}}
-              transition={sending ? { 
-                duration: 3.5,
-                repeat: Infinity,
-                ease: [0.45, 0.05, 0.55, 0.95],
-                times: [0, 0.3, 0.5, 0.7, 1]
-              } : {}}
-              className="text-6xl md:text-9xl font-black mb-6 tracking-tighter leading-[0.8] mix-blend-exclusion"
-            >
-              JOIN<br/>THE CIRCLE
-            </motion.h1>
-            <motion.div 
-              animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 0.5, filter: 'blur(0px)' }}
+            <AnimatedTitle sending={sending} />
+            <motion.div
+              animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 1, filter: 'blur(0px)' }}
               transition={{ duration: 0.5 }}
-              className="w-48 h-[1px] bg-[#C42121] mx-auto my-8" 
+              className="w-48 h-[1px] bg-[#C42121] mx-auto my-8"
             />
-            <motion.p 
-              animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 0.4, filter: 'blur(0px)' }}
+            <motion.p
+              animate={sending ? { opacity: 0, filter: 'blur(4px)' } : { opacity: 1, filter: 'blur(0px)' }}
               transition={{ duration: 0.5 }}
-              className="text-xs tracking-[0.5em] uppercase font-mono"
+              className="text-base tracking-[0.5em] uppercase font-mono text-[#f5f5f0]"
             >
-              VOL. II
+              VOL. III
             </motion.p>
           </div>
 
@@ -728,8 +813,8 @@ export default function FormPage() {
             transition={{ delay: sending ? 0 : 0.3, duration: 0.5 }}
             className="mb-12 p-8 border border-[#C42121]/20 bg-black/60 backdrop-blur-sm"
           >
-            <p className="text-xs leading-relaxed opacity-60 text-center tracking-widest uppercase font-mono">
-              10.01.2026 - SECRET LOCATION, VALENCIA
+            <p className="text-base leading-relaxed text-center tracking-widest uppercase font-mono text-[#f5f5f0]">
+              28.02.2026 - SECRET LOCATION, VALENCIA
             </p>
           </motion.div>
 
@@ -769,12 +854,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('fullName') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('fullName') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 Full Name
               </motion.label>
@@ -791,7 +876,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
                 placeholder="Your complete name"
               />
             </motion.div>
@@ -817,12 +902,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('age') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('age') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 Age
               </motion.label>
@@ -839,7 +924,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
                 placeholder="Your age"
               />
             </motion.div>
@@ -865,12 +950,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('whereFrom') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('whereFrom') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 Where are you from
               </motion.label>
@@ -887,7 +972,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
                 placeholder="e.g., Valencia"
               />
             </motion.div>
@@ -913,12 +998,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('instagram') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('instagram') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 IG account
               </motion.label>
@@ -935,7 +1020,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
                 placeholder="@username"
               />
             </motion.div>
@@ -961,12 +1046,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('email') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('email') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 E-mail address
               </motion.label>
@@ -983,7 +1068,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
                 placeholder="your@email.com"
               />
             </motion.div>
@@ -995,7 +1080,7 @@ export default function FormPage() {
               transition={{ delay: 0.7 }}
               className="group"
             >
-              <label className="block text-[13px] font-mono tracking-[0.3em] mb-3 opacity-50 uppercase">
+              <label className="block text-base font-mono tracking-[0.3em] mb-3 uppercase text-[#f5f5f0]">
                 Are you an artist? If so, please include the link to your portfolio (optional)
               </label>
               <input
@@ -1003,7 +1088,7 @@ export default function FormPage() {
                 name="artist"
                 value={formData.artist}
                 onChange={handleChange}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
                 placeholder="Portfolio link (optional)"
               />
             </motion.div>
@@ -1029,12 +1114,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('unexpected') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('unexpected') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 What's something people would never expect about you?
               </motion.label>
@@ -1051,55 +1136,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
-                placeholder="Your answer"
-              />
-            </motion.div>
-
-            {/* Dream Guest */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={emptyFields.includes('dreamGuest') ? {
-                opacity: 1,
-                x: 0,
-                borderColor: ['#C42121', '#ff0000', '#C42121']
-              } : {
-                opacity: 1,
-                x: 0
-              }}
-              transition={emptyFields.includes('dreamGuest') ? {
-                borderColor: { duration: 0.5, repeat: 3 },
-                delay: 0.8
-              } : { delay: 0.8 }}
-              className="group"
-            >
-              <motion.label 
-                animate={emptyFields.includes('dreamGuest') ? {
-                  opacity: [0.5, 1, 0.5],
-                  color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
-                transition={emptyFields.includes('dreamGuest') ? {
-                  duration: 0.5,
-                  repeat: 3
-                } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
-              >
-                Imagine The Circle could bring anyone to the table, who would you want to sit with?
-              </motion.label>
-              <motion.textarea
-                name="dreamGuest"
-                required
-                value={formData.dreamGuest}
-                onChange={handleChange}
-                rows={3}
-                animate={emptyFields.includes('dreamGuest') ? {
-                  borderColor: ['#333', '#C42121', '#ff0000', '#C42121', '#333']
-                } : {}}
-                transition={emptyFields.includes('dreamGuest') ? {
-                  duration: 0.5,
-                  repeat: 3
-                } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -1125,12 +1162,12 @@ export default function FormPage() {
                 animate={emptyFields.includes('expectations') ? {
                   opacity: [0.5, 1, 0.5],
                   color: ['#C42121', '#ff0000', '#C42121']
-                } : { opacity: 0.5 }}
+                } : { opacity: 1, color: '#f5f5f0' }}
                 transition={emptyFields.includes('expectations') ? {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="block text-[13px] font-mono tracking-[0.3em] mb-3 uppercase"
+                className="block text-base font-mono tracking-[0.3em] mb-3 uppercase"
               >
                 What do you expect from The Circle?
               </motion.label>
@@ -1147,7 +1184,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#333] py-4 text-[#C42121] text-2xl font-mono focus:outline-none focus:border-[#C42121] transition-all placeholder:text-[#333] placeholder:text-lg resize-none"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -1225,13 +1262,23 @@ export default function FormPage() {
       </div>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 w-full p-6 flex justify-between items-end z-40 pointer-events-none mix-blend-difference opacity-40">
-        <div className="text-[9px] tracking-widest uppercase">
-          © 2025 THECIRCLE
+      <footer className="relative w-full p-6 md:p-8 mt-8 md:mt-12 flex justify-between items-center z-40 text-[#C42121]">
+        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
+          © 2026 THE CIRCLE
         </div>
-        <div className="text-[9px] tracking-widest uppercase">
-          <a href="mailto:contact@thecirclevlc.com" className="pointer-events-auto hover:opacity-100 transition-opacity">
-            contact@thecirclevlc.com
+        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
+          <a
+            href="https://www.aliastudio.cc/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[#ff4444] transition-colors"
+          >
+            BY ALIA
+          </a>
+        </div>
+        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
+          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#ff4444] transition-colors">
+            CONTACT
           </a>
         </div>
       </footer>
