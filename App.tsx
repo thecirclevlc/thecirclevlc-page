@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 import { StandardHeader } from './StandardHeader';
-import { CustomCursor } from './CustomCursor';
+// import { CustomCursor } from './CustomCursor';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -563,7 +563,7 @@ export default function TheCircleApp() {
 
   return (
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-hidden">
-      <CustomCursor />
+      {/* <CustomCursor /> */}
 
       {/* Background Layer */}
       <motion.div

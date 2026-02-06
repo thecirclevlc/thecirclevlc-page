@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { gsap } from 'gsap';
 import { HamburgerMenu } from './HamburgerMenu';
-import { CustomCursor } from './CustomCursor';
+// import { CustomCursor } from './CustomCursor';
 
 // Smooth scroll utility - Extra slow and smooth (50% slower)
 let scrollAnimationId: number | null = null;
@@ -624,7 +624,7 @@ export default function FormPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-[#050000] text-[#C42121] flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 relative overflow-hidden cursor-crosshair">
-        <CustomCursor />
+        {/* <CustomCursor /> */}
         <WebGLBackground chaosLevel={0} />
         
         {/* Sticky Header Bar */}
@@ -740,7 +740,7 @@ export default function FormPage() {
 
   return (
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-x-hidden">
-      <CustomCursor />
+      {/* <CustomCursor /> */}
       <WebGLBackground chaosLevel={chaosLevel} />
 
       {/* Sticky Header Bar */}
