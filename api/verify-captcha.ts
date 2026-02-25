@@ -16,8 +16,9 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Enable CORS — restricted to production origin only
+  const allowedOrigin = process.env.ALLOWED_ORIGIN ?? 'https://thecirclevlc.com';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

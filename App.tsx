@@ -591,7 +591,7 @@ export default function TheCircleApp() {
       <div className="relative z-10 opacity-100 pt-16 md:pt-20">
 
         {/* Hero Section */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+        <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
             {/* Spinning Circle - No hover effect */}
             <motion.div 
                 initial={{ scale: 0.3, opacity: 0 }}

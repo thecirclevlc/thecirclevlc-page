@@ -876,7 +876,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl"
                 placeholder="Your complete name"
               />
             </motion.div>
@@ -924,7 +924,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl"
                 placeholder="Your age"
               />
             </motion.div>
@@ -972,7 +972,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl"
                 placeholder="e.g., Valencia"
               />
             </motion.div>
@@ -1020,7 +1020,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl"
                 placeholder="@username"
               />
             </motion.div>
@@ -1068,7 +1068,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl"
                 placeholder="your@email.com"
               />
             </motion.div>
@@ -1088,7 +1088,7 @@ export default function FormPage() {
                 name="artist"
                 value={formData.artist}
                 onChange={handleChange}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl"
                 placeholder="Portfolio link (optional)"
               />
             </motion.div>
@@ -1136,7 +1136,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl resize-none"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -1184,7 +1184,7 @@ export default function FormPage() {
                   duration: 0.5,
                   repeat: 3
                 } : {}}
-                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-xl resize-none"
+                className="w-full bg-transparent border-b border-[#C42121] py-4 text-[#f5f5f0] text-base md:text-2xl font-mono focus:outline-none focus:border-[#ff4444] transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl resize-none"
                 placeholder="Your answer"
               />
             </motion.div>
@@ -1207,12 +1207,14 @@ export default function FormPage() {
                 } : {}}
                 className="transform scale-90 md:scale-100 origin-center"
               >
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
-                  onChange={handleCaptchaChange}
-                  theme="dark"
-                />
+                {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    onChange={handleCaptchaChange}
+                    theme="dark"
+                  />
+                )}
               </motion.div>
               {showCaptchaError && (
                 <motion.p

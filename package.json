@@ -14,8 +14,9 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.97.0",
     "@types/react-google-recaptcha": "^2.1.9",
-    "framer-motion": "^12.23.25",
+    "framer-motion": "^12.34.3",
     "gsap": "^3.14.2",
     "lucide-react": "^0.555.0",
     "react": "^19.2.1",
@@ -27,7 +28,11 @@
     "@types/node": "^22.14.0",
     "@vercel/node": "^5.5.15",
     "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react-swc": "^4.2.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.59.0"
   }
 }

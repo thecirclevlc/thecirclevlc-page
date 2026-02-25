@@ -228,10 +228,12 @@ export const HamburgerMenu: React.FC = () => {
 
         {/* Menu Items Container */}
         <div ref={menuItemsRef} className="relative z-10 w-full max-w-5xl px-8">
-          <nav className="flex flex-col items-center justify-center gap-8 md:gap-12 lg:gap-16">
-            <MenuItem label="HOME" onClick={() => handleMenuClick('/')} />
-            {/* <MenuItem label="COMING SOON" disabled /> */}
-            <MenuItem label="JOIN US" onClick={() => handleMenuClick('/form')} />
+          <nav className="flex flex-col items-center justify-center gap-3 md:gap-5 lg:gap-6">
+            <MenuItem label="HOME"        onClick={() => handleMenuClick('/')} />
+            <MenuItem label="PAST EVENTS" onClick={() => handleMenuClick('/past-events')} />
+            <MenuItem label="DJS"         onClick={() => handleMenuClick('/djs')} />
+            <MenuItem label="ARTISTS"     onClick={() => handleMenuClick('/artists')} />
+            <MenuItem label="JOIN US"     onClick={() => handleMenuClick('/form')} />
           </nav>
         </div>
       </div>
@@ -239,70 +241,81 @@ export const HamburgerMenu: React.FC = () => {
   );
 };
 
-// Menu Item Component with red text and sophisticated hover effects
+// Menu Item — refined hover: subtle lift + color + underline sweep
 const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo(({
   label,
   onClick,
 }) => {
-  const itemRef = useRef<HTMLDivElement>(null);
-  const underlineRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLDivElement>(null);
+  const tlRef   = useRef<gsap.core.Timeline | null>(null);
 
   const handleMouseEnter = () => {
-    const item = itemRef.current;
-    const underline = underlineRef.current;
-    if (!item || !underline) return;
+    tlRef.current?.kill();
+    const tl = gsap.timeline();
+    tlRef.current = tl;
 
-    // Sophisticated hover animation
-    gsap.to(item, {
-      x: 20,
-      scale: 1.05,
-      color: '#ff4444',
-      duration: 0.6,
-      ease: 'expo.out',
-    });
+    // Text: subtle lift + brighten — everything moves together, no stagger
+    tl.to(textRef.current, {
+      y: -4,
+      color: '#FF3A3A',
+      duration: 0.45,
+      ease: 'power3.out',
+    }, 0);
 
-    gsap.to(underline, {
-      scaleX: 1,
-      duration: 0.6,
-      ease: 'expo.out',
-    });
+    // Underline: precise wipe left → right
+    tl.fromTo(
+      lineRef.current,
+      { scaleX: 0, transformOrigin: '0% 50%' },
+      { scaleX: 1, transformOrigin: '0% 50%', duration: 0.5, ease: 'power3.inOut' },
+      0,
+    );
   };
 
   const handleMouseLeave = () => {
-    const item = itemRef.current;
-    const underline = underlineRef.current;
-    if (!item || !underline) return;
+    tlRef.current?.kill();
+    const tl = gsap.timeline();
+    tlRef.current = tl;
 
-    gsap.to(item, {
-      x: 0,
-      scale: 1,
+    // Text: return to rest
+    tl.to(textRef.current, {
+      y: 0,
       color: '#C42121',
-      duration: 0.6,
-      ease: 'expo.out',
-    });
+      duration: 0.4,
+      ease: 'power2.out',
+    }, 0);
 
-    gsap.to(underline, {
+    // Underline: retract right → left
+    tl.to(lineRef.current, {
       scaleX: 0,
-      duration: 0.6,
-      ease: 'expo.out',
-    });
+      transformOrigin: '100% 50%',
+      duration: 0.35,
+      ease: 'power3.in',
+    }, 0);
   };
 
   return (
-    <div className="menu-item relative w-full">
+    <div className="menu-item w-full">
       <div
-        ref={itemRef}
-        className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none py-4 md:py-6 text-center text-[#C42121] cursor-pointer select-none transition-colors duration-300"
+        className="relative flex items-center justify-center py-2 md:py-3 cursor-pointer select-none"
         onClick={onClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {label}
-        {/* Animated underline */}
+        {/* Single text block — GSAP owns color + transform */}
         <div
-          ref={underlineRef}
-          className="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 h-[3px] md:h-[4px] w-4/5 bg-gradient-to-r from-transparent via-[#ff4444] to-transparent origin-center"
-          style={{ scaleX: 0 }}
+          ref={textRef}
+          className="font-black tracking-tight leading-none"
+          style={{ fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: '#C42121', willChange: 'transform, color' }}
+        >
+          {label}
+        </div>
+
+        {/* Underline — GSAP owns scaleX exclusively */}
+        <div
+          ref={lineRef}
+          className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FF3A3A]"
+          style={{ transform: 'scaleX(0)', transformOrigin: '0% 50%' }}
         />
       </div>
     </div>
