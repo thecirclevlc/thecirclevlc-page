@@ -7,6 +7,8 @@ import type { DJ } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
+import ProfileModal from './components/ProfileModal';
+import AdminToolbar from './components/AdminToolbar';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -33,7 +35,7 @@ const GSAPReveal: React.FC<{
 };
 
 // ── DJ Card ───────────────────────────────────────────────────────
-const DJCard: React.FC<{ dj: DJ; index: number }> = ({ dj, index }) => {
+const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, index, onClick }) => {
   const cardRef  = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +81,7 @@ const DJCard: React.FC<{ dj: DJ; index: number }> = ({ dj, index }) => {
   ].filter(s => socials[s.key]);
 
   return (
-    <div ref={cardRef} className="group cursor-pointer">
+    <div ref={cardRef} className="group cursor-pointer" onClick={onClick}>
       {/* Photo */}
       <div className="relative aspect-[3/4] overflow-hidden bg-black border border-[#C42121]/20">
         <div ref={imageRef} className="w-full h-full">
@@ -163,8 +165,8 @@ export default function DJs() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_djs');
-  const heroNumberRef     = useRef<HTMLDivElement>(null);
   const heroTitleRef      = useRef<HTMLDivElement>(null);
+  const [activeDJ, setActiveDJ] = useState<DJ | null>(null);
 
   // Fetch DJs
   useEffect(() => {
@@ -182,18 +184,11 @@ export default function DJs() {
 
   // Hero entrance
   useEffect(() => {
-    const number = heroNumberRef.current;
-    const title  = heroTitleRef.current;
-    if (!number || !title) return;
-
-    const tl = gsap.timeline();
-    tl.fromTo(number,
-      { opacity: 0, scale: 0.5, filter: 'blur(20px)' },
-      { opacity: 0.3, scale: 1, filter: 'blur(0px)', duration: 1.5, ease: 'power3.out' }
-    ).fromTo(title.children,
+    const title = heroTitleRef.current;
+    if (!title) return;
+    gsap.fromTo(title.children,
       { opacity: 0, y: 100, rotationX: -90 },
-      { opacity: 1, y: 0, rotationX: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out' },
-      '-=1'
+      { opacity: 1, y: 0, rotationX: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out', delay: 0.3 }
     );
   }, []);
 
@@ -227,12 +222,6 @@ export default function DJs() {
             />
           )}
           <div className="relative z-10 w-full max-w-7xl">
-            <div
-              ref={heroNumberRef}
-              className="text-[#C42121]/30 font-black text-[20vw] md:text-[15vw] leading-none mb-4"
-            >
-              03
-            </div>
             <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase mb-8">
               <div>THE</div>
               <div className="text-[#C42121]">DJS</div>
@@ -245,9 +234,9 @@ export default function DJs() {
           </div>
         </section>
 
-        {/* ── DJs Grid ─────────────────────────────────── */}
-        <section className="relative px-6 md:px-20 py-20 md:py-32">
-          <div className="max-w-7xl mx-auto">
+        {/* ── DJs — grouped by genre ───────────────────── */}
+        <section className="relative px-6 md:px-20 py-14 md:py-20">
+          <div className="max-w-7xl mx-auto space-y-12">
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
                 {[1,2,3,4,5,6,7,8].map(i => <SkeletonDJ key={i} />)}
@@ -263,13 +252,64 @@ export default function DJs() {
                 <p className="text-[#C42121]/30 text-sm font-mono mt-3">Check back soon.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
-                {djs.map((dj, index) => (
-                  <DJCard key={dj.id} dj={dj} index={index} />
-                ))}
-              </div>
+              /* Group DJs by first genre; ungrouped DJs go under "Other" */
+              (() => {
+                const groups: Record<string, DJ[]> = {};
+                djs.forEach(dj => {
+                  const key = (dj.genres && dj.genres.length > 0) ? dj.genres[0] : 'Other';
+                  if (!groups[key]) groups[key] = [];
+                  groups[key].push(dj);
+                });
+                const sortedEntries = Object.entries(groups).sort(([a], [b]) => {
+                  if (a === 'Other') return 1;
+                  if (b === 'Other') return -1;
+                  return a.localeCompare(b);
+                });
+                return sortedEntries.map(([genre, groupDJs]) => (
+                  <div key={genre}>
+                    <h3 className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-8 border-b border-[#C42121]/10 pb-4">
+                      {genre}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
+                      {groupDJs.map((dj, index) => (
+                        <DJCard
+                          key={dj.id}
+                          dj={dj}
+                          index={index}
+                          onClick={() => setActiveDJ(dj)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()
             )}
           </div>
+        </section>
+
+        {/* Profile Modal */}
+        <ProfileModal
+          profile={activeDJ}
+          type="dj"
+          onClose={() => setActiveDJ(null)}
+        />
+
+        {/* ── Cross-link to Artists ────────────────────── */}
+        <section className="relative px-6 md:px-20 py-20 border-t border-[#C42121]/20">
+          <GSAPReveal delay={0.1}>
+            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-2">Also at The Circle</p>
+                <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">THE ARTISTS</h3>
+              </div>
+              <button
+                className="border border-[#C42121]/40 px-8 py-3 text-sm font-mono tracking-widest text-[#C42121] hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
+                onClick={() => { window.scrollTo(0, 0); setTimeout(() => navigate('/artists'), 50); }}
+              >
+                EXPLORE ARTISTS →
+              </button>
+            </div>
+          </GSAPReveal>
         </section>
 
         {/* ── CTA ─────────────────────────────────────── */}
@@ -295,6 +335,8 @@ export default function DJs() {
         </section>
 
       </div>
+
+      <AdminToolbar />
 
       {/* Footer */}
       <footer className="relative w-full px-6 md:px-8 py-6 md:py-8 flex justify-between items-center border-t border-[#C42121]/10 text-[#f5f5f0]/50">

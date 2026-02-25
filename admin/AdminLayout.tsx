@@ -3,15 +3,16 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
   LayoutDashboard, Calendar, Music2, Users,
-  LogOut, Menu, X, ExternalLink, Settings,
+  LogOut, Menu, X, ExternalLink, Settings, Paintbrush,
 } from 'lucide-react';
 
 const NAV = [
-  { label: 'Dashboard', to: '/admin',          icon: LayoutDashboard, end: true },
-  { label: 'Events',    to: '/admin/events',   icon: Calendar },
-  { label: 'DJs',       to: '/admin/djs',      icon: Music2 },
-  { label: 'Artists',   to: '/admin/artists',  icon: Users },
-  { label: 'Settings',  to: '/admin/settings', icon: Settings },
+  { label: 'Dashboard',      to: '/admin',                icon: LayoutDashboard, end: true },
+  { label: 'Events',         to: '/admin/events',         icon: Calendar },
+  { label: 'DJs',            to: '/admin/djs',            icon: Music2 },
+  { label: 'Artists',        to: '/admin/artists',        icon: Users },
+  { label: 'Visual Editor',  to: '/admin/visual-editor',  icon: Paintbrush },
+  { label: 'Settings',       to: '/admin/settings',       icon: Settings },
 ];
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {

@@ -19,7 +19,8 @@ const AdminDJs          = lazy(() => import('./admin/AdminDJs'));
 const AdminDJForm       = lazy(() => import('./admin/AdminDJForm'));
 const AdminArtists      = lazy(() => import('./admin/AdminArtists'));
 const AdminArtistForm   = lazy(() => import('./admin/AdminArtistForm'));
-const AdminSiteSettings = lazy(() => import('./admin/AdminSiteSettings'));
+const AdminSiteSettings  = lazy(() => import('./admin/AdminSiteSettings'));
+const AdminVisualEditor  = lazy(() => import('./admin/AdminVisualEditor'));
 
 // ── Auth wrapper (lazy) ─────────────────────────────────────────
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
@@ -70,7 +71,8 @@ export default function AppRouter() {
         <Route path="/admin/artists"      element={<AdminPage><AdminArtists /></AdminPage>} />
         <Route path="/admin/artists/new"  element={<AdminPage><AdminArtistForm /></AdminPage>} />
         <Route path="/admin/artists/:id"  element={<AdminPage><AdminArtistForm /></AdminPage>} />
-        <Route path="/admin/settings"     element={<AdminPage><AdminSiteSettings /></AdminPage>} />
+        <Route path="/admin/settings"        element={<AdminPage><AdminSiteSettings /></AdminPage>} />
+        <Route path="/admin/visual-editor"   element={<AdminPage><AdminVisualEditor /></AdminPage>} />
 
       </Routes>
     </Suspense>

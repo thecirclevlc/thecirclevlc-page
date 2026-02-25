@@ -7,6 +7,7 @@ import type { Event as DBEvent } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
+import AdminToolbar from './components/AdminToolbar';
 
 // Adapts Supabase event to the shape EventCard expects
 interface CardEvent {
@@ -271,7 +272,6 @@ export default function PastEvents() {
   const [error, setError]         = useState<string | null>(null);
   const { bgUrl, bgType }         = usePageBackground('page_events');
   const logoRef         = useRef<HTMLDivElement>(null);
-  const heroNumberRef   = useRef<HTMLDivElement>(null);
   const heroTitleRef    = useRef<HTMLDivElement>(null);
 
   // Fetch published events from Supabase
@@ -303,42 +303,13 @@ export default function PastEvents() {
 
   // Hero animations
   useEffect(() => {
-    const number = heroNumberRef.current;
     const title = heroTitleRef.current;
-    if (!number || !title) return;
+    if (!title) return;
 
-    const tl = gsap.timeline();
-
-    tl.fromTo(
-      number,
-      {
-        opacity: 0,
-        scale: 0.5,
-        filter: 'blur(20px)',
-      },
-      {
-        opacity: 0.3,
-        scale: 1,
-        filter: 'blur(0px)',
-        duration: 1.5,
-        ease: 'power3.out',
-      }
-    ).fromTo(
+    gsap.fromTo(
       title.children,
-      {
-        opacity: 0,
-        y: 100,
-        rotationX: -90,
-      },
-      {
-        opacity: 1,
-        y: 0,
-        rotationX: 0,
-        duration: 1.2,
-        stagger: 0.1,
-        ease: 'power3.out',
-      },
-      '-=1'
+      { opacity: 0, y: 100, rotationX: -90 },
+      { opacity: 1, y: 0, rotationX: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out', delay: 0.3 }
     );
   }, []);
 
@@ -377,25 +348,11 @@ export default function PastEvents() {
             />
           )}
           <div className="relative z-10 w-full max-w-7xl">
-            {/* Section Number */}
-            <div
-              ref={heroNumberRef}
-              className="text-[#C42121]/30 font-black text-[20vw] md:text-[15vw] leading-none mb-4"
-            >
-              02
-            </div>
-
-            {/* Main Title with ASCII Circle */}
             <div className="flex items-center gap-8 md:gap-16 mb-8">
               <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase flex-1">
                 <div>PAST</div>
                 <div className="text-[#C42121]">EVENTS</div>
               </div>
-
-              {/* ASCII Circle - Hidden on mobile */}
-              {/* <div className="hidden lg:block">
-                <ASCIICircle />
-              </div> */}
             </div>
 
             {/* Subtitle */}
@@ -482,6 +439,8 @@ export default function PastEvents() {
           </a>
         </div>
       </footer>
+
+      <AdminToolbar />
     </div>
   );
 }

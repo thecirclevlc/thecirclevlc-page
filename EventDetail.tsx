@@ -3,23 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { supabase } from './lib/supabase';
-import type { Event as DBEvent } from './lib/database.types';
+import type { Event as DBEvent, DJ, ArtistWithCategory } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import ImageLightbox from './components/ImageLightbox';
+import ProfileModal, { type ProfileType } from './components/ProfileModal';
+import AdminToolbar from './components/AdminToolbar';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Image Gallery Component with GSAP and Lightbox
-const ImageGallery: React.FC<{ images: string[]; onImageClick: (index: number) => void }> = ({ images, onImageClick }) => {
-  return (
-    <div className="space-y-12 md:space-y-20">
-      {images.map((image, index) => (
-        <GSAPImage key={index} image={image} index={index} onClick={onImageClick} />
-      ))}
-    </div>
-  );
-};
+// ── Image Gallery ────────────────────────────────────────────────
 
 const GSAPImage: React.FC<{ image: string; index: number; onClick: (index: number) => void }> = ({ image, index, onClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,39 +23,27 @@ const GSAPImage: React.FC<{ image: string; index: number; onClick: (index: numbe
     const img = imageRef.current;
     if (!container || !img) return;
 
-    // Wrap ScrollTrigger animations in context for proper cleanup on unmount
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        container,
+      gsap.fromTo(container,
         { opacity: 0, y: 80 },
-        {
-          opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
-          scrollTrigger: { trigger: container, start: 'top 85%' },
-        }
+        { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
+          scrollTrigger: { trigger: container, start: 'top 85%' } }
       );
-      gsap.fromTo(
-        img,
+      gsap.fromTo(img,
         { scale: 1.2, filter: 'brightness(0.3)' },
-        {
-          scale: 1, filter: 'brightness(0.6)', duration: 1.5, ease: 'power2.out',
-          scrollTrigger: { trigger: container, start: 'top 85%' },
-        }
+        { scale: 1, filter: 'brightness(0.6)', duration: 1.5, ease: 'power2.out',
+          scrollTrigger: { trigger: container, start: 'top 85%' } }
       );
     }, container);
 
-    // Hover animation
-    const handleMouseEnter = () => {
-      gsap.to(img, { scale: 1.05, filter: 'brightness(0.8)', duration: 0.6, ease: 'power2.out' });
-    };
-    const handleMouseLeave = () => {
-      gsap.to(img, { scale: 1, filter: 'brightness(0.6)', duration: 0.6, ease: 'power2.out' });
-    };
+    const handleMouseEnter = () => gsap.to(img, { scale: 1.05, filter: 'brightness(0.8)', duration: 0.6, ease: 'power2.out' });
+    const handleMouseLeave = () => gsap.to(img, { scale: 1, filter: 'brightness(0.6)', duration: 0.6, ease: 'power2.out' });
 
     container.addEventListener('mouseenter', handleMouseEnter);
     container.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
-      ctx.revert(); // kills ScrollTrigger instances + tweens automatically
+      ctx.revert();
       container.removeEventListener('mouseenter', handleMouseEnter);
       container.removeEventListener('mouseleave', handleMouseLeave);
     };
@@ -76,8 +57,6 @@ const GSAPImage: React.FC<{ image: string; index: number; onClick: (index: numbe
     >
       <img ref={imageRef} src={image} alt={`Event image ${index + 1}`} className="w-full h-full object-cover" loading="lazy" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-
-      {/* Click hint */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
         <div className="text-[#C42121] text-sm font-mono tracking-widest">CLICK TO EXPAND</div>
       </div>
@@ -85,7 +64,45 @@ const GSAPImage: React.FC<{ image: string; index: number; onClick: (index: numbe
   );
 };
 
-// ── Adapt DB event for rendering ────────────────────────────────
+const ImageGallery: React.FC<{ images: string[]; onImageClick: (index: number) => void }> = ({ images, onImageClick }) => (
+  <div className="space-y-12 md:space-y-20">
+    {images.map((image, index) => (
+      <GSAPImage key={index} image={image} index={index} onClick={onImageClick} />
+    ))}
+  </div>
+);
+
+// ── Name Row — text-only, hover reveals a floating photo ──────────
+
+interface HoverImg { url: string; x: number; y: number }
+
+const NameRow: React.FC<{
+  name: string;
+  photo_url: string | null;
+  subtitle?: string;
+  onSetHover: (h: HoverImg | null) => void;
+  onClick: () => void;
+}> = ({ name, photo_url, subtitle, onSetHover, onClick }) => (
+  <div
+    className="group cursor-pointer flex items-baseline justify-between gap-3 py-3 border-b border-[#C42121]/10 hover:border-[#C42121]/40 transition-colors duration-200"
+    onMouseEnter={e => { if (photo_url) onSetHover({ url: photo_url, x: e.clientX, y: e.clientY }); }}
+    onMouseMove={e => { if (photo_url) onSetHover({ url: photo_url, x: e.clientX, y: e.clientY }); }}
+    onMouseLeave={() => onSetHover(null)}
+    onClick={onClick}
+  >
+    <span className="text-xl md:text-2xl font-black text-[#C42121] uppercase tracking-tight leading-none group-hover:text-white transition-colors duration-200">
+      {name}
+    </span>
+    {subtitle && (
+      <span className="text-[10px] font-mono text-[#C42121]/40 tracking-wider whitespace-nowrap flex-shrink-0">
+        {subtitle}
+      </span>
+    )}
+  </div>
+);
+
+// ── Helpers ───────────────────────────────────────────────────────
+
 function formatDate(date: string | null) {
   if (!date) return '';
   return new Date(date + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -93,28 +110,41 @@ function formatDate(date: string | null) {
   });
 }
 
-// Main Event Detail Page
+// ── Main Page ─────────────────────────────────────────────────────
+
 export default function EventDetail() {
   const navigate = useNavigate();
-  const { eventId } = useParams<{ eventId: string }>();   // eventId holds the slug
+  const { eventId } = useParams<{ eventId: string }>();
 
   const [event, setEvent]       = useState<DBEvent | null>(null);
   const [nextEvent, setNext]    = useState<DBEvent | null>(null);
   const [loading, setLoading]   = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const logoRef = useRef<HTMLDivElement>(null);
+
+  // DJ / Artist join data
+  const [eventDJs, setEventDJs]           = useState<DJ[]>([]);
+  const [eventArtists, setEventArtists]   = useState<ArtistWithCategory[]>([]);
+
+  // Profile modal
+  const [activeProfile, setActiveProfile]   = useState<DJ | ArtistWithCategory | null>(null);
+  const [activeType, setActiveType]         = useState<ProfileType>('dj');
+
+  // Hover image (follows cursor)
+  const [hoverImg, setHoverImg] = useState<HoverImg | null>(null);
+
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Fetch event by slug + the next event by date
+  // ── Fetch event + joins ────────────────────────────────────────
   useEffect(() => {
     if (!eventId) return;
     setLoading(true);
     setNotFound(false);
 
-    // Fetch event + next event in parallel (faster than sequential awaits)
     Promise.all([
+      // Base event
       supabase.from('events').select('*').eq('slug', eventId).single(),
+      // Next event
       supabase
         .from('events')
         .select('id,title,slug,event_number,cover_image_url,date')
@@ -123,101 +153,74 @@ export default function EventDetail() {
         .order('date', { ascending: false })
         .limit(1),
     ]).then(([{ data: eventData, error }, { data: nextData }]) => {
-      if (error || !eventData) { setNotFound(true); }
-      else { setEvent(eventData); setNext(nextData?.[0] ?? null); }
-      setLoading(false);
+      if (error || !eventData) { setNotFound(true); setLoading(false); return; }
+      setEvent(eventData);
+      setNext(nextData?.[0] ?? null);
+
+      // Fetch DJ and Artist joins in parallel
+      Promise.all([
+        supabase
+          .from('event_djs')
+          .select('sort_order, djs(*)')
+          .eq('event_id', eventData.id)
+          .order('sort_order'),
+        supabase
+          .from('event_artists')
+          .select('sort_order, artists(*, artist_categories(id,name,slug,sort_order))')
+          .eq('event_id', eventData.id)
+          .order('sort_order'),
+      ]).then(([{ data: djData }, { data: artistData }]) => {
+        if (djData) {
+          const djs = djData.map((r: any) => r.djs).filter(Boolean) as DJ[];
+          setEventDJs(djs);
+        }
+        if (artistData) {
+          const artists = artistData.map((r: any) => r.artists).filter(Boolean) as ArtistWithCategory[];
+          setEventArtists(artists);
+        }
+        setLoading(false);
+      });
     });
   }, [eventId]);
 
-  // Logo rotation
-  useEffect(() => {
-    const logo = logoRef.current;
-    if (!logo) return;
-
-    gsap.to(logo, {
-      rotation: 360,
-      duration: 40,
-      repeat: -1,
-      ease: 'none',
-    });
-  }, []);
-
-  // Hero parallax effect
+  // ── Hero parallax ─────────────────────────────────────────────
   useEffect(() => {
     const hero = heroRef.current;
     if (!hero) return;
-
     const img = hero.querySelector('img');
     if (!img) return;
-
     gsap.to(img, {
-      y: 150,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: hero,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: true,
-      },
+      y: 150, ease: 'none',
+      scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
     });
   }, [event]);
 
-  // Hero content animation
+  // ── Hero content animation ────────────────────────────────────
   useEffect(() => {
     if (!event) return;
-
     const tl = gsap.timeline();
-
-    tl.fromTo(
-      '.hero-number',
-      {
-        opacity: 0,
-        x: -100,
-        filter: 'blur(20px)',
-      },
-      {
-        opacity: 0.4,
-        x: 0,
-        filter: 'blur(0px)',
-        duration: 1.2,
-        ease: 'power3.out',
-      }
-    )
-      .fromTo(
-        '.hero-title',
-        {
-          opacity: 0,
-          y: 100,
-          rotationX: -90,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          rotationX: 0,
-          duration: 1.2,
-          ease: 'power3.out',
-        },
-        '-=0.8'
-      )
-      .fromTo(
-        '.hero-meta > div',
-        {
-          opacity: 0,
-          y: 30,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          stagger: 0.1,
-          ease: 'power2.out',
-        },
-        '-=0.6'
-      );
+    tl.fromTo('.hero-number',
+      { opacity: 0, x: -100, filter: 'blur(20px)' },
+      { opacity: 0.4, x: 0, filter: 'blur(0px)', duration: 1.2, ease: 'power3.out' }
+    ).fromTo('.hero-title',
+      { opacity: 0, y: 100, rotationX: -90 },
+      { opacity: 1, y: 0, rotationX: 0, duration: 1.2, ease: 'power3.out' },
+      '-=0.8'
+    ).fromTo('.hero-meta > div',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'power2.out' },
+      '-=0.6'
+    );
   }, [event]);
 
+  // ── Music styles: unique genres from DJs + event tags ─────────
+  const musicStyles = React.useMemo(() => {
+    const genres = eventDJs.flatMap(dj => dj.genres ?? []);
+    const tags   = event?.tags ?? [];
+    return [...new Set([...genres, ...tags])];
+  }, [eventDJs, event]);
 
-  // ── Loading state ────────────────────────────────────────────
+  // ── Loading / not found ───────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050000] flex items-center justify-center">
@@ -242,20 +245,27 @@ export default function EventDetail() {
     );
   }
 
-  // Aliases from DB → template format
-  const coverImage   = event.cover_image_url ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&h=800&fit=crop';
+  const coverImage    = event.cover_image_url ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&h=800&fit=crop';
   const galleryImages = event.gallery_images ?? [];
-  const lineup       = event.lineup ?? [];
-  const tags         = event.tags ?? [];
+  // Legacy lineup fallback: show if no join data
+  const showLegacyLineup = eventDJs.length === 0 && eventArtists.length === 0 && (event.lineup ?? []).length > 0;
 
   return (
     <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black">
+
       {/* Image Lightbox */}
       <ImageLightbox
         images={galleryImages}
         initialIndex={lightboxIndex ?? 0}
         isOpen={lightboxIndex !== null}
         onClose={() => setLightboxIndex(null)}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        profile={activeProfile}
+        type={activeType}
+        onClose={() => setActiveProfile(null)}
       />
 
       {/* Noise Overlay */}
@@ -265,38 +275,29 @@ export default function EventDetail() {
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
       />
-
-      {/* Vignette */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[1]"
-        style={{ background: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%)' }}
-      />
+      <div className="fixed inset-0 pointer-events-none z-[1]" style={{ background: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%)' }} />
 
       <StandardHeader />
 
-      {/* Main Content */}
       <div className="relative z-10 pt-16 md:pt-20">
-        {/* Hero Section */}
+
+        {/* ── Hero ──────────────────────────────────────── */}
         <section ref={heroRef} className="relative h-[100dvh] flex items-end overflow-hidden">
-          {/* Background media (video or image) with parallax on image */}
           <HeroMedia
             videoUrl={event.hero_video_url}
             imageUrl={coverImage}
             posterUrl={coverImage}
             priority
           />
-
-          {/* Hero Content */}
           <div className="relative z-10 w-full px-6 md:px-20 pb-20 md:pb-32">
-            {/* Event Number */}
             {event.event_number && (
-              <div className="hero-number text-[#C42121]/40 font-black text-[15vw] md:text-[10vw] leading-none mb-4">{event.event_number}</div>
+              <div className="hero-number text-[#C42121]/40 font-black text-[15vw] md:text-[10vw] leading-none mb-4">
+                {event.event_number}
+              </div>
             )}
-
-            {/* Title */}
-            <h1 className="hero-title text-6xl md:text-9xl font-black tracking-tighter leading-[0.85] uppercase mb-6">{event.title}</h1>
-
-            {/* Meta Info */}
+            <h1 className="hero-title text-6xl md:text-9xl font-black tracking-tighter leading-[0.85] uppercase mb-6">
+              {event.title}
+            </h1>
             <div className="hero-meta flex flex-wrap gap-8 text-sm md:text-base font-mono text-[#C42121]/70">
               {event.date && (
                 <div>
@@ -320,70 +321,116 @@ export default function EventDetail() {
           </div>
         </section>
 
-        {/* Description Section */}
-        <section className="relative px-6 md:px-20 py-20 md:py-32 border-t border-[#C42121]/20">
+        {/* ── 3-Column: About · DJs · Artists ───────────── */}
+        <section className="relative px-6 md:px-20 py-16 md:py-24 border-t border-[#C42121]/20">
           <div className="max-w-7xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 md:gap-20">
-              {/* Left — short description teaser */}
-              <div className="space-y-6">
-                {event.short_description && (
-                  <>
-                    <span className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">About</span>
-                    <p className="text-xl md:text-2xl font-light text-[#C42121]/80 leading-relaxed">
-                      {event.short_description}
-                    </p>
-                  </>
-                )}
-              </div>
+            <div className={`grid grid-cols-1 gap-12 md:gap-0 ${
+              eventArtists.length > 0 && (eventDJs.length > 0 || showLegacyLineup)
+                ? 'md:grid-cols-3'
+                : (eventDJs.length > 0 || showLegacyLineup || eventArtists.length > 0)
+                  ? 'md:grid-cols-2'
+                  : 'md:grid-cols-1'
+            }`}>
 
-              {/* Right — tags + lineup */}
-              <div className="space-y-12">
-                {/* Tags */}
-                {tags.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-mono text-[#C42121]/50 mb-4 tracking-wider">EXPERIENCE</h3>
-                    <div className="flex flex-wrap gap-3">
-                      {tags.map((tag, i) => (
-                        <span key={i} className="text-xs font-mono px-4 py-2 border border-[#C42121]/30 text-[#C42121]/80 uppercase tracking-wider hover:bg-[#C42121]/10 transition-colors duration-300">
-                          {tag}
+              {/* Column 1 — About */}
+              <div className="md:pr-10 space-y-6">
+                <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">About</p>
+                {event.short_description && (
+                  <p className="text-base md:text-lg font-light text-[#C42121]/80 leading-relaxed">
+                    {event.short_description}
+                  </p>
+                )}
+                {event.description && (
+                  <div className="space-y-4">
+                    {event.description.split('\n').filter(Boolean).map((para, i) => (
+                      <p key={i} className="text-sm text-[#C42121]/60 leading-relaxed">{para}</p>
+                    ))}
+                  </div>
+                )}
+                {musicStyles.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">Music</p>
+                    <div className="flex flex-wrap gap-2">
+                      {musicStyles.map((style, i) => (
+                        <span key={i} className="text-[10px] font-mono px-3 py-1.5 border border-[#C42121]/25 text-[#C42121]/70 uppercase tracking-wider hover:bg-[#C42121]/10 transition-colors">
+                          {style}
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
-
-                {/* Lineup */}
-                {lineup.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-mono text-[#C42121]/50 mb-4 tracking-wider">LINEUP</h3>
-                    <div className="space-y-2">
-                      {lineup.map((artist, i) => (
-                        <div key={i} className="text-lg font-light text-[#C42121]/90 border-l-2 border-[#C42121]/30 pl-4 hover:border-[#C42121] hover:text-[#C42121] transition-colors duration-300">
-                          {artist}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {/* Column 2 — DJs */}
+              {(eventDJs.length > 0 || showLegacyLineup) && (
+                <div className="md:px-10 md:border-l md:border-[#C42121]/10 space-y-4">
+                  <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">DJs — Line Up</p>
+                  <div>
+                    {eventDJs.map(dj => (
+                      <NameRow
+                        key={dj.id}
+                        name={dj.name}
+                        subtitle={dj.genres?.slice(0, 2).join(' · ')}
+                        photo_url={dj.photo_url}
+                        onSetHover={setHoverImg}
+                        onClick={() => { setHoverImg(null); setActiveType('dj'); setActiveProfile(dj); }}
+                      />
+                    ))}
+                    {/* Legacy text fallback */}
+                    {showLegacyLineup && (event.lineup ?? []).map((name, i) => (
+                      <div key={i} className="py-3 border-b border-[#C42121]/10 text-xl font-black text-[#C42121] uppercase tracking-tight">
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Column 3 — Artists */}
+              {eventArtists.length > 0 && (
+                <div className="md:pl-10 md:border-l md:border-[#C42121]/10 space-y-4">
+                  <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">Artists</p>
+                  <div>
+                    {eventArtists.map(artist => (
+                      <NameRow
+                        key={artist.id}
+                        name={artist.name}
+                        subtitle={artist.artist_categories?.name ?? (artist.genres?.slice(0, 1).join('') ?? undefined)}
+                        photo_url={artist.photo_url}
+                        onSetHover={setHoverImg}
+                        onClick={() => { setHoverImg(null); setActiveType('artist'); setActiveProfile(artist); }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </section>
 
-        {/* Long Description */}
-        {event.description && (
-          <section className="relative px-6 md:px-20 py-20 md:py-32 border-t border-[#C42121]/20 bg-black/30">
-            <div className="max-w-5xl mx-auto space-y-8">
-              {event.description.split('\n').filter(Boolean).map((paragraph, index) => (
-                <p key={index} className="text-lg md:text-2xl font-light text-[#C42121]/80 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </section>
+        {/* ── Floating hover image (follows cursor on desktop) ── */}
+        {hoverImg && (
+          <div
+            className="fixed pointer-events-none z-[200] w-44 h-56 overflow-hidden border border-[#C42121]/30 shadow-2xl"
+            style={{
+              left:      hoverImg.x + 24,
+              top:       hoverImg.y,
+              transform: 'translateY(-40%)',
+              transition: 'left 0.05s linear, top 0.05s linear',
+            }}
+          >
+            <img
+              src={hoverImg.url}
+              alt=""
+              className="w-full h-full object-cover"
+              style={{ filter: 'brightness(0.75)' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          </div>
         )}
 
-        {/* Image Gallery */}
+        {/* ── Image Gallery ──────────────────────────────── */}
         {galleryImages.length > 0 && (
           <section className="relative px-6 md:px-20 py-20 md:py-32 border-t border-[#C42121]/20">
             <div className="max-w-7xl mx-auto">
@@ -392,11 +439,11 @@ export default function EventDetail() {
           </section>
         )}
 
-        {/* Next Event */}
+        {/* ── Next Event ─────────────────────────────────── */}
         {nextEvent && (
           <section className="relative border-t border-[#C42121]/20">
             <div
-              className="group relative h-[60vh] md:h-[80vh] overflow-hidden cursor-pointer next-event-section"
+              className="group relative h-[60vh] md:h-[80vh] overflow-hidden cursor-pointer"
               onClick={() => {
                 window.scrollTo(0, 0);
                 setTimeout(() => navigate(`/past-events/${nextEvent.slug}`), 50);
@@ -405,64 +452,53 @@ export default function EventDetail() {
               <img
                 src={nextEvent.cover_image_url ?? ''}
                 alt={nextEvent.title}
-                className="absolute inset-0 w-full h-full object-cover next-event-img"
+                className="absolute inset-0 w-full h-full object-cover"
                 style={{ filter: 'brightness(0.3)' }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#050000] via-[#050000]/70 to-transparent" />
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                <div className="text-sm font-mono text-[#C42121]/60 mb-4 tracking-widest next-event-label">NEXT EVENT</div>
-                <h2 className="text-6xl md:text-8xl font-black tracking-tighter leading-none uppercase mb-6 next-event-title">{nextEvent.title}</h2>
+                <div className="text-sm font-mono text-[#C42121]/60 mb-4 tracking-widest">NEXT EVENT</div>
+                <h2 className="text-6xl md:text-8xl font-black tracking-tighter leading-none uppercase mb-6">
+                  {nextEvent.title}
+                </h2>
                 {nextEvent.event_number && (
-                  <div className="text-lg md:text-xl font-light text-[#C42121]/80 next-event-subtitle">{nextEvent.event_number}</div>
+                  <div className="text-lg md:text-xl font-light text-[#C42121]/80">{nextEvent.event_number}</div>
                 )}
-                <div className="mt-12 text-4xl text-[#C42121] next-event-arrow">↓</div>
+                <div className="mt-12 text-4xl text-[#C42121]">↓</div>
               </div>
             </div>
           </section>
         )}
 
-        {/* Back to Events CTA */}
+        {/* ── Back to Events ────────────────────────────── */}
         <section className="relative px-6 md:px-20 py-32 md:py-40 border-t border-[#C42121]/20 text-center">
-          <div className="">
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-8 uppercase">
-              EXPLORE MORE
-              <br />
-              <span className="text-[#C42121]">PAST EVENTS</span>
-            </h2>
-            <button
-              className="border border-[#C42121] px-12 py-4 text-sm font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer"
-              onClick={() => {
-                window.scrollTo(0, 0);
-                setTimeout(() => navigate('/past-events'), 50);
-              }}
-            >
-              VIEW ALL EVENTS
-            </button>
-          </div>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-8 uppercase">
+            EXPLORE MORE
+            <br />
+            <span className="text-[#C42121]">PAST EVENTS</span>
+          </h2>
+          <button
+            className="border border-[#C42121] px-12 py-4 text-sm font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer"
+            onClick={() => { window.scrollTo(0, 0); setTimeout(() => navigate('/past-events'), 50); }}
+          >
+            VIEW ALL EVENTS
+          </button>
         </section>
+
       </div>
 
       {/* Footer */}
       <footer className="relative w-full px-6 md:px-8 py-6 md:py-8 flex justify-between items-center border-t border-[#C42121]/10 text-[#f5f5f0]/50">
+        <div className="text-sm tracking-wider uppercase font-mono">© 2026 THE CIRCLE</div>
         <div className="text-sm tracking-wider uppercase font-mono">
-          © 2026 THE CIRCLE
+          <a href="https://www.aliastudio.cc/" target="_blank" rel="noopener noreferrer" className="hover:text-[#C42121] transition-colors">BY ALIA</a>
         </div>
         <div className="text-sm tracking-wider uppercase font-mono">
-          <a
-            href="https://www.aliastudio.cc/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#C42121] transition-colors"
-          >
-            BY ALIA
-          </a>
-        </div>
-        <div className="text-sm tracking-wider uppercase font-mono">
-          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#C42121] transition-colors">
-            CONTACT
-          </a>
+          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#C42121] transition-colors">CONTACT</a>
         </div>
       </footer>
+
+      <AdminToolbar />
     </div>
   );
 }

@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Trash2, Image, Film, Ban, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  Upload, Trash2, Image, Film, Ban, Loader2, CheckCircle, AlertCircle,
+  Plus, GripVertical, Pencil, Check, X,
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { uploadImage, uploadVideo, deleteImage } from '../lib/imageUpload';
-import type { PageBackground, PageKey } from '../lib/database.types';
+import { slugify } from '../lib/slugify';
+import type { PageBackground, PageKey, ArtistCategory, ArtistCategoryInsert } from '../lib/database.types';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -38,7 +42,6 @@ function PageSection({ config, onToast }: PageSectionProps) {
   const imgRef   = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
 
-  // Load current setting
   useEffect(() => {
     supabase
       .from('site_settings')
@@ -52,7 +55,6 @@ function PageSection({ config, onToast }: PageSectionProps) {
       .catch(() => setLoading(false));
   }, [config.key]);
 
-  // Save to Supabase
   const save = async (newBg: PageBackground) => {
     setSaving(true);
     try {
@@ -69,7 +71,6 @@ function PageSection({ config, onToast }: PageSectionProps) {
     }
   };
 
-  // Upload image
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -86,7 +87,6 @@ function PageSection({ config, onToast }: PageSectionProps) {
     }
   };
 
-  // Upload video
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -103,7 +103,6 @@ function PageSection({ config, onToast }: PageSectionProps) {
     }
   };
 
-  // Remove media
   const handleRemove = async () => {
     if (bg.bg_url) await deleteImage(bg.bg_url).catch(() => {});
     await save({ bg_url: null, bg_type: 'none' });
@@ -120,7 +119,6 @@ function PageSection({ config, onToast }: PageSectionProps) {
 
   return (
     <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-      {/* Header */}
       <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center justify-between">
         <div>
           <h3 className="text-white font-semibold text-sm tracking-wide">{config.label}</h3>
@@ -138,21 +136,12 @@ function PageSection({ config, onToast }: PageSectionProps) {
       </div>
 
       <div className="p-6 space-y-5">
-        {/* Preview */}
         {bg.bg_url && bg.bg_type !== 'none' ? (
           <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
             {bg.bg_type === 'video' ? (
-              <video
-                src={bg.bg_url}
-                autoPlay loop muted playsInline
-                className="w-full h-full object-cover opacity-80"
-              />
+              <video src={bg.bg_url} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-80" />
             ) : (
-              <img
-                src={bg.bg_url}
-                alt="Background preview"
-                className="w-full h-full object-cover opacity-80"
-              />
+              <img src={bg.bg_url} alt="Background preview" className="w-full h-full object-cover opacity-80" />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             <button
@@ -172,37 +161,23 @@ function PageSection({ config, onToast }: PageSectionProps) {
           </div>
         )}
 
-        {/* Upload buttons */}
         <div className="flex gap-3">
-          {/* Image upload */}
           <button
             onClick={() => imgRef.current?.click()}
             disabled={uploading || saving}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] hover:border-[#C42121]/30 rounded-lg text-sm text-[#888] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Image size={14} />
-            )}
+            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Image size={14} />}
             <span>Image</span>
           </button>
-
-          {/* Video upload */}
           <button
             onClick={() => videoRef.current?.click()}
             disabled={uploading || saving}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] hover:border-purple-500/30 rounded-lg text-sm text-[#888] hover:text-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Film size={14} />
-            )}
+            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Film size={14} />}
             <span>Video</span>
           </button>
-
-          {/* Remove */}
           {bg.bg_url && (
             <button
               onClick={handleRemove}
@@ -213,35 +188,244 @@ function PageSection({ config, onToast }: PageSectionProps) {
             </button>
           )}
         </div>
-
         <p className="text-[#333] text-xs font-mono">
           Image: JPG, PNG, WebP · Video: MP4, WebM · Images auto-converted to WebP
         </p>
       </div>
 
-      {/* Hidden inputs */}
-      <input
-        ref={imgRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageUpload}
-      />
-      <input
-        ref={videoRef}
-        type="file"
-        accept="video/mp4,video/webm,video/*"
-        className="hidden"
-        onChange={handleVideoUpload}
-      />
+      <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      <input ref={videoRef} type="file" accept="video/mp4,video/webm,video/*" className="hidden" onChange={handleVideoUpload} />
+    </div>
+  );
+}
+
+// ── Artist Categories CRUD ────────────────────────────────────────
+
+interface CategoryRowProps {
+  cat: ArtistCategory;
+  onSave:   (id: string, name: string, slug: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+function CategoryRow({ cat, onSave, onDelete }: CategoryRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName]       = useState(cat.name);
+  const [saving, setSaving]   = useState(false);
+
+  async function commitEdit() {
+    if (!name.trim() || name === cat.name) { setEditing(false); setName(cat.name); return; }
+    setSaving(true);
+    await onSave(cat.id, name.trim(), slugify(name.trim()));
+    setSaving(false);
+    setEditing(false);
+  }
+
+  return (
+    <div className="flex items-center gap-3 py-2.5 border-b border-[#1a1a1a] last:border-0 group">
+      <GripVertical size={14} className="text-[#333] flex-shrink-0" />
+
+      {editing ? (
+        <input
+          autoFocus
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commitEdit();
+            if (e.key === 'Escape') { setEditing(false); setName(cat.name); }
+          }}
+          className="flex-1 bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#059669]/40"
+        />
+      ) : (
+        <span className="flex-1 text-white text-sm">{cat.name}</span>
+      )}
+
+      <span className="text-[#333] text-xs font-mono hidden sm:block">{cat.slug}</span>
+
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {editing ? (
+          <>
+            <button
+              onClick={commitEdit}
+              disabled={saving}
+              className="w-6 h-6 flex items-center justify-center rounded text-[#059669] hover:bg-[#059669]/10 transition-colors"
+            >
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setName(cat.name); }}
+              className="w-6 h-6 flex items-center justify-center rounded text-[#444] hover:text-white transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setEditing(true)}
+              className="w-6 h-6 flex items-center justify-center rounded text-[#444] hover:text-white transition-colors"
+            >
+              <Pencil size={12} />
+            </button>
+            <button
+              onClick={() => onDelete(cat.id)}
+              className="w-6 h-6 flex items-center justify-center rounded text-[#444] hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ArtistCategoriesTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
+  const [categories, setCategories] = useState<ArtistCategory[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [newName, setNewName]       = useState('');
+  const [adding, setAdding]         = useState(false);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  async function loadCategories() {
+    const { data } = await supabase
+      .from('artist_categories')
+      .select('*')
+      .order('sort_order');
+    if (data) setCategories(data as ArtistCategory[]);
+    setLoading(false);
+  }
+
+  async function handleAdd() {
+    if (!newName.trim()) return;
+    setAdding(true);
+    try {
+      const toInsert: ArtistCategoryInsert = {
+        name: newName.trim(),
+        slug: slugify(newName.trim()),
+        sort_order: categories.length,
+      };
+      const { error } = await supabase.from('artist_categories').insert(toInsert);
+      if (error) throw error;
+      setNewName('');
+      await loadCategories();
+      onToast({ text: 'Category created', type: 'success' });
+    } catch (err: any) {
+      onToast({ text: err.message ?? 'Create failed', type: 'error' });
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleSave(id: string, name: string, slug: string) {
+    try {
+      const { error } = await supabase
+        .from('artist_categories')
+        .update({ name, slug })
+        .eq('id', id);
+      if (error) throw error;
+      setCategories(prev => prev.map(c => c.id === id ? { ...c, name, slug } : c));
+      onToast({ text: 'Category updated', type: 'success' });
+    } catch (err: any) {
+      onToast({ text: err.message ?? 'Update failed', type: 'error' });
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const { error } = await supabase
+        .from('artist_categories')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setCategories(prev => prev.filter(c => c.id !== id));
+      onToast({ text: 'Category deleted', type: 'success' });
+    } catch (err: any) {
+      onToast({ text: err.message ?? 'Delete failed', type: 'error' });
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3 py-12 justify-center">
+        <Loader2 size={18} className="animate-spin text-[#444]" />
+        <span className="text-[#444] text-sm">Loading categories…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-white text-lg font-semibold">Artist Categories</h2>
+        <p className="text-[#555] text-sm mt-1">
+          Define discipline groups for the public Artists page (e.g. Painters, Photographers, Graphic Designers).
+        </p>
+      </div>
+
+      {/* Categories list */}
+      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#1a1a1a] flex items-center justify-between">
+          <span className="text-[#333] text-xs tracking-[0.2em] uppercase">Categories</span>
+          <span className="text-[#333] text-xs font-mono">{categories.length} total</span>
+        </div>
+
+        <div className="px-5">
+          {categories.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-[#444] text-sm">No categories yet.</p>
+              <p className="text-[#333] text-xs mt-1">Add your first category below.</p>
+            </div>
+          ) : (
+            categories.map(cat => (
+              <CategoryRow
+                key={cat.id}
+                cat={cat}
+                onSave={handleSave}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Add new */}
+        <div className="px-5 py-4 border-t border-[#1a1a1a]">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }}}
+              placeholder="New category name…"
+              className="flex-1 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors"
+            />
+            <button
+              onClick={handleAdd}
+              disabled={adding || !newName.trim()}
+              className="flex items-center gap-2 px-4 py-2 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+              Add
+            </button>
+          </div>
+          <p className="text-[#333] text-xs mt-2 font-mono">
+            Slug is auto-generated from the name. Click the pencil icon to edit existing categories.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────────
 
+type Tab = 'backgrounds' | 'categories';
+
 export default function AdminSiteSettings() {
-  const [toasts, setToasts] = useState<(ToastMsg & { id: number })[]>([]);
+  const [activeTab, setActiveTab]   = useState<Tab>('backgrounds');
+  const [toasts, setToasts]         = useState<(ToastMsg & { id: number })[]>([]);
 
   const addToast = (t: ToastMsg) => {
     const id = Date.now();
@@ -249,33 +433,64 @@ export default function AdminSiteSettings() {
     setTimeout(() => setToasts(prev => prev.filter(x => x.id !== id)), 3500);
   };
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'backgrounds', label: 'Page Backgrounds' },
+    { id: 'categories',  label: 'Artist Categories' },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">Site Settings</h1>
         <p className="text-[#555] text-sm mt-1">
-          Configure hero backgrounds for public pages. Images are auto-optimised to WebP.
+          Configure hero backgrounds, artist categories, and global site options.
         </p>
       </div>
 
-      {/* SQL reminder */}
-      <div className="bg-amber-950/20 border border-amber-500/20 rounded-xl px-5 py-4 flex gap-3">
-        <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-amber-400 text-sm font-medium">SQL required</p>
-          <p className="text-amber-500/70 text-xs mt-0.5 font-mono">
-            Run the <span className="text-amber-400">supabase-schema.sql</span> additions in your Supabase SQL Editor if you haven't yet (ALTER TABLE events ADD COLUMN hero_video_url + CREATE TABLE site_settings).
-          </p>
-        </div>
-      </div>
-
-      {/* Page sections */}
-      <div className="grid gap-6 lg:grid-cols-1">
-        {PAGES.map(p => (
-          <PageSection key={p.key} config={p} onToast={addToast} />
+      {/* Tabs */}
+      <div className="flex gap-1 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-1 w-fit">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === tab.id
+                ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
+                : 'text-[#555] hover:text-[#888]'
+            }`}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
+
+      {/* Tab: Backgrounds */}
+      {activeTab === 'backgrounds' && (
+        <div className="space-y-8">
+          <div className="bg-amber-950/20 border border-amber-500/20 rounded-xl px-5 py-4 flex gap-3">
+            <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-amber-400 text-sm font-medium">SQL required</p>
+              <p className="text-amber-500/70 text-xs mt-0.5 font-mono">
+                Run the <span className="text-amber-400">supabase-schema.sql</span> additions in your Supabase SQL Editor if you haven't yet.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-1">
+            {PAGES.map(p => (
+              <PageSection key={p.key} config={p} onToast={addToast} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Artist Categories */}
+      {activeTab === 'categories' && (
+        <ArtistCategoriesTab onToast={addToast} />
+      )}
 
       {/* Toast notifications */}
       <div className="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none">
@@ -288,14 +503,12 @@ export default function AdminSiteSettings() {
                 : 'bg-red-900 border border-red-500/30 text-red-300'
             }`}
           >
-            {t.type === 'success'
-              ? <CheckCircle size={15} />
-              : <AlertCircle size={15} />
-            }
+            {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}
           </div>
         ))}
       </div>
+
     </div>
   );
 }

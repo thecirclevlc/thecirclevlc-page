@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { supabase } from './lib/supabase';
-import type { Artist } from './lib/database.types';
+import type { ArtistWithCategory } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
+import ProfileModal from './components/ProfileModal';
+import AdminToolbar from './components/AdminToolbar';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -33,7 +35,7 @@ const GSAPReveal: React.FC<{
 };
 
 // ── Artist Card ───────────────────────────────────────────────────
-const ArtistCard: React.FC<{ artist: Artist; index: number }> = ({ artist, index }) => {
+const ArtistCard: React.FC<{ artist: ArtistWithCategory; index: number; onClick: () => void }> = ({ artist, index, onClick }) => {
   const cardRef  = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +72,7 @@ const ArtistCard: React.FC<{ artist: Artist; index: number }> = ({ artist, index
   }, [index]);
 
   // Social link icons
-  const socials = artist.social_links as Record<string, string>;
+  const socials = (artist.social_links ?? {}) as Record<string, string>;
   const socialLinks = [
     { key: 'instagram',  label: 'IG' },
     { key: 'soundcloud', label: 'SC' },
@@ -79,7 +81,7 @@ const ArtistCard: React.FC<{ artist: Artist; index: number }> = ({ artist, index
   ].filter(s => socials[s.key]);
 
   return (
-    <div ref={cardRef} className="group cursor-pointer">
+    <div ref={cardRef} className="group cursor-pointer" onClick={onClick}>
       {/* Photo */}
       <div className="relative aspect-[3/4] overflow-hidden bg-black border border-[#C42121]/20">
         <div ref={imageRef} className="w-full h-full">
@@ -132,6 +134,11 @@ const ArtistCard: React.FC<{ artist: Artist; index: number }> = ({ artist, index
         <h3 className="text-xl md:text-2xl font-black text-[#C42121] tracking-tight leading-none uppercase">
           {artist.name}
         </h3>
+        {artist.artist_categories?.name && (
+          <p className="text-xs font-mono text-[#059669]/70 tracking-wider uppercase">
+            {artist.artist_categories.name}
+          </p>
+        )}
         {artist.genres?.length > 0 && (
           <p className="text-sm font-mono text-[#C42121]/50 tracking-wider">
             {artist.genres.join(' · ')}
@@ -159,41 +166,34 @@ const SkeletonArtist: React.FC = () => (
 // ── Main Artists Page ─────────────────────────────────────────────
 export default function Artists() {
   const navigate              = useNavigate();
-  const [artists, setArtists] = useState<Artist[]>([]);
+  const [artists, setArtists] = useState<ArtistWithCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_artists');
-  const heroNumberRef         = useRef<HTMLDivElement>(null);
   const heroTitleRef          = useRef<HTMLDivElement>(null);
+  const [activeArtist, setActiveArtist] = useState<ArtistWithCategory | null>(null);
 
-  // Fetch Artists
+  // Fetch Artists with category join
   useEffect(() => {
     supabase
       .from('artists')
-      .select('*')
+      .select('*, artist_categories(id, name, slug, sort_order)')
       .order('featured', { ascending: false })
       .order('name')
       .then(({ data, error: err }) => {
         if (err) setError(err.message);
-        else if (data) setArtists(data);
+        else if (data) setArtists(data as ArtistWithCategory[]);
         setLoading(false);
       });
   }, []);
 
   // Hero entrance
   useEffect(() => {
-    const number = heroNumberRef.current;
-    const title  = heroTitleRef.current;
-    if (!number || !title) return;
-
-    const tl = gsap.timeline();
-    tl.fromTo(number,
-      { opacity: 0, scale: 0.5, filter: 'blur(20px)' },
-      { opacity: 0.3, scale: 1, filter: 'blur(0px)', duration: 1.5, ease: 'power3.out' }
-    ).fromTo(title.children,
+    const title = heroTitleRef.current;
+    if (!title) return;
+    gsap.fromTo(title.children,
       { opacity: 0, y: 100, rotationX: -90 },
-      { opacity: 1, y: 0, rotationX: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out' },
-      '-=1'
+      { opacity: 1, y: 0, rotationX: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out', delay: 0.3 }
     );
   }, []);
 
@@ -227,12 +227,6 @@ export default function Artists() {
             />
           )}
           <div className="relative z-10 w-full max-w-7xl">
-            <div
-              ref={heroNumberRef}
-              className="text-[#C42121]/30 font-black text-[20vw] md:text-[15vw] leading-none mb-4"
-            >
-              04
-            </div>
             <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase mb-8">
               <div>THE</div>
               <div className="text-[#C42121]">ARTISTS</div>
@@ -245,9 +239,9 @@ export default function Artists() {
           </div>
         </section>
 
-        {/* ── Artists Grid ─────────────────────────────── */}
-        <section className="relative px-6 md:px-20 py-20 md:py-32">
-          <div className="max-w-7xl mx-auto">
+        {/* ── Artists — grouped by category ────────────── */}
+        <section className="relative px-6 md:px-20 py-14 md:py-20">
+          <div className="max-w-7xl mx-auto space-y-12">
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
                 {[1,2,3,4,5,6,7,8].map(i => <SkeletonArtist key={i} />)}
@@ -263,13 +257,75 @@ export default function Artists() {
                 <p className="text-[#C42121]/30 text-sm font-mono mt-3">Check back soon.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
-                {artists.map((artist, index) => (
-                  <ArtistCard key={artist.id} artist={artist} index={index} />
-                ))}
-              </div>
+              /* Group artists by category; uncategorised go last */
+              (() => {
+                // Build category order map
+                const catOrder: Record<string, number> = {};
+                artists.forEach(a => {
+                  if (a.artist_categories) {
+                    catOrder[a.artist_categories.name] = a.artist_categories.sort_order;
+                  }
+                });
+
+                const groups: Record<string, ArtistWithCategory[]> = {};
+                artists.forEach(a => {
+                  const key = a.artist_categories?.name ?? 'Other';
+                  if (!groups[key]) groups[key] = [];
+                  groups[key].push(a);
+                });
+
+                // Sort group keys by category sort_order, "Other" last
+                const sortedKeys = Object.keys(groups).sort((a, b) => {
+                  if (a === 'Other') return 1;
+                  if (b === 'Other') return -1;
+                  return (catOrder[a] ?? 999) - (catOrder[b] ?? 999);
+                });
+
+                return sortedKeys.map(cat => (
+                  <div key={cat}>
+                    <h3 className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-8 border-b border-[#C42121]/10 pb-4">
+                      {cat}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
+                      {groups[cat].map((artist, index) => (
+                        <ArtistCard
+                          key={artist.id}
+                          artist={artist}
+                          index={index}
+                          onClick={() => setActiveArtist(artist)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()
             )}
           </div>
+        </section>
+
+        {/* Profile Modal */}
+        <ProfileModal
+          profile={activeArtist}
+          type="artist"
+          onClose={() => setActiveArtist(null)}
+        />
+
+        {/* ── Cross-link to DJs ────────────────────────── */}
+        <section className="relative px-6 md:px-20 py-20 border-t border-[#C42121]/20">
+          <GSAPReveal delay={0.1}>
+            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-2">Also at The Circle</p>
+                <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">THE DJS</h3>
+              </div>
+              <button
+                className="border border-[#C42121]/40 px-8 py-3 text-sm font-mono tracking-widest text-[#C42121] hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
+                onClick={() => { window.scrollTo(0, 0); setTimeout(() => navigate('/djs'), 50); }}
+              >
+                EXPLORE DJS →
+              </button>
+            </div>
+          </GSAPReveal>
         </section>
 
         {/* ── CTA ─────────────────────────────────────── */}
@@ -308,6 +364,8 @@ export default function Artists() {
             className="hover:text-[#C42121] transition-colors">CONTACT</a>
         </div>
       </footer>
+
+      <AdminToolbar />
     </div>
   );
 }

@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { uploadImage, uploadVideo, deleteVideo } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
-import type { EventInsert } from '../lib/database.types';
+import type { EventInsert, EntityOption } from '../lib/database.types';
 import { ArrowLeft, Upload, X, Loader2, Plus, Check, Film } from 'lucide-react';
+import EntitySelector from './EntitySelector';
 
 // ── helpers ──────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ const TEXTAREA = INPUT + ' resize-none';
 const BLANK: EventInsert = {
   title: '', slug: '', event_number: null, date: null, time: null,
   venue: null, description: null, short_description: null, cover_image_url: null, hero_video_url: null,
-  gallery_images: [], ticket_url: null, lineup: [], tags: [],
+  gallery_images: [], gallery_style: 'default', ticket_url: null, lineup: [], tags: [],
   attendees: null, status: 'draft', featured: false,
 };
 
@@ -43,8 +44,11 @@ export default function AdminEventForm() {
   const [uploadingCover, setUCover]   = useState(false);
   const [uploadingGallery, setUGallery] = useState(false);
   const [uploadingVideo, setUVideo]   = useState(false);
-  const [lineupInput, setLineupInput] = useState('');
   const [tagInput, setTagInput]       = useState('');
+
+  // Entity selectors
+  const [selectedDJs, setSelectedDJs]         = useState<EntityOption[]>([]);
+  const [selectedArtists, setSelectedArtists] = useState<EntityOption[]>([]);
 
   const coverRef   = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -53,13 +57,51 @@ export default function AdminEventForm() {
   // ── load existing event ──────────────────────────────────────
   useEffect(() => {
     if (!isEdit) return;
-    supabase.from('events').select('*').eq('id', id).single().then(({ data }) => {
-      if (data) {
-        const { id: _, created_at, updated_at, ...rest } = data;
+    const fetchEvent = async () => {
+      // Load event base data
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (eventData) {
+        const { id: _, created_at, updated_at, ...rest } = eventData;
         setForm({ ...BLANK, ...rest });
       }
+
+      // Load existing DJ joins
+      const { data: djRows } = await supabase
+        .from('event_djs')
+        .select('dj_id, sort_order, djs(id, name, photo_url)')
+        .eq('event_id', id)
+        .order('sort_order');
+
+      if (djRows) {
+        const djs = djRows
+          .map((r: any) => r.djs)
+          .filter(Boolean) as EntityOption[];
+        setSelectedDJs(djs);
+      }
+
+      // Load existing Artist joins
+      const { data: artistRows } = await supabase
+        .from('event_artists')
+        .select('artist_id, sort_order, artists(id, name, photo_url)')
+        .eq('event_id', id)
+        .order('sort_order');
+
+      if (artistRows) {
+        const artists = artistRows
+          .map((r: any) => r.artists)
+          .filter(Boolean) as EntityOption[];
+        setSelectedArtists(artists);
+      }
+
       setLoading(false);
-    });
+    };
+
+    fetchEvent();
   }, [id]);
 
   // ── field setter ─────────────────────────────────────────────
@@ -120,15 +162,7 @@ export default function AdminEventForm() {
     } finally { setUGallery(false); }
   }
 
-  // ── lineup / tags helpers ────────────────────────────────────
-  function addLineup() {
-    if (!lineupInput.trim()) return;
-    set('lineup', [...(form.lineup ?? []), lineupInput.trim()]);
-    setLineupInput('');
-  }
-  function removeLineup(i: number) {
-    set('lineup', (form.lineup ?? []).filter((_, idx) => idx !== i));
-  }
+  // ── tags helpers ─────────────────────────────────────────────
   function addTag() {
     if (!tagInput.trim()) return;
     set('tags', [...(form.tags ?? []), tagInput.trim()]);
@@ -141,6 +175,33 @@ export default function AdminEventForm() {
     set('gallery_images', (form.gallery_images ?? []).filter((_, idx) => idx !== i));
   }
 
+  // ── sync join tables ──────────────────────────────────────────
+  async function syncJoins(eventId: string) {
+    // DJs: delete all then insert selected in order
+    await supabase.from('event_djs').delete().eq('event_id', eventId);
+    if (selectedDJs.length > 0) {
+      const djRows = selectedDJs.map((dj, idx) => ({
+        event_id: eventId,
+        dj_id: dj.id,
+        sort_order: idx,
+      }));
+      const { error } = await supabase.from('event_djs').insert(djRows);
+      if (error) throw error;
+    }
+
+    // Artists: delete all then insert selected in order
+    await supabase.from('event_artists').delete().eq('event_id', eventId);
+    if (selectedArtists.length > 0) {
+      const artistRows = selectedArtists.map((artist, idx) => ({
+        event_id: eventId,
+        artist_id: artist.id,
+        sort_order: idx,
+      }));
+      const { error } = await supabase.from('event_artists').insert(artistRows);
+      if (error) throw error;
+    }
+  }
+
   // ── save ─────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,10 +211,12 @@ export default function AdminEventForm() {
       if (isEdit) {
         const { error } = await supabase.from('events').update(form).eq('id', id!);
         if (error) throw error;
+        await syncJoins(id!);
         showToast('Event saved!', 'ok');
       } else {
-        const { error } = await supabase.from('events').insert(form);
+        const { data, error } = await supabase.from('events').insert(form).select('id').single();
         if (error) throw error;
+        await syncJoins(data.id);
         showToast('Event created!', 'ok');
         setTimeout(() => navigate('/admin/events'), 1200);
       }
@@ -286,6 +349,42 @@ export default function AdminEventForm() {
           </Field>
         </section>
 
+        {/* ── LINEUP ──────────────────────────────────────── */}
+        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-5">
+          <div>
+            <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Lineup</p>
+            <p className="text-[#333] text-xs mt-1 font-mono">
+              Select DJs and Artists from the database. They'll appear with full profiles on the event page.
+            </p>
+          </div>
+
+          {/* DJs Selector */}
+          <div>
+            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">DJs</label>
+            <EntitySelector
+              table="djs"
+              selected={selectedDJs}
+              onChange={setSelectedDJs}
+              createLink="/admin/djs/new"
+              label="DJs"
+              accentColor="#C42121"
+            />
+          </div>
+
+          {/* Artists Selector */}
+          <div>
+            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Artists</label>
+            <EntitySelector
+              table="artists"
+              selected={selectedArtists}
+              onChange={setSelectedArtists}
+              createLink="/admin/artists/new"
+              label="Artists"
+              accentColor="#059669"
+            />
+          </div>
+        </section>
+
         {/* ── IMAGES ─────────────────────────────────────── */}
         <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-5">
           <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Images</p>
@@ -381,64 +480,57 @@ export default function AdminEventForm() {
             </div>
             <input ref={galleryRef} type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" />
           </Field>
+
+          {/* Gallery Style Toggle */}
+          <Field label="Gallery Style">
+            <div className="flex gap-3">
+              {([
+                { value: 'default',    label: 'Default Grid',        desc: 'Standard photo grid' },
+                { value: 'horizontal', label: 'Horizontal Parallax', desc: '2-row scroll effect' },
+              ] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => set('gallery_style', opt.value)}
+                  className={`flex-1 text-left px-4 py-3 rounded-lg border text-sm transition-all ${
+                    form.gallery_style === opt.value
+                      ? 'border-[#C42121]/50 bg-[#C42121]/10 text-white'
+                      : 'border-[#1e1e1e] bg-[#0d0d0d] text-[#555] hover:border-[#2a2a2a] hover:text-[#888]'
+                  }`}
+                >
+                  <div className="font-medium">{opt.label}</div>
+                  <div className="text-xs mt-0.5 text-[#333]">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          </Field>
         </section>
 
-        {/* ── LINEUP & TAGS ────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-5">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Lineup & Tags</p>
+        {/* ── TAGS ─────────────────────────────────────────── */}
+        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
+          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Tags</p>
 
-          {/* Lineup */}
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Lineup</label>
-            <div className="flex flex-wrap gap-2 mb-2.5">
-              {(form.lineup ?? []).map((item, i) => (
-                <span key={i} className="flex items-center gap-1.5 bg-[#1a1a1a] border border-[#222] rounded-full px-3 py-1 text-sm text-white">
-                  {item}
-                  <button type="button" onClick={() => removeLineup(i)} className="text-[#444] hover:text-red-400 transition-colors ml-0.5">
-                    <X size={11} />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text" value={lineupInput}
-                onChange={e => setLineupInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLineup(); }}}
-                className={INPUT + ' flex-1'} placeholder="DJ name or act…"
-              />
-              <button type="button" onClick={addLineup}
-                className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
-                Add
-              </button>
-            </div>
+          <div className="flex flex-wrap gap-2 mb-2.5">
+            {(form.tags ?? []).map((tag, i) => (
+              <span key={i} className="flex items-center gap-1.5 bg-[#C42121]/10 border border-[#C42121]/20 rounded-full px-3 py-1 text-xs text-[#C42121]">
+                {tag}
+                <button type="button" onClick={() => removeTag(i)} className="hover:text-red-300 transition-colors">
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
           </div>
-
-          {/* Tags */}
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Tags</label>
-            <div className="flex flex-wrap gap-2 mb-2.5">
-              {(form.tags ?? []).map((tag, i) => (
-                <span key={i} className="flex items-center gap-1.5 bg-[#C42121]/10 border border-[#C42121]/20 rounded-full px-3 py-1 text-xs text-[#C42121]">
-                  {tag}
-                  <button type="button" onClick={() => removeTag(i)} className="hover:text-red-300 transition-colors">
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text" value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); }}}
-                className={INPUT + ' flex-1'} placeholder="Electronic, Immersive…"
-              />
-              <button type="button" onClick={addTag}
-                className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
-                Add
-              </button>
-            </div>
+          <div className="flex gap-2">
+            <input
+              type="text" value={tagInput}
+              onChange={e => setTagInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); }}}
+              className={INPUT + ' flex-1'} placeholder="Electronic, Immersive…"
+            />
+            <button type="button" onClick={addTag}
+              className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
+              Add
+            </button>
           </div>
         </section>
 
@@ -471,7 +563,7 @@ export default function AdminEventForm() {
             <button
               type="button"
               onClick={() => set('featured', !form.featured)}
-              className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${form.featured ? 'bg-[#C42121]' : 'bg-[#1e1e1e] border border-[#2a2a2a]'}`}
+              className={`relative rounded-full transition-colors flex-shrink-0 ${form.featured ? 'bg-[#C42121]' : 'bg-[#1e1e1e] border border-[#2a2a2a]'}`}
               style={{ height: '22px', width: '40px' }}
             >
               <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-transform ${form.featured ? 'translate-x-[20px]' : 'translate-x-[3px]'}`} />

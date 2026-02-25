@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { uploadImage } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
-import type { ArtistInsert } from '../lib/database.types';
+import type { ArtistInsert, ArtistCategory } from '../lib/database.types';
 import { ArrowLeft, Upload, X, Loader2, Check } from 'lucide-react';
 
 const INPUT    = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
@@ -11,7 +11,7 @@ const TEXTAREA = INPUT + ' resize-none';
 
 const BLANK: ArtistInsert = {
   name: '', slug: '', bio: null, photo_url: null,
-  genres: [], social_links: {}, featured: false,
+  genres: [], social_links: {}, featured: false, category_id: null,
 };
 
 export default function AdminArtistForm() {
@@ -19,14 +19,26 @@ export default function AdminArtistForm() {
   const navigate = useNavigate();
   const isEdit   = !!id;
 
-  const [form, setForm]           = useState<ArtistInsert>(BLANK);
-  const [loading, setLoading]     = useState(isEdit);
-  const [saving, setSaving]       = useState(false);
-  const [toast, setToast]         = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [genreInput, setGenreInput] = useState('');
+  const [form, setForm]               = useState<ArtistInsert>(BLANK);
+  const [loading, setLoading]         = useState(isEdit);
+  const [saving, setSaving]           = useState(false);
+  const [toast, setToast]             = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+  const [uploading, setUploading]     = useState(false);
+  const [genreInput, setGenreInput]   = useState('');
+  const [categories, setCategories]   = useState<ArtistCategory[]>([]);
 
   const photoRef = useRef<HTMLInputElement>(null);
+
+  // Load categories on mount
+  useEffect(() => {
+    supabase
+      .from('artist_categories')
+      .select('*')
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data) setCategories(data as ArtistCategory[]);
+      });
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -179,9 +191,62 @@ export default function AdminArtistForm() {
           </div>
         </section>
 
+        {/* ── CATEGORY ────────────────────────────────────── */}
+        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
+          <div>
+            <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Discipline Category</p>
+            <p className="text-[#333] text-xs mt-1 font-mono">
+              Groups this artist in the public Artists page. Manage categories in Site Settings → Artist Categories.
+            </p>
+          </div>
+
+          {categories.length === 0 ? (
+            <p className="text-[#444] text-sm italic">
+              No categories yet.{' '}
+              <a
+                href="/admin/settings"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#059669] hover:underline"
+              >
+                Create categories in Site Settings →
+              </a>
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {/* "None" option */}
+              <button
+                type="button"
+                onClick={() => set('category_id', null)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                  form.category_id === null
+                    ? 'border-[#059669]/50 bg-[#059669]/10 text-[#34d399]'
+                    : 'border-[#1e1e1e] bg-[#0d0d0d] text-[#555] hover:border-[#2a2a2a] hover:text-[#888]'
+                }`}
+              >
+                None
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => set('category_id', cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                    form.category_id === cat.id
+                      ? 'border-[#059669]/50 bg-[#059669]/10 text-[#34d399]'
+                      : 'border-[#1e1e1e] bg-[#0d0d0d] text-[#555] hover:border-[#2a2a2a] hover:text-[#888]'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* ── GENRES ──────────────────────────────────────── */}
         <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Genres</p>
+          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Genres / Disciplines</p>
           <div className="flex flex-wrap gap-2">
             {(form.genres ?? []).map((g, i) => (
               <span key={i} className="flex items-center gap-1.5 bg-[#059669]/10 border border-[#059669]/20 rounded-full px-3 py-1 text-xs text-[#34d399]">
@@ -194,7 +259,7 @@ export default function AdminArtistForm() {
             <input type="text" value={genreInput}
               onChange={e => setGenreInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGenre(); }}}
-              className={INPUT + ' flex-1'} placeholder="Electronic, Live Performance…" />
+              className={INPUT + ' flex-1'} placeholder="Photography, Painting…" />
             <button type="button" onClick={addGenre}
               className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
               Add

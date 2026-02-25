@@ -5,6 +5,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 import { StandardHeader } from './StandardHeader';
+import { useSiteTheme } from './hooks/useSiteTheme';
+import AdminToolbar from './components/AdminToolbar';
 // import { CustomCursor } from './CustomCursor';
 
 // Register GSAP plugins
@@ -491,6 +493,7 @@ const ManifestoSection: React.FC = () => {
 
 // --- Main App ---
 export default function TheCircleApp() {
+  useSiteTheme(); // applies --color-primary and --color-bg CSS vars globally
   const navigate = useNavigate();
   const { scrollY } = useScroll();
   const rotation = useMotionValue(0);
@@ -725,6 +728,8 @@ export default function TheCircleApp() {
           </a>
         </div>
       </footer>
+
+      <AdminToolbar />
 
       <style>{`
         /* Glitch Animation */
