@@ -7,6 +7,7 @@ import type { DJ } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
+import { useSiteContent } from './hooks/useSiteContent';
 import ProfileModal from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
 
@@ -165,8 +166,14 @@ export default function DJs() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_djs');
+  const { title: heroTitle, subtitle: heroSubtitle } = useSiteContent('content_djs_hero');
   const heroTitleRef      = useRef<HTMLDivElement>(null);
   const [activeDJ, setActiveDJ] = useState<DJ | null>(null);
+
+  // Split title into "THE" + "DJS" style (rest + last word in red)
+  const heroWords = heroTitle.trim().split(' ');
+  const heroLast  = heroWords.length > 1 ? (heroWords.pop() ?? '') : heroTitle;
+  const heroRest  = heroWords.join(' ');
 
   // Fetch DJs
   useEffect(() => {
@@ -223,12 +230,12 @@ export default function DJs() {
           )}
           <div className="relative z-10 w-full max-w-7xl">
             <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase mb-8">
-              <div>THE</div>
-              <div className="text-[#C42121]">DJS</div>
+              {heroRest && <div>{heroRest}</div>}
+              <div className="text-[#C42121]">{heroLast}</div>
             </div>
             <GSAPReveal delay={0.6}>
               <p className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide">
-                The selectors who define The Circle. Each set a journey, each night a collective experience.
+                {heroSubtitle}
               </p>
             </GSAPReveal>
           </div>

@@ -7,6 +7,7 @@ import type { Event as DBEvent } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
+import { useSiteContent } from './hooks/useSiteContent';
 import AdminToolbar from './components/AdminToolbar';
 
 // Adapts Supabase event to the shape EventCard expects
@@ -271,8 +272,13 @@ export default function PastEvents() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const { bgUrl, bgType }         = usePageBackground('page_events');
+  const { title: heroTitle, subtitle: heroSubtitle } = useSiteContent('content_events_hero');
   const logoRef         = useRef<HTMLDivElement>(null);
   const heroTitleRef    = useRef<HTMLDivElement>(null);
+
+  const heroWords = heroTitle.trim().split(' ');
+  const heroLast  = heroWords.length > 1 ? (heroWords.pop() ?? '') : heroTitle;
+  const heroRest  = heroWords.join(' ');
 
   // Fetch published events from Supabase
   useEffect(() => {
@@ -350,15 +356,15 @@ export default function PastEvents() {
           <div className="relative z-10 w-full max-w-7xl">
             <div className="flex items-center gap-8 md:gap-16 mb-8">
               <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase flex-1">
-                <div>PAST</div>
-                <div className="text-[#C42121]">EVENTS</div>
+                {heroRest && <div>{heroRest}</div>}
+                <div className="text-[#C42121]">{heroLast}</div>
               </div>
             </div>
 
             {/* Subtitle */}
             <GSAPReveal delay={0.6}>
               <p className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide">
-                Each event is a unique moment in time. Explore the gatherings that shaped The Circle.
+                {heroSubtitle}
               </p>
             </GSAPReveal>
           </div>

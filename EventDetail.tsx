@@ -9,6 +9,7 @@ import HeroMedia from './components/HeroMedia';
 import ImageLightbox from './components/ImageLightbox';
 import ProfileModal, { type ProfileType } from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
+import HorizontalGallery from './components/HorizontalGallery';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -72,21 +73,18 @@ const ImageGallery: React.FC<{ images: string[]; onImageClick: (index: number) =
   </div>
 );
 
-// ── Name Row — text-only, hover reveals a floating photo ──────────
-
-interface HoverImg { url: string; x: number; y: number }
+// ── Name Row — text-only, hover pop (no cursor tracking = no lag) ─
 
 const NameRow: React.FC<{
   name: string;
   photo_url: string | null;
   subtitle?: string;
-  onSetHover: (h: HoverImg | null) => void;
+  onSetHover: (url: string | null) => void;
   onClick: () => void;
 }> = ({ name, photo_url, subtitle, onSetHover, onClick }) => (
   <div
     className="group cursor-pointer flex items-baseline justify-between gap-3 py-3 border-b border-[#C42121]/10 hover:border-[#C42121]/40 transition-colors duration-200"
-    onMouseEnter={e => { if (photo_url) onSetHover({ url: photo_url, x: e.clientX, y: e.clientY }); }}
-    onMouseMove={e => { if (photo_url) onSetHover({ url: photo_url, x: e.clientX, y: e.clientY }); }}
+    onMouseEnter={() => { if (photo_url) onSetHover(photo_url); }}
     onMouseLeave={() => onSetHover(null)}
     onClick={onClick}
   >
@@ -130,8 +128,8 @@ export default function EventDetail() {
   const [activeProfile, setActiveProfile]   = useState<DJ | ArtistWithCategory | null>(null);
   const [activeType, setActiveType]         = useState<ProfileType>('dj');
 
-  // Hover image (follows cursor)
-  const [hoverImg, setHoverImg] = useState<HoverImg | null>(null);
+  // Hover image — fixed position pop (no cursor tracking, no lag)
+  const [hoveredUrl, setHoveredUrl] = useState<string | null>(null);
 
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -372,8 +370,8 @@ export default function EventDetail() {
                         name={dj.name}
                         subtitle={dj.genres?.slice(0, 2).join(' · ')}
                         photo_url={dj.photo_url}
-                        onSetHover={setHoverImg}
-                        onClick={() => { setHoverImg(null); setActiveType('dj'); setActiveProfile(dj); }}
+                        onSetHover={setHoveredUrl}
+                        onClick={() => { setHoveredUrl(null); setActiveType('dj'); setActiveProfile(dj); }}
                       />
                     ))}
                     {/* Legacy text fallback */}
@@ -397,8 +395,8 @@ export default function EventDetail() {
                         name={artist.name}
                         subtitle={artist.artist_categories?.name ?? (artist.genres?.slice(0, 1).join('') ?? undefined)}
                         photo_url={artist.photo_url}
-                        onSetHover={setHoverImg}
-                        onClick={() => { setHoverImg(null); setActiveType('artist'); setActiveProfile(artist); }}
+                        onSetHover={setHoveredUrl}
+                        onClick={() => { setHoveredUrl(null); setActiveType('artist'); setActiveProfile(artist); }}
                       />
                     ))}
                   </div>
@@ -409,19 +407,13 @@ export default function EventDetail() {
           </div>
         </section>
 
-        {/* ── Floating hover image (follows cursor on desktop) ── */}
-        {hoverImg && (
-          <div
-            className="fixed pointer-events-none z-[200] w-44 h-56 overflow-hidden border border-[#C42121]/30 shadow-2xl"
-            style={{
-              left:      hoverImg.x + 24,
-              top:       hoverImg.y,
-              transform: 'translateY(-40%)',
-              transition: 'left 0.05s linear, top 0.05s linear',
-            }}
-          >
+        {/* ── Hover image — fixed pop, no cursor tracking ─── */}
+        {hoveredUrl && (
+          <div className="fixed right-10 top-1/2 -translate-y-1/2 pointer-events-none z-[200]
+                          w-48 h-60 overflow-hidden border border-[#C42121]/30 shadow-2xl
+                          hidden md:block">
             <img
-              src={hoverImg.url}
+              src={hoveredUrl}
               alt=""
               className="w-full h-full object-cover"
               style={{ filter: 'brightness(0.75)' }}
@@ -430,11 +422,21 @@ export default function EventDetail() {
           </div>
         )}
 
-        {/* ── Image Gallery ──────────────────────────────── */}
+        {/* ── Image Gallery (default vertical / horizontal parallax) ── */}
         {galleryImages.length > 0 && (
           <section className="relative px-6 md:px-20 py-20 md:py-32 border-t border-[#C42121]/20">
             <div className="max-w-7xl mx-auto">
-              <ImageGallery images={galleryImages} onImageClick={(index) => setLightboxIndex(index)} />
+              {event.gallery_style === 'horizontal' ? (
+                <HorizontalGallery
+                  images={galleryImages}
+                  onImageClick={idx => setLightboxIndex(idx)}
+                />
+              ) : (
+                <ImageGallery
+                  images={galleryImages}
+                  onImageClick={idx => setLightboxIndex(idx)}
+                />
+              )}
             </div>
           </section>
         )}

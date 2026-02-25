@@ -7,6 +7,7 @@ import type { ArtistWithCategory } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
+import { useSiteContent } from './hooks/useSiteContent';
 import ProfileModal from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
 
@@ -170,8 +171,13 @@ export default function Artists() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_artists');
+  const { title: heroTitle, subtitle: heroSubtitle } = useSiteContent('content_artists_hero');
   const heroTitleRef          = useRef<HTMLDivElement>(null);
   const [activeArtist, setActiveArtist] = useState<ArtistWithCategory | null>(null);
+
+  const heroWords = heroTitle.trim().split(' ');
+  const heroLast  = heroWords.length > 1 ? (heroWords.pop() ?? '') : heroTitle;
+  const heroRest  = heroWords.join(' ');
 
   // Fetch Artists with category join
   useEffect(() => {
@@ -228,12 +234,12 @@ export default function Artists() {
           )}
           <div className="relative z-10 w-full max-w-7xl">
             <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase mb-8">
-              <div>THE</div>
-              <div className="text-[#C42121]">ARTISTS</div>
+              {heroRest && <div>{heroRest}</div>}
+              <div className="text-[#C42121]">{heroLast}</div>
             </div>
             <GSAPReveal delay={0.6}>
               <p className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide">
-                The performers who bring The Circle to life. Each artist a world, each night a shared journey.
+                {heroSubtitle}
               </p>
             </GSAPReveal>
           </div>
