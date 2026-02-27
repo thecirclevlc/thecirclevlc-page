@@ -10,30 +10,11 @@ import { usePageBackground } from './hooks/usePageBackground';
 import { useSiteContent } from './hooks/useSiteContent';
 import ProfileModal from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
+import PageShell from './components/PageShell';
+import Footer from './components/Footer';
+import GSAPReveal from './components/GSAPReveal';
 
 gsap.registerPlugin(ScrollTrigger);
-
-// ── GSAP scroll reveal ────────────────────────────────────────────
-const GSAPReveal: React.FC<{
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}> = ({ children, delay = 0, className = '' }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(el,
-        { opacity: 0, y: 80, filter: 'blur(10px)' },
-        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.4, delay, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' } }
-      );
-    }, el);
-    return () => ctx.revert();
-  }, [delay]);
-  return <div ref={ref} className={className}>{children}</div>;
-};
 
 // ── DJ Card ───────────────────────────────────────────────────────
 const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, index, onClick }) => {
@@ -45,7 +26,6 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
     const image = imageRef.current;
     if (!card || !image) return;
 
-    // Wrap ScrollTrigger animation in context for proper cleanup on unmount
     const ctx = gsap.context(() => {
       gsap.fromTo(card,
         { opacity: 0, y: 80, scale: 0.95 },
@@ -54,7 +34,6 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
       );
     }, card);
 
-    // Hover
     const enter = () => {
       gsap.to(card,  { y: -10, duration: 0.5, ease: 'power2.out' });
       gsap.to(image, { scale: 1.08, duration: 0.7, ease: 'power2.out' });
@@ -66,13 +45,12 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
     card.addEventListener('mouseenter', enter);
     card.addEventListener('mouseleave', leave);
     return () => {
-      ctx.revert(); // kills ScrollTrigger + tweens automatically
+      ctx.revert();
       card.removeEventListener('mouseenter', enter);
       card.removeEventListener('mouseleave', leave);
     };
   }, [index]);
 
-  // Social link icons
   const socials = dj.social_links as Record<string, string>;
   const socialLinks = [
     { key: 'instagram',  label: 'IG' },
@@ -83,7 +61,6 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
 
   return (
     <div ref={cardRef} className="group cursor-pointer" onClick={onClick}>
-      {/* Photo */}
       <div className="relative aspect-[3/4] overflow-hidden bg-black border border-[#C42121]/20">
         <div ref={imageRef} className="w-full h-full">
           {dj.photo_url ? (
@@ -101,17 +78,14 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
             </div>
           )}
         </div>
-        {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
-        {/* Featured badge */}
         {dj.featured && (
           <div className="absolute top-4 right-4 text-[10px] font-mono tracking-widest border border-[#C42121]/50 px-2 py-1 text-[#C42121]/80 uppercase">
             FEATURED
           </div>
         )}
 
-        {/* Social links on hover */}
         {socialLinks.length > 0 && (
           <div className="absolute bottom-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             {socialLinks.map(s => (
@@ -130,7 +104,6 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
         )}
       </div>
 
-      {/* Info */}
       <div className="mt-5 space-y-2">
         <h3 className="text-xl md:text-2xl font-black text-[#C42121] tracking-tight leading-none uppercase">
           {dj.name}
@@ -148,7 +121,6 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
   );
 };
 
-// ── Skeleton card ─────────────────────────────────────────────────
 const SkeletonDJ: React.FC = () => (
   <div className="animate-pulse">
     <div className="aspect-[3/4] bg-[#0d0000] border border-[#C42121]/10" />
@@ -170,12 +142,15 @@ export default function DJs() {
   const heroTitleRef      = useRef<HTMLDivElement>(null);
   const [activeDJ, setActiveDJ] = useState<DJ | null>(null);
 
-  // Split title into "THE" + "DJS" style (rest + last word in red)
   const heroWords = heroTitle.trim().split(' ');
   const heroLast  = heroWords.length > 1 ? (heroWords.pop() ?? '') : heroTitle;
   const heroRest  = heroWords.join(' ');
 
-  // Fetch DJs
+  const handleNav = (path: string) => {
+    window.scrollTo(0, 0);
+    setTimeout(() => navigate(path), 50);
+  };
+
   useEffect(() => {
     supabase
       .from('djs')
@@ -189,7 +164,6 @@ export default function DJs() {
       });
   }, []);
 
-  // Hero entrance
   useEffect(() => {
     const title = heroTitleRef.current;
     if (!title) return;
@@ -200,21 +174,7 @@ export default function DJs() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black">
-
-      {/* Noise overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.03] z-[1] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-        }}
-      />
-      {/* Vignette */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[1]"
-        style={{ background: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%)' }}
-      />
-
+    <PageShell>
       <StandardHeader />
 
       <div className="relative z-10 pt-16 md:pt-20">
@@ -259,7 +219,6 @@ export default function DJs() {
                 <p className="text-[#C42121]/30 text-sm font-mono mt-3">Check back soon.</p>
               </div>
             ) : (
-              /* Group DJs by first genre; ungrouped DJs go under "Other" */
               (() => {
                 const groups: Record<string, DJ[]> = {};
                 djs.forEach(dj => {
@@ -311,9 +270,27 @@ export default function DJs() {
               </div>
               <button
                 className="border border-[#C42121]/40 px-8 py-3 text-sm font-mono tracking-widest text-[#C42121] hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
-                onClick={() => { window.scrollTo(0, 0); setTimeout(() => navigate('/artists'), 50); }}
+                onClick={() => handleNav('/artists')}
               >
-                EXPLORE ARTISTS →
+                EXPLORE ARTISTS &rarr;
+              </button>
+            </div>
+          </GSAPReveal>
+        </section>
+
+        {/* ── Cross-link to Events ─────────────────────── */}
+        <section className="relative px-6 md:px-20 py-20 border-t border-[#C42121]/20">
+          <GSAPReveal delay={0.1}>
+            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-2">Where they play</p>
+                <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">THE EVENTS</h3>
+              </div>
+              <button
+                className="border border-[#C42121]/40 px-8 py-3 text-sm font-mono tracking-widest text-[#C42121] hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
+                onClick={() => handleNav('/past-events')}
+              >
+                VIEW EVENTS &rarr;
               </button>
             </div>
           </GSAPReveal>
@@ -333,7 +310,7 @@ export default function DJs() {
               </p>
               <button
                 className="bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] transition-all duration-300 cursor-pointer"
-                onClick={() => { window.scrollTo(0, 0); setTimeout(() => navigate('/form'), 50); }}
+                onClick={() => handleNav('/form')}
               >
                 APPLY NOW
               </button>
@@ -343,20 +320,8 @@ export default function DJs() {
 
       </div>
 
+      <Footer />
       <AdminToolbar />
-
-      {/* Footer */}
-      <footer className="relative w-full px-6 md:px-8 py-6 md:py-8 flex justify-between items-center border-t border-[#C42121]/10 text-[#f5f5f0]/50">
-        <div className="text-sm md:text-base tracking-wider uppercase font-mono">© 2026 THE CIRCLE</div>
-        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
-          <a href="https://www.aliastudio.cc/" target="_blank" rel="noopener noreferrer"
-            className="hover:text-[#C42121] transition-colors">BY ALIA</a>
-        </div>
-        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
-          <a href="mailto:contact@thecirclevlc.com"
-            className="hover:text-[#C42121] transition-colors">CONTACT</a>
-        </div>
-      </footer>
-    </div>
+    </PageShell>
   );
 }

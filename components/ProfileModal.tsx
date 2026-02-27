@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { supabase } from '../lib/supabase';
-import type { DJ, Artist, ArtistWithCategory, Event as DBEvent } from '../lib/database.types';
-import { X, Instagram, ExternalLink, Music, Globe } from 'lucide-react';
+import type { DJ, ArtistWithCategory, Event as DBEvent } from '../lib/database.types';
+import { X, Instagram, Music, Globe } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -35,9 +36,10 @@ function SocialLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-// ── Appeared-in events ─────────────────────────────────────────────
+// ── Appeared-in events (now clickable) ────────────────────────────
 
-function AppearedIn({ profileId, type }: { profileId: string; type: ProfileType }) {
+function AppearedIn({ profileId, type, onClose }: { profileId: string; type: ProfileType; onClose: () => void }) {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Pick<DBEvent, 'id' | 'title' | 'slug' | 'date' | 'event_number'>[]>([]);
 
   useEffect(() => {
@@ -62,25 +64,45 @@ function AppearedIn({ profileId, type }: { profileId: string; type: ProfileType 
 
   if (events.length === 0) return null;
 
+  const handleEventClick = (slug: string) => {
+    onClose();
+    window.scrollTo(0, 0);
+    setTimeout(() => navigate(`/past-events/${slug}`), 300);
+  };
+
   return (
     <div className="mt-8">
       <h4 className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-3">APPEARED IN</h4>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {events.map(ev => (
-          <div key={ev.id} className="flex items-center gap-3 text-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C42121]/40 flex-shrink-0" />
-            <span className="text-[#C42121]/80 font-medium">{ev.title}</span>
+          <button
+            key={ev.id}
+            onClick={() => handleEventClick(ev.slug)}
+            className="w-full flex items-center gap-3 text-sm py-2.5 px-3 -mx-3 rounded hover:bg-[#C42121]/5 transition-colors cursor-pointer group text-left"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C42121]/40 group-hover:bg-[#C42121] flex-shrink-0 transition-colors" />
+            <span className="text-[#C42121]/80 font-medium group-hover:text-white transition-colors">{ev.title}</span>
             {ev.event_number && (
               <span className="text-[#C42121]/40 text-xs font-mono">{ev.event_number}</span>
             )}
             {ev.date && (
-              <span className="text-[#C42121]/30 text-xs font-mono ml-auto">
+              <span className="text-[#C42121]/30 text-xs font-mono ml-auto flex-shrink-0">
                 {new Date(ev.date + 'T00:00:00').getFullYear()}
               </span>
             )}
-          </div>
+          </button>
         ))}
       </div>
+      <button
+        onClick={() => {
+          onClose();
+          window.scrollTo(0, 0);
+          setTimeout(() => navigate('/past-events'), 300);
+        }}
+        className="mt-4 text-xs font-mono text-[#C42121]/40 hover:text-[#C42121] tracking-widest uppercase transition-colors cursor-pointer"
+      >
+        View all Events &rarr;
+      </button>
     </div>
   );
 }
@@ -122,7 +144,6 @@ export default function ProfileModal({ profile, type, onClose }: ProfileModalPro
 
   const genres: string[] = profile?.genres ?? [];
 
-  // Category label for artists
   const categoryName = type === 'artist'
     ? (profile as ArtistWithCategory)?.artist_categories?.name ?? null
     : null;
@@ -191,7 +212,7 @@ export default function ProfileModal({ profile, type, onClose }: ProfileModalPro
               {(categoryName || genres.length > 0) && (
                 <div className="profile-item flex flex-wrap gap-2">
                   {categoryName && (
-                    <span className="text-xs font-mono px-3 py-1 border border-[#059669]/40 text-[#34d399] uppercase tracking-wider">
+                    <span className="text-xs font-mono px-3 py-1 border border-[#C42121]/40 text-[#C42121] bg-[#C42121]/5 uppercase tracking-wider">
                       {categoryName}
                     </span>
                   )}
@@ -222,9 +243,9 @@ export default function ProfileModal({ profile, type, onClose }: ProfileModalPro
               {/* Divider */}
               <div className="profile-item border-t border-[#C42121]/10" />
 
-              {/* Appeared In */}
+              {/* Appeared In — now clickable */}
               <div className="profile-item">
-                <AppearedIn profileId={profile.id} type={type} />
+                <AppearedIn profileId={profile.id} type={type} onClose={onClose} />
               </div>
 
             </div>

@@ -10,6 +10,8 @@ import ImageLightbox from './components/ImageLightbox';
 import ProfileModal, { type ProfileType } from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
 import HorizontalGallery from './components/HorizontalGallery';
+import PageShell from './components/PageShell';
+import Footer from './components/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -115,23 +117,25 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
 
   const [event, setEvent]       = useState<DBEvent | null>(null);
-  const [nextEvent, setNext]    = useState<DBEvent | null>(null);
+  const [nextEvent, setNext]    = useState<Pick<DBEvent, 'id' | 'title' | 'slug' | 'event_number' | 'cover_image_url' | 'date'> | null>(null);
   const [loading, setLoading]   = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // DJ / Artist join data
   const [eventDJs, setEventDJs]           = useState<DJ[]>([]);
   const [eventArtists, setEventArtists]   = useState<ArtistWithCategory[]>([]);
 
-  // Profile modal
   const [activeProfile, setActiveProfile]   = useState<DJ | ArtistWithCategory | null>(null);
   const [activeType, setActiveType]         = useState<ProfileType>('dj');
 
-  // Hover image — fixed position pop (no cursor tracking, no lag)
   const [hoveredUrl, setHoveredUrl] = useState<string | null>(null);
 
   const heroRef = useRef<HTMLDivElement>(null);
+
+  const handleNav = (path: string) => {
+    window.scrollTo(0, 0);
+    setTimeout(() => navigate(path), 50);
+  };
 
   // ── Fetch event + joins ────────────────────────────────────────
   useEffect(() => {
@@ -140,9 +144,7 @@ export default function EventDetail() {
     setNotFound(false);
 
     Promise.all([
-      // Base event
       supabase.from('events').select('*').eq('slug', eventId).single(),
-      // Next event
       supabase
         .from('events')
         .select('id,title,slug,event_number,cover_image_url,date')
@@ -155,7 +157,6 @@ export default function EventDetail() {
       setEvent(eventData);
       setNext(nextData?.[0] ?? null);
 
-      // Fetch DJ and Artist joins in parallel
       Promise.all([
         supabase
           .from('event_djs')
@@ -245,11 +246,10 @@ export default function EventDetail() {
 
   const coverImage    = event.cover_image_url ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&h=800&fit=crop';
   const galleryImages = event.gallery_images ?? [];
-  // Legacy lineup fallback: show if no join data
   const showLegacyLineup = eventDJs.length === 0 && eventArtists.length === 0 && (event.lineup ?? []).length > 0;
 
   return (
-    <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black">
+    <PageShell>
 
       {/* Image Lightbox */}
       <ImageLightbox
@@ -266,15 +266,6 @@ export default function EventDetail() {
         onClose={() => setActiveProfile(null)}
       />
 
-      {/* Noise Overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.03] z-[1] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-        }}
-      />
-      <div className="fixed inset-0 pointer-events-none z-[1]" style={{ background: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%)' }} />
-
       <StandardHeader />
 
       <div className="relative z-10 pt-16 md:pt-20">
@@ -288,6 +279,18 @@ export default function EventDetail() {
             priority
           />
           <div className="relative z-10 w-full px-6 md:px-20 pb-20 md:pb-32">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-xs font-mono text-[#C42121]/40 tracking-wider mb-6">
+              <button
+                onClick={() => handleNav('/past-events')}
+                className="hover:text-[#C42121] transition-colors uppercase cursor-pointer"
+              >
+                Events
+              </button>
+              <span>/</span>
+              <span className="text-[#C42121]/70 truncate max-w-[200px]">{event.title}</span>
+            </div>
+
             {event.event_number && (
               <div className="hero-number text-[#C42121]/40 font-black text-[15vw] md:text-[10vw] leading-none mb-4">
                 {event.event_number}
@@ -374,13 +377,18 @@ export default function EventDetail() {
                         onClick={() => { setHoveredUrl(null); setActiveType('dj'); setActiveProfile(dj); }}
                       />
                     ))}
-                    {/* Legacy text fallback */}
                     {showLegacyLineup && (event.lineup ?? []).map((name, i) => (
                       <div key={i} className="py-3 border-b border-[#C42121]/10 text-xl font-black text-[#C42121] uppercase tracking-tight">
                         {name}
                       </div>
                     ))}
                   </div>
+                  <button
+                    onClick={() => handleNav('/djs')}
+                    className="mt-4 text-xs font-mono text-[#C42121]/40 hover:text-[#C42121] tracking-widest uppercase transition-colors cursor-pointer"
+                  >
+                    View all DJs &rarr;
+                  </button>
                 </div>
               )}
 
@@ -400,6 +408,12 @@ export default function EventDetail() {
                       />
                     ))}
                   </div>
+                  <button
+                    onClick={() => handleNav('/artists')}
+                    className="mt-4 text-xs font-mono text-[#C42121]/40 hover:text-[#C42121] tracking-widest uppercase transition-colors cursor-pointer"
+                  >
+                    View all Artists &rarr;
+                  </button>
                 </div>
               )}
 
@@ -446,10 +460,7 @@ export default function EventDetail() {
           <section className="relative border-t border-[#C42121]/20">
             <div
               className="group relative h-[60vh] md:h-[80vh] overflow-hidden cursor-pointer"
-              onClick={() => {
-                window.scrollTo(0, 0);
-                setTimeout(() => navigate(`/past-events/${nextEvent.slug}`), 50);
-              }}
+              onClick={() => handleNav(`/past-events/${nextEvent.slug}`)}
             >
               <img
                 src={nextEvent.cover_image_url ?? ''}
@@ -464,9 +475,16 @@ export default function EventDetail() {
                   {nextEvent.title}
                 </h2>
                 {nextEvent.event_number && (
-                  <div className="text-lg md:text-xl font-light text-[#C42121]/80">{nextEvent.event_number}</div>
+                  <div className="text-lg md:text-xl font-light text-[#C42121]/80 mb-4">{nextEvent.event_number}</div>
                 )}
-                <div className="mt-12 text-4xl text-[#C42121]">↓</div>
+                {nextEvent.date && (
+                  <div className="text-sm font-mono text-[#C42121]/50 mb-8">
+                    {formatDate(nextEvent.date)}
+                  </div>
+                )}
+                <span className="inline-block text-sm font-mono tracking-widest text-[#C42121] border border-[#C42121]/40 px-6 py-3 group-hover:bg-[#C42121] group-hover:text-black transition-all duration-300 uppercase">
+                  View Event &rarr;
+                </span>
               </div>
             </div>
           </section>
@@ -481,7 +499,7 @@ export default function EventDetail() {
           </h2>
           <button
             className="border border-[#C42121] px-12 py-4 text-sm font-mono tracking-widest hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer"
-            onClick={() => { window.scrollTo(0, 0); setTimeout(() => navigate('/past-events'), 50); }}
+            onClick={() => handleNav('/past-events')}
           >
             VIEW ALL EVENTS
           </button>
@@ -489,18 +507,8 @@ export default function EventDetail() {
 
       </div>
 
-      {/* Footer */}
-      <footer className="relative w-full px-6 md:px-8 py-6 md:py-8 flex justify-between items-center border-t border-[#C42121]/10 text-[#f5f5f0]/50">
-        <div className="text-sm tracking-wider uppercase font-mono">© 2026 THE CIRCLE</div>
-        <div className="text-sm tracking-wider uppercase font-mono">
-          <a href="https://www.aliastudio.cc/" target="_blank" rel="noopener noreferrer" className="hover:text-[#C42121] transition-colors">BY ALIA</a>
-        </div>
-        <div className="text-sm tracking-wider uppercase font-mono">
-          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#C42121] transition-colors">CONTACT</a>
-        </div>
-      </footer>
-
+      <Footer />
       <AdminToolbar />
-    </div>
+    </PageShell>
   );
 }
