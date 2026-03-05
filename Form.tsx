@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { gsap } from 'gsap';
 import { HamburgerMenu } from './HamburgerMenu';
+import Footer from './components/Footer';
+import { useSiteBlock } from './hooks/useSiteContent';
+import AdminToolbar from './components/AdminToolbar';
+import EditableText from './components/EditableText';
 // import { CustomCursor } from './CustomCursor';
 
 // Smooth scroll utility - Extra slow and smooth (50% slower)
@@ -400,6 +404,8 @@ export default function FormPage() {
   const navigate = useNavigate();
   const rotation = useMotionValue(0);
   const [chaosLevel, setChaosLevel] = useState(0);
+  const { data: formIntro, setData: setFormIntro } = useSiteBlock('content_form_intro', { title: 'THE CIRCLE', subtitle: 'VOL. III' });
+  const { data: formEvent, setData: setFormEvent } = useSiteBlock('content_form_event', { info: '28.02.2026 - SECRET LOCATION, VALENCIA' });
   
   // Rotation animation
   useEffect(() => {
@@ -438,6 +444,7 @@ export default function FormPage() {
   const [emptyFields, setEmptyFields] = useState<string[]>([]);
   const [captchaValue, setCaptchaValue] = useState<string | null>(null);
   const [showCaptchaError, setShowCaptchaError] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -794,7 +801,13 @@ export default function FormPage() {
               transition={{ duration: 0.5 }}
               className="text-base tracking-[0.5em] uppercase font-mono text-[#f5f5f0]"
             >
-              VOL. III
+              <EditableText
+                as="span"
+                contentKey="content_form_intro"
+                field="subtitle"
+                value={formIntro.subtitle}
+                onSave={v => setFormIntro(prev => ({ ...prev, subtitle: v }))}
+              />
             </motion.p>
           </div>
 
@@ -813,9 +826,14 @@ export default function FormPage() {
             transition={{ delay: sending ? 0 : 0.3, duration: 0.5 }}
             className="mb-12 p-8 border border-[#C42121]/20 bg-black/60 backdrop-blur-sm"
           >
-            <p className="text-base leading-relaxed text-center tracking-widest uppercase font-mono text-[#f5f5f0]">
-              28.02.2026 - SECRET LOCATION, VALENCIA
-            </p>
+            <EditableText
+              as="p"
+              contentKey="content_form_event"
+              field="info"
+              value={formEvent.info}
+              onSave={v => setFormEvent(prev => ({ ...prev, info: v }))}
+              className="text-base leading-relaxed text-center tracking-widest uppercase font-mono text-[#f5f5f0]"
+            />
           </motion.div>
 
           {/* Form */}
@@ -1189,8 +1207,35 @@ export default function FormPage() {
               />
             </motion.div>
 
+            {/* Terms & Privacy Checkbox */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.82 }}
+              className="flex justify-center"
+            >
+              <label className="flex items-start gap-3 cursor-pointer max-w-md">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={e => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-[#C42121] cursor-pointer shrink-0"
+                />
+                <span className="text-xs font-mono text-[#f5f5f0]/60 leading-relaxed">
+                  I accept the{' '}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#C42121] hover:underline">
+                    Terms and Conditions
+                  </a>{' '}
+                  and{' '}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#C42121] hover:underline">
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+            </motion.div>
+
             {/* CAPTCHA */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.85 }}
@@ -1236,7 +1281,7 @@ export default function FormPage() {
             >
               <motion.button
                 type="submit"
-                disabled={sending}
+                disabled={sending || !acceptedTerms}
                 whileTap={{ scale: 0.95 }}
                 animate={showError ? { 
                   scale: [1, 1.05, 1, 1.05, 1],
@@ -1263,27 +1308,8 @@ export default function FormPage() {
         </motion.div>
       </div>
 
-      {/* Footer */}
-      <footer className="relative w-full p-6 md:p-8 mt-8 md:mt-12 flex justify-between items-center z-40 text-[#C42121]">
-        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
-          © 2026 THE CIRCLE
-        </div>
-        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
-          <a
-            href="https://www.aliastudio.cc/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#ff4444] transition-colors"
-          >
-            BY ALIA
-          </a>
-        </div>
-        <div className="text-sm md:text-base tracking-wider uppercase font-mono">
-          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#ff4444] transition-colors">
-            CONTACT
-          </a>
-        </div>
-      </footer>
+      <Footer />
+      <AdminToolbar />
 
       {/* Custom Styles */}
       <style>{`

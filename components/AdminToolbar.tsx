@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Paintbrush, LayoutDashboard, LogOut, Zap } from 'lucide-react';
+import { useEditMode } from '../contexts/EditModeContext';
 
 /**
  * Floating admin toolbar shown at the bottom of public pages
@@ -8,7 +9,7 @@ import { Paintbrush, LayoutDashboard, LogOut, Zap } from 'lucide-react';
  */
 export default function AdminToolbar() {
   const { user, signOut } = useAuth();
-  const [editMode, setEditMode] = useState(false);
+  const { editMode, setEditMode } = useEditMode();
 
   // Inject / remove edit-mode CSS when toggle changes
   useEffect(() => {

@@ -7,12 +7,13 @@ import type { DJ } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
-import { useSiteContent } from './hooks/useSiteContent';
+import { useSiteContent, useSiteBlock } from './hooks/useSiteContent';
 import ProfileModal from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
 import PageShell from './components/PageShell';
 import Footer from './components/Footer';
 import GSAPReveal from './components/GSAPReveal';
+import EditableText from './components/EditableText';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -138,7 +139,11 @@ export default function DJs() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_djs');
-  const { title: heroTitle, subtitle: heroSubtitle } = useSiteContent('content_djs_hero');
+  const { title: heroTitle, subtitle: heroSubtitle, setContent: setDjsContent } = useSiteContent('content_djs_hero');
+  const { data: ctaData, setData: setCtaData } = useSiteBlock('content_cta_djs', {
+    title: 'ARE YOU A SELECTOR?',
+    subtitle: "We're always looking for artists who push boundaries. Apply to join The Circle.",
+  });
   const heroTitleRef      = useRef<HTMLDivElement>(null);
   const [activeDJ, setActiveDJ] = useState<DJ | null>(null);
 
@@ -194,9 +199,15 @@ export default function DJs() {
               <div className="text-[#C42121]">{heroLast}</div>
             </div>
             <GSAPReveal delay={0.6}>
-              <p className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide">
-                {heroSubtitle}
-              </p>
+              <EditableText
+                as="p"
+                contentKey="content_djs_hero"
+                field="subtitle"
+                value={heroSubtitle}
+                onSave={v => setDjsContent('subtitle', v)}
+                className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide"
+                multiline
+              />
             </GSAPReveal>
           </div>
         </section>
@@ -300,14 +311,23 @@ export default function DJs() {
         <section className="relative px-6 md:px-20 py-32 md:py-40 border-t border-[#C42121]/20">
           <GSAPReveal delay={0.1}>
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-8">
-                ARE YOU A
-                <br />
-                <span className="text-[#C42121]">SELECTOR?</span>
-              </h2>
-              <p className="text-lg md:text-xl font-light text-[#C42121]/70 mb-12 leading-relaxed">
-                We're always looking for artists who push boundaries. Apply to join The Circle.
-              </p>
+              <EditableText
+                as="h2"
+                contentKey="content_cta_djs"
+                field="title"
+                value={ctaData.title}
+                onSave={v => setCtaData(prev => ({ ...prev, title: v }))}
+                className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-8 text-[#C42121]"
+              />
+              <EditableText
+                as="p"
+                contentKey="content_cta_djs"
+                field="subtitle"
+                value={ctaData.subtitle}
+                onSave={v => setCtaData(prev => ({ ...prev, subtitle: v }))}
+                className="text-lg md:text-xl font-light text-[#C42121]/70 mb-12 leading-relaxed"
+                multiline
+              />
               <button
                 className="bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] transition-all duration-300 cursor-pointer"
                 onClick={() => handleNav('/form')}

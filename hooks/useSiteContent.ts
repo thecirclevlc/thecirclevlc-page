@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 // ── Content keys correspond to site_settings rows ────────────────
@@ -35,6 +35,7 @@ const DEFAULTS: Record<ContentKey, PageContent> = {
 
 interface UseSiteContentResult extends PageContent {
   loading: boolean;
+  setContent: (field: 'title' | 'subtitle', value: string) => void;
 }
 
 /**
@@ -47,7 +48,12 @@ export function useSiteContent(key: ContentKey): UseSiteContentResult {
   const [result, setResult] = useState<UseSiteContentResult>({
     ...DEFAULTS[key],
     loading: true,
+    setContent: () => {},
   });
+
+  const setContent = useCallback((field: 'title' | 'subtitle', value: string) => {
+    setResult(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,11 +66,12 @@ export function useSiteContent(key: ContentKey): UseSiteContentResult {
       .then(({ data }) => {
         if (cancelled) return;
         const content = data?.value as PageContent | undefined;
-        setResult({
+        setResult(prev => ({
+          ...prev,
           title:    content?.title    ?? DEFAULTS[key].title,
           subtitle: content?.subtitle ?? DEFAULTS[key].subtitle,
           loading:  false,
-        });
+        }));
       })
       .catch(() => {
         if (!cancelled) setResult(prev => ({ ...prev, loading: false }));
@@ -73,5 +80,49 @@ export function useSiteContent(key: ContentKey): UseSiteContentResult {
     return () => { cancelled = true; };
   }, [key]);
 
-  return result;
+  return { ...result, setContent };
+}
+
+// ── Generic content block hook ──────────────────────────────────
+
+/**
+ * Fetches any JSON content block from `site_settings` by key.
+ * Falls back to the provided default if the key doesn't exist yet.
+ */
+export function useSiteBlock<T>(key: string, fallback: T): { data: T; loading: boolean; setData: React.Dispatch<React.SetStateAction<T>> } {
+  const [state, setState] = useState<{ data: T; loading: boolean }>({
+    data: fallback,
+    loading: true,
+  });
+
+  const setData = useCallback((action: React.SetStateAction<T>) => {
+    setState(prev => ({
+      ...prev,
+      data: typeof action === 'function' ? (action as (prev: T) => T)(prev.data) : action,
+    }));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase
+      .from('site_settings')
+      .select('value')
+      .eq('id', key)
+      .single()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setState({
+          data: (data?.value as T) ?? fallback,
+          loading: false,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setState(prev => ({ ...prev, loading: false }));
+      });
+
+    return () => { cancelled = true; };
+  }, [key]);
+
+  return { ...state, setData };
 }

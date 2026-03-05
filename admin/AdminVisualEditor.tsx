@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Check, X, Loader2, Paintbrush, Type } from 'lucide-react';
+import { Check, X, Loader2, Paintbrush, Type, FileText } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -339,16 +339,334 @@ function TextsTab() {
   );
 }
 
+// ── Content Blocks Tab ────────────────────────────────────────────
+
+interface ContentBlocks {
+  content_home_manifesto: { p1: string; p2: string; p3: string };
+  content_home_marquee:   { text: string };
+  content_home_join:      { title: string; desc1: string; desc2: string };
+  content_form_intro:     { title: string; subtitle: string };
+  content_home_headings:  { h1: string; h2: string; h3: string };
+  content_form_event:     { info: string };
+  content_cta_events:     { title: string; subtitle: string };
+  content_cta_djs:        { title: string; subtitle: string };
+  content_cta_artists:    { title: string; subtitle: string };
+}
+
+type BlockKey = keyof ContentBlocks;
+
+const DEFAULT_BLOCKS: ContentBlocks = {
+  content_home_manifesto: {
+    p1: 'The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.',
+    p2: 'Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.',
+    p3: 'An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.',
+  },
+  content_home_marquee: {
+    text: 'SECRET LOCATION • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •',
+  },
+  content_home_join: {
+    title: 'JOIN THE NEXT EVENT',
+    desc1: 'We review every submission carefully. If selected, you will receive the link to the event ticket.',
+    desc2: 'Attendance is limited. Each night is designed to maintain a creative, intimate, and connected community.',
+  },
+  content_form_intro: {
+    title: 'THE CIRCLE',
+    subtitle: 'VOL. III',
+  },
+  content_home_headings: {
+    h1: 'MUSIC THAT MOVES UNSEEN SPACES.',
+    h2: 'MOMENTS THAT HAPPEN ONLY ONCE.',
+    h3: 'EXPRESSION WITHOUT BOUNDARIES.',
+  },
+  content_form_event: {
+    info: '28.02.2026 - SECRET LOCATION, VALENCIA',
+  },
+  content_cta_events: {
+    title: "DON'T MISS THE NEXT CHAPTER",
+    subtitle: 'The next Circle is forming. Limited spaces available.',
+  },
+  content_cta_djs: {
+    title: 'ARE YOU A SELECTOR?',
+    subtitle: "We're always looking for artists who push boundaries. Apply to join The Circle.",
+  },
+  content_cta_artists: {
+    title: 'WANT TO PERFORM?',
+    subtitle: "We're always looking for artists who push boundaries. Apply to join The Circle.",
+  },
+};
+
+const BLOCK_LABELS: { key: BlockKey; label: string; description: string }[] = [
+  { key: 'content_home_manifesto', label: 'Home Manifesto',  description: '3 paragraphs in the manifesto section' },
+  { key: 'content_home_marquee',   label: 'Home Marquee',    description: 'Scrolling banner text' },
+  { key: 'content_home_join',      label: 'Home Join Section', description: 'Title and descriptions for the join/apply section' },
+  { key: 'content_form_intro',     label: 'Form Intro',      description: 'Title and subtitle on the application form page' },
+  { key: 'content_home_headings',  label: 'Home Headings',   description: '3 headings in the manifesto right column' },
+  { key: 'content_form_event',     label: 'Form Event Info', description: 'Event date and location on the application form' },
+  { key: 'content_cta_events',    label: 'Events CTA',     description: 'Call-to-action section on the Events page' },
+  { key: 'content_cta_djs',       label: 'DJs CTA',        description: 'Call-to-action section on the DJs page' },
+  { key: 'content_cta_artists',   label: 'Artists CTA',    description: 'Call-to-action section on the Artists page' },
+];
+
+const TEXTAREA = INPUT + ' min-h-[80px] resize-y';
+
+function ContentBlocksTab() {
+  const [blocks, setBlocks] = useState<ContentBlocks>(DEFAULT_BLOCKS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [toast, setToast]     = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+
+  function showToast(msg: string, type: 'ok' | 'err') {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  useEffect(() => {
+    const keys = BLOCK_LABELS.map(b => b.key);
+    supabase
+      .from('site_settings')
+      .select('id, value')
+      .in('id', keys)
+      .then(({ data }) => {
+        if (data) {
+          const merged = { ...DEFAULT_BLOCKS } as any;
+          data.forEach((row: { id: string; value: unknown }) => {
+            if (row.id in merged) merged[row.id] = row.value;
+          });
+          setBlocks(merged);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  function setField(key: BlockKey, field: string, value: string) {
+    setBlocks(prev => ({
+      ...prev,
+      [key]: { ...prev[key], [field]: value },
+    }));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const rows = BLOCK_LABELS.map(b => ({ id: b.key, value: blocks[b.key] }));
+      const { error } = await supabase.from('site_settings').upsert(rows, { onConflict: 'id' });
+      if (error) throw error;
+      showToast('Content blocks saved!', 'ok');
+    } catch (err: any) {
+      showToast(err.message ?? 'Save failed.', 'err');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 size={24} className="text-[#059669] animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {toast && <Toast {...toast} />}
+
+      {/* Manifesto */}
+      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+        <div>
+          <p className="text-white text-sm font-medium">Home Manifesto</p>
+          <p className="text-[#444] text-xs mt-0.5">3 paragraphs in the manifesto section</p>
+        </div>
+        {(['p1', 'p2', 'p3'] as const).map((f, i) => (
+          <div key={f}>
+            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Paragraph {i + 1}</label>
+            <textarea
+              value={blocks.content_home_manifesto[f]}
+              onChange={e => setField('content_home_manifesto', f, e.target.value)}
+              className={TEXTAREA}
+              rows={3}
+            />
+          </div>
+        ))}
+      </section>
+
+      {/* Marquee */}
+      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+        <div>
+          <p className="text-white text-sm font-medium">Home Marquee</p>
+          <p className="text-[#444] text-xs mt-0.5">Scrolling banner text</p>
+        </div>
+        <div>
+          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Text</label>
+          <input
+            type="text"
+            value={blocks.content_home_marquee.text}
+            onChange={e => setField('content_home_marquee', 'text', e.target.value)}
+            className={INPUT}
+          />
+        </div>
+      </section>
+
+      {/* Join Section */}
+      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+        <div>
+          <p className="text-white text-sm font-medium">Home Join Section</p>
+          <p className="text-[#444] text-xs mt-0.5">Title and descriptions for the join/apply section</p>
+        </div>
+        <div>
+          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Title</label>
+          <input
+            type="text"
+            value={blocks.content_home_join.title}
+            onChange={e => setField('content_home_join', 'title', e.target.value)}
+            className={INPUT}
+          />
+        </div>
+        <div>
+          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Description 1</label>
+          <textarea
+            value={blocks.content_home_join.desc1}
+            onChange={e => setField('content_home_join', 'desc1', e.target.value)}
+            className={TEXTAREA}
+            rows={2}
+          />
+        </div>
+        <div>
+          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Description 2</label>
+          <textarea
+            value={blocks.content_home_join.desc2}
+            onChange={e => setField('content_home_join', 'desc2', e.target.value)}
+            className={TEXTAREA}
+            rows={2}
+          />
+        </div>
+      </section>
+
+      {/* Form Intro */}
+      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+        <div>
+          <p className="text-white text-sm font-medium">Form Intro</p>
+          <p className="text-[#444] text-xs mt-0.5">Title and subtitle on the application form page</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Title</label>
+            <input
+              type="text"
+              value={blocks.content_form_intro.title}
+              onChange={e => setField('content_form_intro', 'title', e.target.value)}
+              className={INPUT}
+            />
+          </div>
+          <div>
+            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Subtitle</label>
+            <input
+              type="text"
+              value={blocks.content_form_intro.subtitle}
+              onChange={e => setField('content_form_intro', 'subtitle', e.target.value)}
+              className={INPUT}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Home Headings */}
+      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+        <div>
+          <p className="text-white text-sm font-medium">Home Headings</p>
+          <p className="text-[#444] text-xs mt-0.5">3 headings in the manifesto right column</p>
+        </div>
+        {(['h1', 'h2', 'h3'] as const).map((f, i) => (
+          <div key={f}>
+            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Heading {i + 1}</label>
+            <input
+              type="text"
+              value={blocks.content_home_headings[f]}
+              onChange={e => setField('content_home_headings', f, e.target.value)}
+              className={INPUT}
+            />
+          </div>
+        ))}
+      </section>
+
+      {/* Form Event Info */}
+      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+        <div>
+          <p className="text-white text-sm font-medium">Form Event Info</p>
+          <p className="text-[#444] text-xs mt-0.5">Event date and location on the application form</p>
+        </div>
+        <div>
+          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Info</label>
+          <input
+            type="text"
+            value={blocks.content_form_event.info}
+            onChange={e => setField('content_form_event', 'info', e.target.value)}
+            className={INPUT}
+          />
+        </div>
+      </section>
+
+      {/* CTA Sections */}
+      {(['content_cta_events', 'content_cta_djs', 'content_cta_artists'] as const).map(key => {
+        const labels: Record<string, string> = {
+          content_cta_events: 'Events CTA',
+          content_cta_djs: 'DJs CTA',
+          content_cta_artists: 'Artists CTA',
+        };
+        return (
+          <section key={key} className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+            <div>
+              <p className="text-white text-sm font-medium">{labels[key]}</p>
+              <p className="text-[#444] text-xs mt-0.5">Call-to-action heading and description</p>
+            </div>
+            <div>
+              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Title</label>
+              <input
+                type="text"
+                value={(blocks as any)[key]?.title ?? ''}
+                onChange={e => setField(key, 'title', e.target.value)}
+                className={INPUT}
+              />
+            </div>
+            <div>
+              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Subtitle</label>
+              <textarea
+                value={(blocks as any)[key]?.subtitle ?? ''}
+                onChange={e => setField(key, 'subtitle', e.target.value)}
+                className={TEXTAREA}
+                rows={2}
+              />
+            </div>
+          </section>
+        );
+      })}
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors"
+        >
+          {saving && <Loader2 size={14} className="animate-spin" />}
+          {saving ? 'Saving…' : 'Save Content Blocks'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────
 
-type Tab = 'colors' | 'texts';
+type Tab = 'colors' | 'texts' | 'content';
 
 export default function AdminVisualEditor() {
   const [tab, setTab] = useState<Tab>('colors');
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-    { key: 'colors', label: 'Colors',     icon: Paintbrush },
-    { key: 'texts',  label: 'Page Texts', icon: Type },
+    { key: 'colors',  label: 'Colors',         icon: Paintbrush },
+    { key: 'texts',   label: 'Page Texts',     icon: Type },
+    { key: 'content', label: 'Content Blocks', icon: FileText },
   ];
 
   return (
@@ -377,8 +695,9 @@ export default function AdminVisualEditor() {
       </div>
 
       {/* Tab content */}
-      {tab === 'colors' && <ColorsTab />}
-      {tab === 'texts'  && <TextsTab />}
+      {tab === 'colors'  && <ColorsTab />}
+      {tab === 'texts'   && <TextsTab />}
+      {tab === 'content' && <ContentBlocksTab />}
     </div>
   );
 }

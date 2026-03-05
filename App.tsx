@@ -6,7 +6,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useNavigate } from 'react-router-dom';
 import { StandardHeader } from './StandardHeader';
 import { useSiteTheme } from './hooks/useSiteTheme';
+import { useSiteBlock } from './hooks/useSiteContent';
 import AdminToolbar from './components/AdminToolbar';
+import Footer from './components/Footer';
+import EditableText from './components/EditableText';
 // import { CustomCursor } from './CustomCursor';
 
 // Register GSAP plugins
@@ -383,6 +386,18 @@ const ScrollReveal: React.FC<{
 
 // Manifesto Section with Subtle GSAP Scroll Animations
 const ManifestoSection: React.FC = () => {
+    const { data: manifesto, setData: setManifesto } = useSiteBlock('content_home_manifesto', {
+      p1: 'The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.',
+      p2: 'Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.',
+      p3: 'An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.',
+    });
+
+    const { data: headings, setData: setHeadings } = useSiteBlock('content_home_headings', {
+      h1: 'MUSIC THAT MOVES UNSEEN SPACES.',
+      h2: 'MOMENTS THAT HAPPEN ONLY ONCE.',
+      h3: 'EXPRESSION WITHOUT BOUNDARIES.',
+    });
+
     const sectionRef = useRef<HTMLDivElement>(null);
     const leftColRef = useRef<HTMLDivElement>(null);
     const p1Ref = useRef<HTMLParagraphElement>(null);
@@ -451,38 +466,74 @@ const ManifestoSection: React.FC = () => {
                 <div className="flex flex-col md:grid md:grid-cols-2 gap-12 md:gap-16">
                     {/* Left Column - Larger Text (Desktop Only) */}
                     <div ref={leftColRef} className="md:sticky md:top-32 h-fit space-y-8 md:space-y-10">
-                        <p ref={p1Ref} className="text-lg md:text-3xl leading-relaxed opacity-80">
-                            The Circle is a nomadic creative space where electronic music, art, and live performances come together. Every event is ephemeral, immersive, and curated to create unique experiences.
-                        </p>
-                        <p ref={p2Ref} className="text-lg md:text-3xl leading-relaxed opacity-80">
-                            Participants are selected to join a network of like-minded artists, creators, and art lovers. Here, ideas cross, disciplines mix, and collaboration drives every moment.
-                        </p>
-                        <p ref={p3Ref} className="text-base md:text-2xl font-light leading-relaxed pt-4 md:pt-6 border-t border-[#C42121]/20 opacity-80">
-                            An underground event concept based in Valencia. A curated mix of bold talent and art-driven people.
-                        </p>
+                        <EditableText
+                            ref={p1Ref}
+                            as="p"
+                            contentKey="content_home_manifesto"
+                            field="p1"
+                            value={manifesto.p1}
+                            onSave={v => setManifesto(prev => ({ ...prev, p1: v }))}
+                            className="text-lg md:text-3xl leading-relaxed opacity-80"
+                            multiline
+                        />
+                        <EditableText
+                            ref={p2Ref}
+                            as="p"
+                            contentKey="content_home_manifesto"
+                            field="p2"
+                            value={manifesto.p2}
+                            onSave={v => setManifesto(prev => ({ ...prev, p2: v }))}
+                            className="text-lg md:text-3xl leading-relaxed opacity-80"
+                            multiline
+                        />
+                        <EditableText
+                            ref={p3Ref}
+                            as="p"
+                            contentKey="content_home_manifesto"
+                            field="p3"
+                            value={manifesto.p3}
+                            onSave={v => setManifesto(prev => ({ ...prev, p3: v }))}
+                            className="text-base md:text-2xl font-light leading-relaxed pt-4 md:pt-6 border-t border-[#C42121]/20 opacity-80"
+                            multiline
+                        />
                     </div>
 
                     {/* Right Column - Headers (Unchanged) */}
                     <div className="space-y-0">
-                        {/* First Line - MUSIC THAT */}
+                        {/* First Line */}
                         <ScrollReveal delay={0.2} variant="blur">
-                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
-                                <span className="text-[#C42121]">MUSIC THAT MOVES UNSEEN<br/>SPACES.</span>
-                            </h2>
+                            <EditableText
+                                as="h2"
+                                contentKey="content_home_headings"
+                                field="h1"
+                                value={headings.h1}
+                                onSave={v => setHeadings(prev => ({ ...prev, h1: v }))}
+                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4 text-[#C42121]"
+                            />
                         </ScrollReveal>
 
-                        {/* Second Line - MOMENTS THAT */}
+                        {/* Second Line */}
                         <ScrollReveal delay={0.6} variant="glitch">
-                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4">
-                                <span className="text-[#330000] selection:bg-white selection:text-black">MOMENTS THAT HAPPEN ONLY<br/>ONCE.</span>
-                            </h2>
+                            <EditableText
+                                as="h2"
+                                contentKey="content_home_headings"
+                                field="h2"
+                                value={headings.h2}
+                                onSave={v => setHeadings(prev => ({ ...prev, h2: v }))}
+                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4 text-[#330000] selection:bg-white selection:text-black"
+                            />
                         </ScrollReveal>
 
-                        {/* Third Line - EXPRESSION */}
+                        {/* Third Line */}
                         <ScrollReveal delay={1.0} variant="blur">
-                            <h2 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter">
-                                <span className="text-[#C42121]">EXPRESSION WITHOUT<br/>BOUNDARIES.</span>
-                            </h2>
+                            <EditableText
+                                as="h2"
+                                contentKey="content_home_headings"
+                                field="h3"
+                                value={headings.h3}
+                                onSave={v => setHeadings(prev => ({ ...prev, h3: v }))}
+                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter text-[#C42121]"
+                            />
                         </ScrollReveal>
                     </div>
                 </div>
@@ -495,6 +546,15 @@ const ManifestoSection: React.FC = () => {
 export default function TheCircleApp() {
   useSiteTheme(); // applies --color-primary and --color-bg CSS vars globally
   const navigate = useNavigate();
+
+  const { data: marquee, setData: setMarquee } = useSiteBlock('content_home_marquee', {
+    text: 'SECRET LOCATION • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •',
+  });
+  const { data: joinBlock, setData: setJoinBlock } = useSiteBlock('content_home_join', {
+    title: 'JOIN THE NEXT EVENT',
+    desc1: 'We review every submission carefully. If selected, you will receive the link to the event ticket.',
+    desc2: 'Attendance is limited. Each night is designed to maintain a creative, intimate, and connected community.',
+  });
   const { scrollY } = useScroll();
   const rotation = useMotionValue(0);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -663,9 +723,15 @@ export default function TheCircleApp() {
                 style={{ willChange: 'transform' }}
              >
                 {[...Array(12)].map((_, i) => (
-                    <span key={i} className="text-3xl md:text-5xl font-black uppercase tracking-tight transition-opacity duration-300 group-hover:opacity-80">
-                        SECRET LOCATION • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •
-                    </span>
+                    <EditableText
+                        key={i}
+                        as="span"
+                        contentKey="content_home_marquee"
+                        field="text"
+                        value={marquee.text}
+                        onSave={v => setMarquee(prev => ({ ...prev, text: v }))}
+                        className="text-3xl md:text-5xl font-black uppercase tracking-tight transition-opacity duration-300 group-hover:opacity-80"
+                    />
                 ))}
              </motion.div>
         </div>
@@ -681,10 +747,31 @@ export default function TheCircleApp() {
                             className="w-16 h-16 border-2 border-[#C42121] rounded-full mx-auto mb-8"
                             style={{ willChange: 'transform' }}
                         />
-                        <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6">JOIN THE NEXT EVENT</h3>
+                        <EditableText
+                            as="h3"
+                            contentKey="content_home_join"
+                            field="title"
+                            value={joinBlock.title}
+                            onSave={v => setJoinBlock(prev => ({ ...prev, title: v }))}
+                            className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6"
+                        />
                         <div className="text-sm tracking-wide text-[#C42121]/60 leading-relaxed space-y-4 transition-opacity duration-300">
-                            <p>We review every submission carefully. If selected, you will receive the link to the event ticket.</p>
-                            <p>Attendance is limited. Each night is designed to maintain a creative, intimate, and connected community.</p>
+                            <EditableText
+                                as="p"
+                                contentKey="content_home_join"
+                                field="desc1"
+                                value={joinBlock.desc1}
+                                onSave={v => setJoinBlock(prev => ({ ...prev, desc1: v }))}
+                                multiline
+                            />
+                            <EditableText
+                                as="p"
+                                contentKey="content_home_join"
+                                field="desc2"
+                                value={joinBlock.desc2}
+                                onSave={v => setJoinBlock(prev => ({ ...prev, desc2: v }))}
+                                multiline
+                            />
                         </div>
                     </div>
 
@@ -707,27 +794,7 @@ export default function TheCircleApp() {
       </div>
 
 
-      {/* Footer */}
-      <footer className="relative w-full p-8 md:p-12 flex justify-between items-center z-40 text-[#C42121] mt-8 md:mt-12">
-        <div className="text-base md:text-lg tracking-wider uppercase font-mono">
-          © 2026 THE CIRCLE
-        </div>
-        <div className="text-base md:text-lg tracking-wider uppercase font-mono">
-          <a
-            href="https://www.aliastudio.cc/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#ff4444] transition-colors"
-          >
-            BY ALIA
-          </a>
-        </div>
-        <div className="text-base md:text-lg tracking-wider uppercase font-mono">
-          <a href="mailto:contact@thecirclevlc.com" className="hover:text-[#ff4444] transition-colors">
-            CONTACT
-          </a>
-        </div>
-      </footer>
+      <Footer />
 
       <AdminToolbar />
 

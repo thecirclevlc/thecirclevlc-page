@@ -229,11 +229,17 @@ export const HamburgerMenu: React.FC = () => {
         {/* Menu Items Container */}
         <div ref={menuItemsRef} className="relative z-10 w-full max-w-5xl px-8">
           <nav className="flex flex-col items-center justify-center gap-3 md:gap-5 lg:gap-6">
-            <MenuItem label="HOME"        onClick={() => handleMenuClick('/')} />
-            <MenuItem label="PAST EVENTS" onClick={() => handleMenuClick('/past-events')} />
-            <MenuItem label="DJS"         onClick={() => handleMenuClick('/djs')} />
-            <MenuItem label="ARTISTS"     onClick={() => handleMenuClick('/artists')} />
-            <MenuItem label="JOIN US"     onClick={() => handleMenuClick('/form')} />
+            {/* Current production menu: HOME + JOIN US only */}
+            <MenuItem label="HOME"    onClick={() => handleMenuClick('/')} />
+            <MenuItem label="JOIN US" onClick={() => handleMenuClick('/form')} />
+            {/*
+              Future full menu — uncomment when ecosystem pages are public:
+              <MenuItem label="HOME"        onClick={() => handleMenuClick('/')} />
+              <MenuItem label="PAST EVENTS" onClick={() => handleMenuClick('/past-events')} />
+              <MenuItem label="DJS"         onClick={() => handleMenuClick('/djs')} />
+              <MenuItem label="ARTISTS"     onClick={() => handleMenuClick('/artists')} />
+              <MenuItem label="JOIN US"     onClick={() => handleMenuClick('/form')} />
+            */}
           </nav>
         </div>
       </div>

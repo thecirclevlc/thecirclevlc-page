@@ -7,11 +7,12 @@ import type { Event as DBEvent } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
-import { useSiteContent } from './hooks/useSiteContent';
+import { useSiteContent, useSiteBlock } from './hooks/useSiteContent';
 import AdminToolbar from './components/AdminToolbar';
 import PageShell from './components/PageShell';
 import Footer from './components/Footer';
 import GSAPReveal from './components/GSAPReveal';
+import EditableText from './components/EditableText';
 
 // Adapts Supabase event to the shape EventCard expects
 interface CardEvent {
@@ -196,7 +197,11 @@ export default function PastEvents() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const { bgUrl, bgType }         = usePageBackground('page_events');
-  const { title: heroTitle, subtitle: heroSubtitle } = useSiteContent('content_events_hero');
+  const { title: heroTitle, subtitle: heroSubtitle, setContent: setEventsContent } = useSiteContent('content_events_hero');
+  const { data: ctaData, setData: setCtaData } = useSiteBlock('content_cta_events', {
+    title: "DON'T MISS THE NEXT CHAPTER",
+    subtitle: 'The next Circle is forming. Limited spaces available.',
+  });
   const heroTitleRef    = useRef<HTMLDivElement>(null);
 
   const heroWords = heroTitle.trim().split(' ');
@@ -260,9 +265,15 @@ export default function PastEvents() {
             </div>
 
             <GSAPReveal delay={0.6}>
-              <p className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide">
-                {heroSubtitle}
-              </p>
+              <EditableText
+                as="p"
+                contentKey="content_events_hero"
+                field="subtitle"
+                value={heroSubtitle}
+                onSave={v => setEventsContent('subtitle', v)}
+                className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide"
+                multiline
+              />
             </GSAPReveal>
           </div>
         </section>
@@ -345,14 +356,23 @@ export default function PastEvents() {
         <section className="relative px-6 md:px-20 py-32 md:py-40 border-t border-[#C42121]/20">
           <GSAPReveal delay={0.1}>
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-8">
-                DON'T MISS THE
-                <br />
-                <span className="text-[#C42121]">NEXT CHAPTER</span>
-              </h2>
-              <p className="text-lg md:text-xl font-light text-[#C42121]/70 mb-12 leading-relaxed">
-                The next Circle is forming. Limited spaces available.
-              </p>
+              <EditableText
+                as="h2"
+                contentKey="content_cta_events"
+                field="title"
+                value={ctaData.title}
+                onSave={v => setCtaData(prev => ({ ...prev, title: v }))}
+                className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-8 text-[#C42121]"
+              />
+              <EditableText
+                as="p"
+                contentKey="content_cta_events"
+                field="subtitle"
+                value={ctaData.subtitle}
+                onSave={v => setCtaData(prev => ({ ...prev, subtitle: v }))}
+                className="text-lg md:text-xl font-light text-[#C42121]/70 mb-12 leading-relaxed"
+                multiline
+              />
               <button
                 className="group relative bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] transition-all duration-300 cursor-pointer"
                 onClick={() => handleNav('/form')}

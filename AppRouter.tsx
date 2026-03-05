@@ -8,6 +8,8 @@ const PastEvents  = lazy(() => import('./PastEvents'));
 const EventDetail = lazy(() => import('./EventDetail'));
 const DJs         = lazy(() => import('./DJs'));
 const Artists     = lazy(() => import('./Artists'));
+const Terms       = lazy(() => import('./Terms'));
+const Privacy     = lazy(() => import('./Privacy'));
 
 // ── Lazy-loaded admin pages ─────────────────────────────────────
 const AdminLogin        = lazy(() => import('./admin/AdminLogin'));
@@ -56,6 +58,8 @@ export default function AppRouter() {
         <Route path="/past-events/:eventId" element={<EventDetail />} />
         <Route path="/djs"                  element={<DJs />} />
         <Route path="/artists"              element={<Artists />} />
+        <Route path="/terms"                element={<Terms />} />
+        <Route path="/privacy"              element={<Privacy />} />
 
         {/* ── ADMIN AUTH ── */}
         <Route path="/admin/login" element={<AdminLogin />} />
