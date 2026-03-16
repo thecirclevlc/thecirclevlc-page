@@ -56,16 +56,10 @@ const EventCard: React.FC<{
   onClick: () => void;
 }> = ({ event, index, onClick }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const numberRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     const card = cardRef.current;
-    const image = imageRef.current;
-    const number = numberRef.current;
-    const title = titleRef.current;
-    if (!card || !image || !number || !title) return;
+    if (!card) return;
 
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -78,56 +72,19 @@ const EventCard: React.FC<{
       );
     }, card);
 
-    const handleMouseEnter = () => {
-      gsap.to(card, { y: -12, duration: 0.6, ease: 'power2.out' });
-      gsap.to(image, { scale: 1.1, filter: 'brightness(0.8)', duration: 0.8, ease: 'power2.out' });
-      gsap.to(number, { opacity: 0.5, scale: 1.1, duration: 0.4, ease: 'power2.out' });
-
-      // Split text animation on hover — uses the element's own textContent (safe)
-      const text = title.textContent || '';
-      const spans = text.split('').map((char) => {
-        const span = document.createElement('span');
-        span.style.display = 'inline-block';
-        span.textContent = char === ' ' ? '\u00A0' : char;
-        return span;
-      });
-      title.replaceChildren(...spans);
-
-      gsap.fromTo(
-        title.children,
-        { y: 0 },
-        { y: -5, duration: 0.4, stagger: 0.02, ease: 'power2.out', yoyo: true, repeat: 1 }
-      );
-    };
-
-    const handleMouseLeave = () => {
-      gsap.to(card, { y: 0, duration: 0.6, ease: 'power2.inOut' });
-      gsap.to(image, { scale: 1, filter: 'brightness(0.5)', duration: 0.8, ease: 'power2.inOut' });
-      gsap.to(number, { opacity: 0.2, scale: 1, duration: 0.4, ease: 'power2.inOut' });
-    };
-
-    card.addEventListener('mouseenter', handleMouseEnter);
-    card.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      ctx.revert();
-      card.removeEventListener('mouseenter', handleMouseEnter);
-      card.removeEventListener('mouseleave', handleMouseLeave);
-    };
+    return () => { ctx.revert(); };
   }, [index]);
 
   return (
     <div ref={cardRef} className="group relative cursor-pointer" onClick={onClick}>
       <div
-        ref={numberRef}
         className="absolute -top-4 -left-4 z-10 text-[#C42121] font-black text-6xl md:text-8xl opacity-20 leading-none pointer-events-none"
       >
         {event.number}
       </div>
 
-      <div className="relative aspect-[4/5] overflow-hidden bg-black border border-[#C42121]/20">
+      <div className="relative aspect-[3/4] overflow-hidden bg-black border border-[#C42121]/20">
         <img
-          ref={imageRef}
           src={event.coverImage}
           alt={event.title}
           className="w-full h-full object-cover"
@@ -137,16 +94,12 @@ const EventCard: React.FC<{
       </div>
 
       <div className="mt-6 space-y-4">
-        <div className="flex items-start justify-between gap-4">
+        <div>
           <h3
-            ref={titleRef}
             className="text-3xl md:text-4xl font-black text-[#C42121] tracking-tight leading-none"
           >
             {event.title}
           </h3>
-          <span className="text-xs font-mono text-[#C42121]/60 whitespace-nowrap pt-2">
-            {event.year}
-          </span>
         </div>
 
         {event.subtitle && (
@@ -180,7 +133,7 @@ const EventCard: React.FC<{
 
 const SkeletonCard: React.FC = () => (
   <div className="animate-pulse">
-    <div className="relative aspect-[4/5] bg-[#111] border border-[#C42121]/10" />
+    <div className="relative aspect-[3/4] bg-[#111] border border-[#C42121]/10" />
     <div className="mt-6 space-y-3">
       <div className="h-8 w-3/4 bg-[#111] rounded" />
       <div className="h-4 w-1/2 bg-[#0a0a0a] rounded" />

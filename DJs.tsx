@@ -14,6 +14,7 @@ import PageShell from './components/PageShell';
 import Footer from './components/Footer';
 import GSAPReveal from './components/GSAPReveal';
 import EditableText from './components/EditableText';
+import SocialIcon from './components/SocialIcon';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -54,10 +55,10 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
 
   const socials = dj.social_links as Record<string, string>;
   const socialLinks = [
-    { key: 'instagram',  label: 'IG' },
-    { key: 'soundcloud', label: 'SC' },
-    { key: 'spotify',    label: 'SP' },
-    { key: 'website',    label: 'WEB' },
+    { key: 'instagram' },
+    { key: 'soundcloud' },
+    { key: 'spotify' },
+    { key: 'website' },
   ].filter(s => socials[s.key]);
 
   return (
@@ -69,7 +70,7 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
               src={dj.photo_url}
               alt={dj.name}
               className="w-full h-full object-cover"
-              style={{ filter: 'brightness(0.65)' }}
+              style={{ filter: 'brightness(0.65)', objectPosition: dj.photo_position ?? 'center' }}
             />
           ) : (
             <div className="w-full h-full bg-[#0d0000] flex items-center justify-center">
@@ -96,9 +97,9 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="text-[10px] font-mono tracking-widest border border-[#C42121]/40 px-2 py-1 text-[#C42121]/80 hover:bg-[#C42121]/10 transition-colors uppercase"
+                className="flex items-center justify-center w-7 h-7 border border-[#C42121]/40 text-[#C42121]/80 hover:bg-[#C42121]/10 transition-colors"
               >
-                {s.label}
+                <SocialIcon platform={s.key} size={12} />
               </a>
             ))}
           </div>
@@ -114,8 +115,11 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
             {dj.genres.join(' · ')}
           </p>
         )}
+        {dj.based_in && (
+          <p className="text-xs font-mono text-[#C42121]/40 tracking-wider">{dj.based_in}</p>
+        )}
         {dj.bio && (
-          <p className="text-sm text-[#C42121]/60 leading-relaxed line-clamp-2">{dj.bio}</p>
+          <p className="text-sm text-[#C42121]/60 leading-relaxed line-clamp-2 whitespace-pre-line">{dj.bio}</p>
         )}
       </div>
     </div>
@@ -146,6 +150,22 @@ export default function DJs() {
   });
   const heroTitleRef      = useRef<HTMLDivElement>(null);
   const [activeDJ, setActiveDJ] = useState<DJ | null>(null);
+  const [filter, setFilter] = useState('');
+  const [filterGenre, setFilterGenre] = useState<string>('all');
+
+  const allGenres = React.useMemo(() => {
+    const genres = new Set<string>();
+    djs.forEach(dj => (dj.genres ?? []).forEach(g => genres.add(g)));
+    return Array.from(genres).sort();
+  }, [djs]);
+
+  const filteredDJs = React.useMemo(() => {
+    return djs.filter(dj => {
+      const matchesSearch = !filter || dj.name.toLowerCase().includes(filter.toLowerCase());
+      const matchesGenre = filterGenre === 'all' || (dj.genres ?? []).includes(filterGenre);
+      return matchesSearch && matchesGenre;
+    });
+  }, [djs, filter, filterGenre]);
 
   const heroWords = heroTitle.trim().split(' ');
   const heroLast  = heroWords.length > 1 ? (heroWords.pop() ?? '') : heroTitle;
@@ -212,9 +232,47 @@ export default function DJs() {
           </div>
         </section>
 
-        {/* ── DJs — grouped by genre ───────────────────── */}
+        {/* ── DJs — flat grid with filters ────────────── */}
         <section className="relative px-6 md:px-20 py-14 md:py-20">
-          <div className="max-w-7xl mx-auto space-y-12">
+          <div className="max-w-7xl mx-auto space-y-8">
+            {/* Filter bar */}
+            {!loading && !error && djs.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <input
+                  type="text"
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                  placeholder="Search DJs..."
+                  className="bg-transparent border border-[#C42121]/20 px-4 py-2.5 text-sm text-white placeholder-[#C42121]/30 font-mono tracking-wider focus:outline-none focus:border-[#C42121]/50 transition-colors flex-1 max-w-xs"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilterGenre('all')}
+                    className={`text-[10px] font-mono px-3 py-1.5 border uppercase tracking-wider transition-colors cursor-pointer ${
+                      filterGenre === 'all'
+                        ? 'border-[#C42121] text-[#C42121] bg-[#C42121]/10'
+                        : 'border-[#C42121]/20 text-[#C42121]/50 hover:border-[#C42121]/40'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {allGenres.map(genre => (
+                    <button
+                      key={genre}
+                      onClick={() => setFilterGenre(genre)}
+                      className={`text-[10px] font-mono px-3 py-1.5 border uppercase tracking-wider transition-colors cursor-pointer ${
+                        filterGenre === genre
+                          ? 'border-[#C42121] text-[#C42121] bg-[#C42121]/10'
+                          : 'border-[#C42121]/20 text-[#C42121]/50 hover:border-[#C42121]/40'
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
                 {[1,2,3,4,5,6,7,8].map(i => <SkeletonDJ key={i} />)}
@@ -224,42 +282,17 @@ export default function DJs() {
                 <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">ERROR LOADING DJS</p>
                 <p className="text-[#C42121]/30 text-sm font-mono mt-3">{error}</p>
               </div>
-            ) : djs.length === 0 ? (
+            ) : filteredDJs.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">NO DJS YET</p>
-                <p className="text-[#C42121]/30 text-sm font-mono mt-3">Check back soon.</p>
+                <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">{djs.length === 0 ? 'NO DJS YET' : 'NO RESULTS'}</p>
+                <p className="text-[#C42121]/30 text-sm font-mono mt-3">{djs.length === 0 ? 'Check back soon.' : 'Try a different filter.'}</p>
               </div>
             ) : (
-              (() => {
-                const groups: Record<string, DJ[]> = {};
-                djs.forEach(dj => {
-                  const key = (dj.genres && dj.genres.length > 0) ? dj.genres[0] : 'Other';
-                  if (!groups[key]) groups[key] = [];
-                  groups[key].push(dj);
-                });
-                const sortedEntries = Object.entries(groups).sort(([a], [b]) => {
-                  if (a === 'Other') return 1;
-                  if (b === 'Other') return -1;
-                  return a.localeCompare(b);
-                });
-                return sortedEntries.map(([genre, groupDJs]) => (
-                  <div key={genre}>
-                    <h3 className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-8 border-b border-[#C42121]/10 pb-4">
-                      {genre}
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
-                      {groupDJs.map((dj, index) => (
-                        <DJCard
-                          key={dj.id}
-                          dj={dj}
-                          index={index}
-                          onClick={() => setActiveDJ(dj)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ));
-              })()
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
+                {filteredDJs.map((dj, index) => (
+                  <DJCard key={dj.id} dj={dj} index={index} onClick={() => setActiveDJ(dj)} />
+                ))}
+              </div>
             )}
           </div>
         </section>

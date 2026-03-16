@@ -14,6 +14,7 @@ import PageShell from './components/PageShell';
 import Footer from './components/Footer';
 import GSAPReveal from './components/GSAPReveal';
 import EditableText from './components/EditableText';
+import SocialIcon from './components/SocialIcon';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -54,10 +55,10 @@ const ArtistCard: React.FC<{ artist: ArtistWithCategory; index: number; onClick:
 
   const socials = (artist.social_links ?? {}) as Record<string, string>;
   const socialLinks = [
-    { key: 'instagram',  label: 'IG' },
-    { key: 'soundcloud', label: 'SC' },
-    { key: 'spotify',    label: 'SP' },
-    { key: 'website',    label: 'WEB' },
+    { key: 'instagram' },
+    { key: 'soundcloud' },
+    { key: 'spotify' },
+    { key: 'website' },
   ].filter(s => socials[s.key]);
 
   return (
@@ -96,9 +97,9 @@ const ArtistCard: React.FC<{ artist: ArtistWithCategory; index: number; onClick:
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="text-[10px] font-mono tracking-widest border border-[#C42121]/40 px-2 py-1 text-[#C42121]/80 hover:bg-[#C42121]/10 transition-colors uppercase"
+                className="flex items-center justify-center w-7 h-7 border border-[#C42121]/40 text-[#C42121]/80 hover:bg-[#C42121]/10 transition-colors"
               >
-                {s.label}
+                <SocialIcon platform={s.key} size={12} />
               </a>
             ))}
           </div>
@@ -151,6 +152,26 @@ export default function Artists() {
   });
   const heroTitleRef          = useRef<HTMLDivElement>(null);
   const [activeArtist, setActiveArtist] = useState<ArtistWithCategory | null>(null);
+  const [filter, setFilter] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+
+  const allCategories = React.useMemo(() => {
+    const cats = new Map<string, number>();
+    artists.forEach(a => {
+      if (a.artist_categories) {
+        cats.set(a.artist_categories.name, a.artist_categories.sort_order);
+      }
+    });
+    return Array.from(cats.entries()).sort((a, b) => a[1] - b[1]).map(([name]) => name);
+  }, [artists]);
+
+  const filteredArtists = React.useMemo(() => {
+    return artists.filter(a => {
+      const matchesSearch = !filter || a.name.toLowerCase().includes(filter.toLowerCase());
+      const matchesCategory = filterCategory === 'all' || a.artist_categories?.name === filterCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [artists, filter, filterCategory]);
 
   const heroWords = heroTitle.trim().split(' ');
   const heroLast  = heroWords.length > 1 ? (heroWords.pop() ?? '') : heroTitle;
@@ -217,9 +238,47 @@ export default function Artists() {
           </div>
         </section>
 
-        {/* ── Artists — grouped by category ────────────── */}
+        {/* ── Artists ──────────────────────────────────── */}
         <section className="relative px-6 md:px-20 py-14 md:py-20">
-          <div className="max-w-7xl mx-auto space-y-12">
+          <div className="max-w-7xl mx-auto space-y-8">
+            {/* Filter bar */}
+            {!loading && !error && artists.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <input
+                  type="text"
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                  placeholder="Search artists..."
+                  className="bg-transparent border border-[#C42121]/20 px-4 py-2.5 text-sm text-white placeholder-[#C42121]/30 font-mono tracking-wider focus:outline-none focus:border-[#C42121]/50 transition-colors flex-1 max-w-xs"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilterCategory('all')}
+                    className={`text-[10px] font-mono px-3 py-1.5 border uppercase tracking-wider transition-colors cursor-pointer ${
+                      filterCategory === 'all'
+                        ? 'border-[#C42121] text-[#C42121] bg-[#C42121]/10'
+                        : 'border-[#C42121]/20 text-[#C42121]/50 hover:border-[#C42121]/40'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {allCategories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setFilterCategory(cat)}
+                      className={`text-[10px] font-mono px-3 py-1.5 border uppercase tracking-wider transition-colors cursor-pointer ${
+                        filterCategory === cat
+                          ? 'border-[#C42121] text-[#C42121] bg-[#C42121]/10'
+                          : 'border-[#C42121]/20 text-[#C42121]/50 hover:border-[#C42121]/40'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
                 {[1,2,3,4,5,6,7,8].map(i => <SkeletonArtist key={i} />)}
@@ -229,51 +288,17 @@ export default function Artists() {
                 <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">ERROR LOADING ARTISTS</p>
                 <p className="text-[#C42121]/30 text-sm font-mono mt-3">{error}</p>
               </div>
-            ) : artists.length === 0 ? (
+            ) : filteredArtists.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">NO ARTISTS YET</p>
-                <p className="text-[#C42121]/30 text-sm font-mono mt-3">Check back soon.</p>
+                <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">{artists.length === 0 ? 'NO ARTISTS YET' : 'NO RESULTS'}</p>
+                <p className="text-[#C42121]/30 text-sm font-mono mt-3">{artists.length === 0 ? 'Check back soon.' : 'Try a different filter.'}</p>
               </div>
             ) : (
-              (() => {
-                const catOrder: Record<string, number> = {};
-                artists.forEach(a => {
-                  if (a.artist_categories) {
-                    catOrder[a.artist_categories.name] = a.artist_categories.sort_order;
-                  }
-                });
-
-                const groups: Record<string, ArtistWithCategory[]> = {};
-                artists.forEach(a => {
-                  const key = a.artist_categories?.name ?? 'Other';
-                  if (!groups[key]) groups[key] = [];
-                  groups[key].push(a);
-                });
-
-                const sortedKeys = Object.keys(groups).sort((a, b) => {
-                  if (a === 'Other') return 1;
-                  if (b === 'Other') return -1;
-                  return (catOrder[a] ?? 999) - (catOrder[b] ?? 999);
-                });
-
-                return sortedKeys.map(cat => (
-                  <div key={cat}>
-                    <h3 className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-8 border-b border-[#C42121]/10 pb-4">
-                      {cat}
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
-                      {groups[cat].map((artist, index) => (
-                        <ArtistCard
-                          key={artist.id}
-                          artist={artist}
-                          index={index}
-                          onClick={() => setActiveArtist(artist)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ));
-              })()
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
+                {filteredArtists.map((artist, index) => (
+                  <ArtistCard key={artist.id} artist={artist} index={index} onClick={() => setActiveArtist(artist)} />
+                ))}
+              </div>
             )}
           </div>
         </section>

@@ -3,6 +3,12 @@
 // Manually typed to match supabase-schema.sql
 // ================================================================
 
+export interface EventPartnership {
+  name: string;
+  logo_url?: string;
+  url?: string;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -21,6 +27,7 @@ export interface Event {
   lineup: string[];              // Legacy: free-text lineup (kept for backwards compat)
   tags: string[];
   attendees: number | null;
+  partnerships: EventPartnership[];
   status: 'draft' | 'published';
   featured: boolean;
   created_at: string;
@@ -99,6 +106,10 @@ export interface DJ {
   slug: string;
   bio: string | null;
   photo_url: string | null;
+  based_in: string | null;
+  press_kit_url: string | null;
+  gallery_images: string[];
+  photo_position: string;
   genres: string[];
   social_links: SocialLinks;
   featured: boolean;

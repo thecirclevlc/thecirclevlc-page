@@ -154,6 +154,19 @@ CREATE POLICY "Authenticated delete images"
   USING (bucket_id = 'images' AND auth.role() = 'authenticated');
 
 -- ----------------------------------------------------------------
+-- MIGRATION: DJ improvements (March 2026)
+-- ----------------------------------------------------------------
+ALTER TABLE djs ADD COLUMN IF NOT EXISTS based_in        TEXT;
+ALTER TABLE djs ADD COLUMN IF NOT EXISTS press_kit_url   TEXT;
+ALTER TABLE djs ADD COLUMN IF NOT EXISTS gallery_images  TEXT[]  DEFAULT '{}';
+ALTER TABLE djs ADD COLUMN IF NOT EXISTS photo_position  TEXT    DEFAULT 'center';
+
+-- ----------------------------------------------------------------
+-- MIGRATION: Event partnerships (March 2026)
+-- ----------------------------------------------------------------
+ALTER TABLE events ADD COLUMN IF NOT EXISTS partnerships JSONB DEFAULT '[]';
+
+-- ----------------------------------------------------------------
 -- SEED DATA (optional — matches existing hardcoded events)
 -- ----------------------------------------------------------------
 -- INSERT INTO events (title, slug, event_number, date, venue, description, status, attendees, lineup, tags)

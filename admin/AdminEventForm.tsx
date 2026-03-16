@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { uploadImage, uploadVideo, deleteVideo } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
+import { useAutosave } from '../lib/useAutosave';
 import type { EventInsert, EntityOption } from '../lib/database.types';
 import { ArrowLeft, Upload, X, Loader2, Plus, Check, Film } from 'lucide-react';
 import EntitySelector from './EntitySelector';
@@ -27,7 +28,7 @@ const BLANK: EventInsert = {
   title: '', slug: '', event_number: null, date: null, time: null,
   venue: null, description: null, short_description: null, cover_image_url: null, hero_video_url: null,
   gallery_images: [], gallery_style: 'default', ticket_url: null, lineup: [], tags: [],
-  attendees: null, status: 'draft', featured: false,
+  attendees: null, partnerships: [], status: 'draft', featured: false,
 };
 
 // ── component ────────────────────────────────────────────────────
@@ -45,6 +46,9 @@ export default function AdminEventForm() {
   const [uploadingGallery, setUGallery] = useState(false);
   const [uploadingVideo, setUVideo]   = useState(false);
   const [tagInput, setTagInput]       = useState('');
+  const [partnerName, setPartnerName] = useState('');
+  const [partnerUrl, setPartnerUrl] = useState('');
+  const [dbId, setDbId] = useState<string | null>(id ?? null);
 
   // Entity selectors
   const [selectedDJs, setSelectedDJs]         = useState<EntityOption[]>([]);
@@ -119,6 +123,18 @@ export default function AdminEventForm() {
     setTimeout(() => setToast(null), 3500);
   }
 
+  const autoSaveToDb = React.useCallback(async (data: EventInsert) => {
+    if (!dbId) return;
+    await supabase.from('events').update(data).eq('id', dbId);
+  }, [dbId]);
+
+  const { status: autosaveStatus } = useAutosave({
+    data: form,
+    onSave: autoSaveToDb,
+    delay: 3000,
+    enabled: !!dbId,
+  });
+
   // ── cover image upload ───────────────────────────────────────
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -175,6 +191,22 @@ export default function AdminEventForm() {
     set('gallery_images', (form.gallery_images ?? []).filter((_, idx) => idx !== i));
   }
 
+  function addPartnership() {
+    if (!partnerName.trim()) return;
+    const partnerships = [...((form.partnerships as any[]) ?? []), {
+      name: partnerName.trim(),
+      url: partnerUrl.trim() || undefined,
+    }];
+    set('partnerships', partnerships as any);
+    setPartnerName('');
+    setPartnerUrl('');
+  }
+
+  function removePartnership(i: number) {
+    const partnerships = ((form.partnerships as any[]) ?? []).filter((_: any, idx: number) => idx !== i);
+    set('partnerships', partnerships as any);
+  }
+
   // ── sync join tables ──────────────────────────────────────────
   async function syncJoins(eventId: string) {
     // DJs: delete all then insert selected in order
@@ -216,6 +248,7 @@ export default function AdminEventForm() {
       } else {
         const { data, error } = await supabase.from('events').insert(form).select('id').single();
         if (error) throw error;
+        setDbId(data.id);
         await syncJoins(data.id);
         showToast('Event created!', 'ok');
         setTimeout(() => navigate('/admin/events'), 1200);
@@ -258,6 +291,17 @@ export default function AdminEventForm() {
         <div>
           <h1 className="text-white text-2xl font-bold">{isEdit ? 'Edit Event' : 'New Event'}</h1>
           <p className="text-[#444] text-sm mt-0.5">{isEdit ? 'Update event details' : 'Fill in the details below'}</p>
+            {dbId && autosaveStatus !== 'idle' && (
+              <span className={`text-xs font-mono tracking-wider mt-1 ${
+                autosaveStatus === 'saving' ? 'text-yellow-500' :
+                autosaveStatus === 'saved' ? 'text-green-500' :
+                autosaveStatus === 'error' ? 'text-red-500' : 'text-[#444]'
+              }`}>
+                {autosaveStatus === 'saving' ? 'Saving...' :
+                 autosaveStatus === 'saved' ? 'Saved' :
+                 autosaveStatus === 'error' ? 'Save failed' : ''}
+              </span>
+            )}
         </div>
       </div>
 
@@ -528,6 +572,39 @@ export default function AdminEventForm() {
               className={INPUT + ' flex-1'} placeholder="Electronic, Immersive…"
             />
             <button type="button" onClick={addTag}
+              className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
+              Add
+            </button>
+          </div>
+        </section>
+
+        {/* ── PARTNERSHIPS ───────────────────────────────── */}
+        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
+          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Collaborations & Partners</p>
+          <p className="text-[#333] text-xs font-mono">Brands, venues, or collectives involved in this event.</p>
+
+          <div className="space-y-2">
+            {((form.partnerships as any[]) ?? []).map((p: any, i: number) => (
+              <div key={i} className="flex items-center gap-2 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2">
+                <span className="text-sm text-white flex-1">{p.name}</span>
+                {p.url && <span className="text-xs text-[#444] font-mono truncate max-w-[150px]">{p.url}</span>}
+                <button type="button" onClick={() => removePartnership(i)} className="text-[#444] hover:text-red-400 transition-colors">
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <input type="text" value={partnerName}
+              onChange={e => setPartnerName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPartnership(); }}}
+              className={INPUT + ' flex-1'} placeholder="Partner name" />
+            <input type="url" value={partnerUrl}
+              onChange={e => setPartnerUrl(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPartnership(); }}}
+              className={INPUT + ' flex-1'} placeholder="https://... (optional)" />
+            <button type="button" onClick={addPartnership}
               className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
               Add
             </button>

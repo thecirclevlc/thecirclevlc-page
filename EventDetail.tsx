@@ -15,62 +15,121 @@ import Footer from './components/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ── Image Gallery ────────────────────────────────────────────────
+// ── Pinned Scroll Gallery ─────────────────────────────────────────
+// The section pins to the viewport while images scroll horizontally.
+// Once all images have been seen, the pin releases.
 
-const GSAPImage: React.FC<{ image: string; index: number; onClick: (index: number) => void }> = ({ image, index, onClick }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+const PinnedGallery: React.FC<{ images: string[]; onImageClick: (index: number) => void }> = ({ images, onImageClick }) => {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const counterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    const img = imageRef.current;
-    if (!container || !img) return;
+    const section = sectionRef.current;
+    const track = trackRef.current;
+    if (!section || !track || images.length <= 1) return;
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(container,
-        { opacity: 0, y: 80 },
-        { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
-          scrollTrigger: { trigger: container, start: 'top 85%' } }
-      );
-      gsap.fromTo(img,
-        { scale: 1.2, filter: 'brightness(0.3)' },
-        { scale: 1, filter: 'brightness(0.6)', duration: 1.5, ease: 'power2.out',
-          scrollTrigger: { trigger: container, start: 'top 85%' } }
-      );
-    }, container);
+      // Total horizontal distance to scroll
+      const totalScroll = track.scrollWidth - window.innerWidth;
 
-    const handleMouseEnter = () => gsap.to(img, { scale: 1.05, filter: 'brightness(0.8)', duration: 0.6, ease: 'power2.out' });
-    const handleMouseLeave = () => gsap.to(img, { scale: 1, filter: 'brightness(0.6)', duration: 0.6, ease: 'power2.out' });
+      gsap.to(track, {
+        x: -totalScroll,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top top',
+          end: () => `+=${totalScroll}`,
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+          onUpdate: (self) => {
+            if (counterRef.current) {
+              const idx = Math.min(
+                Math.floor(self.progress * images.length),
+                images.length - 1
+              );
+              counterRef.current.textContent =
+                `${String(idx + 1).padStart(2, '0')} / ${String(images.length).padStart(2, '0')}`;
+            }
+          },
+        },
+      });
+    }, section);
 
-    container.addEventListener('mouseenter', handleMouseEnter);
-    container.addEventListener('mouseleave', handleMouseLeave);
+    return () => ctx.revert();
+  }, [images]);
 
-    return () => {
-      ctx.revert();
-      container.removeEventListener('mouseenter', handleMouseEnter);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, []);
+  // Fallback for single image — no pin needed
+  if (images.length === 1) {
+    return (
+      <div
+        className="relative aspect-[16/10] overflow-hidden bg-black border border-[#C42121]/20 cursor-pointer group"
+        onClick={() => onImageClick(0)}
+      >
+        <img src={images[0]} alt="Event image" className="w-full h-full object-cover" style={{ filter: 'brightness(0.65)' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+      </div>
+    );
+  }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative aspect-[16/10] overflow-hidden bg-black border border-[#C42121]/20 cursor-pointer group"
-      onClick={() => onClick(index)}
-    >
-      <img ref={imageRef} src={image} alt={`Event image ${index + 1}`} className="w-full h-full object-cover" loading="lazy" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-        <div className="text-[#C42121] text-sm font-mono tracking-widest">CLICK TO EXPAND</div>
+    <div ref={sectionRef} className="relative h-screen overflow-hidden">
+      {/* Counter */}
+      <div className="absolute top-6 left-6 md:left-20 z-10 flex items-center gap-4">
+        <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">Gallery</p>
+        <span ref={counterRef} className="text-[10px] font-mono text-[#C42121]/60 tracking-widest">
+          01 / {String(images.length).padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* Horizontal track */}
+      <div ref={trackRef} className="flex items-center h-full gap-4 md:gap-6 pl-6 md:pl-20 will-change-transform">
+        {images.map((img, i) => (
+          <div
+            key={i}
+            className="flex-shrink-0 relative overflow-hidden border border-[#C42121]/20 cursor-pointer group"
+            style={{ width: 'min(80vw, 900px)', height: '75vh' }}
+            onClick={() => onImageClick(i)}
+          >
+            <img
+              src={img}
+              alt={`Gallery image ${i + 1}`}
+              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
+              style={{ filter: 'brightness(0.65)' }}
+              loading="lazy"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              <span className="text-[10px] font-mono tracking-widest text-white border border-white/40 px-3 py-1.5 uppercase">
+                Expand
+              </span>
+            </div>
+          </div>
+        ))}
+        {/* End spacer so last image can reach center */}
+        <div className="flex-shrink-0 w-[20vw]" />
       </div>
     </div>
   );
 };
 
+// Keep legacy vertical gallery as fallback for gallery_style === 'default' on mobile
 const ImageGallery: React.FC<{ images: string[]; onImageClick: (index: number) => void }> = ({ images, onImageClick }) => (
   <div className="space-y-12 md:space-y-20">
     {images.map((image, index) => (
-      <GSAPImage key={index} image={image} index={index} onClick={onImageClick} />
+      <div
+        key={index}
+        className="relative aspect-[16/10] overflow-hidden bg-black border border-[#C42121]/20 cursor-pointer group"
+        onClick={() => onImageClick(index)}
+      >
+        <img src={image} alt={`Event image ${index + 1}`} className="w-full h-full object-cover" style={{ filter: 'brightness(0.65)' }} loading="lazy" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="text-[#C42121] text-sm font-mono tracking-widest">CLICK TO EXPAND</div>
+        </div>
+      </div>
     ))}
   </div>
 );
@@ -421,6 +480,33 @@ export default function EventDetail() {
           </div>
         </section>
 
+        {/* ── Partnerships ────────────────────────────────── */}
+        {event.partnerships && (event.partnerships as any[]).length > 0 && (
+          <section className="relative px-6 md:px-20 py-12 md:py-16 border-t border-[#C42121]/20">
+            <div className="max-w-7xl mx-auto">
+              <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-6">Collaborations & Partners</p>
+              <div className="flex flex-wrap gap-6 items-center">
+                {(event.partnerships as any[]).map((p: any, i: number) => (
+                  <a
+                    key={i}
+                    href={p.url || '#'}
+                    target={p.url ? '_blank' : undefined}
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-5 py-3 border border-[#C42121]/20 hover:border-[#C42121]/40 transition-colors group"
+                  >
+                    {p.logo_url && (
+                      <img src={p.logo_url} alt={p.name} className="h-8 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity" />
+                    )}
+                    <span className="text-sm font-mono text-[#C42121]/70 group-hover:text-[#C42121] tracking-wider uppercase transition-colors">
+                      {p.name}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── Hover image — fixed pop, no cursor tracking ─── */}
         {hoveredUrl && (
           <div className="fixed right-10 top-1/2 -translate-y-1/2 pointer-events-none z-[200]
@@ -436,23 +522,21 @@ export default function EventDetail() {
           </div>
         )}
 
-        {/* ── Image Gallery (default vertical / horizontal parallax) ── */}
+        {/* ── Image Gallery ── */}
         {galleryImages.length > 0 && (
-          <section className="relative px-6 md:px-20 py-20 md:py-32 border-t border-[#C42121]/20">
-            <div className="max-w-7xl mx-auto">
-              {event.gallery_style === 'horizontal' ? (
-                <HorizontalGallery
-                  images={galleryImages}
-                  onImageClick={idx => setLightboxIndex(idx)}
-                />
-              ) : (
-                <ImageGallery
-                  images={galleryImages}
-                  onImageClick={idx => setLightboxIndex(idx)}
-                />
-              )}
-            </div>
-          </section>
+          <div className="border-t border-[#C42121]/20">
+            {event.gallery_style === 'horizontal' ? (
+              <HorizontalGallery
+                images={galleryImages}
+                onImageClick={idx => setLightboxIndex(idx)}
+              />
+            ) : (
+              <PinnedGallery
+                images={galleryImages}
+                onImageClick={idx => setLightboxIndex(idx)}
+              />
+            )}
+          </div>
         )}
 
         {/* ── Next Event ─────────────────────────────────── */}
