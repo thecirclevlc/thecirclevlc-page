@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Upload, Trash2, Image, Film, Ban, Loader2, CheckCircle, AlertCircle,
-  Plus, GripVertical, Pencil, Check, X,
+  Plus, GripVertical, Pencil, Check, X, Eye, Save,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { uploadImage, uploadVideo, deleteImage } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
-import type { PageBackground, PageKey, ArtistCategory, ArtistCategoryInsert } from '../lib/database.types';
+import type {
+  PageBackground,
+  PageKey,
+  ArtistCategory,
+  ArtistCategoryInsert,
+  MetaSeo,
+} from '../lib/database.types';
+import { META_SEO_DEFAULTS, META_SEO_KEY } from '../lib/database.types';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -419,9 +426,149 @@ function ArtistCategoriesTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   );
 }
 
+// ── SEO / Link Preview Section ────────────────────────────────────
+
+interface SeoSectionProps {
+  onToast: (t: ToastMsg) => void;
+}
+
+function SeoSection({ onToast }: SeoSectionProps) {
+  const [values, setValues]   = useState<MetaSeo>(META_SEO_DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [dirty, setDirty]     = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from('site_settings')
+      .select('value')
+      .eq('id', META_SEO_KEY)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data?.value) setValues({ ...META_SEO_DEFAULTS, ...(data.value as MetaSeo) });
+        setLoading(false);
+      });
+  }, []);
+
+  const update = (field: keyof MetaSeo, v: string) => {
+    setValues(prev => ({ ...prev, [field]: v }));
+    setDirty(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          id:         META_SEO_KEY,
+          value:      values,
+          updated_at: new Date().toISOString(),
+        });
+      if (error) throw error;
+      setDirty(false);
+      onToast({ text: 'SEO metadata saved', type: 'success' });
+    } catch (err: any) {
+      onToast({ text: err.message ?? 'Save failed', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 flex items-center gap-3">
+        <Loader2 size={16} className="animate-spin text-[#444]" />
+        <span className="text-[#444] text-sm">Loading SEO settings…</span>
+      </div>
+    );
+  }
+
+  const fields: { key: keyof MetaSeo; label: string; hint: string }[] = [
+    { key: 'title',               label: 'Browser Tab Title',  hint: 'The <title> tag — shown in browser tabs.' },
+    { key: 'description',         label: 'Meta Description',   hint: 'Standard search-engine description.' },
+    { key: 'og_title',            label: 'OG Title',           hint: 'Title shown by WhatsApp, Facebook, LinkedIn previews.' },
+    { key: 'og_description',      label: 'OG Description',     hint: 'Subtitle shown by WhatsApp, Facebook, LinkedIn previews.' },
+    { key: 'twitter_title',       label: 'Twitter Title',      hint: 'Title shown in X/Twitter previews.' },
+    { key: 'twitter_description', label: 'Twitter Description',hint: 'Subtitle shown in X/Twitter previews.' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-white text-lg font-semibold">SEO / Link Preview</h2>
+        <p className="text-[#555] text-sm mt-1">
+          Text shown when someone shares thecirclevlc.com on WhatsApp, Facebook, Twitter, or search engines.
+        </p>
+      </div>
+
+      <div className="bg-amber-950/20 border border-amber-500/20 rounded-xl px-5 py-4 flex gap-3">
+        <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-amber-400 text-sm font-medium">WhatsApp caches link previews</p>
+          <p className="text-amber-500/70 text-xs mt-0.5 font-mono">
+            After saving, new previews will show updated text — but WhatsApp may keep showing the old preview for messages already sent. Use a fresh URL or the Facebook Sharing Debugger to force a refresh.
+          </p>
+        </div>
+      </div>
+
+      {/* Live preview card */}
+      <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Eye size={14} className="text-[#555]" />
+          <span className="text-[#555] text-xs tracking-[0.2em] uppercase">Preview</span>
+        </div>
+        <div className="max-w-md bg-[#1f1f1f] rounded-lg overflow-hidden border border-[#2a2a2a]">
+          <div className="aspect-[1200/630] bg-gradient-to-br from-[#C42121]/20 to-black flex items-center justify-center">
+            <span className="text-[#C42121] font-bold text-2xl tracking-widest">THECIRCLE</span>
+          </div>
+          <div className="p-4 space-y-1">
+            <p className="text-white font-semibold text-sm leading-tight">
+              {values.og_title || '\u2014'}
+            </p>
+            <p className="text-[#888] text-xs leading-snug">
+              {values.og_description || '\u2014'}
+            </p>
+            <p className="text-[#555] text-[11px] mt-2">thecirclevlc.com</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 space-y-5">
+        {fields.map(f => (
+          <div key={f.key}>
+            <label className="block text-white text-xs font-medium tracking-wide mb-1.5">
+              {f.label}
+            </label>
+            <input
+              type="text"
+              value={values[f.key]}
+              onChange={e => update(f.key, e.target.value)}
+              className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors"
+            />
+            <p className="text-[#333] text-xs mt-1 font-mono">{f.hint}</p>
+          </div>
+        ))}
+
+        <div className="flex justify-end pt-2 border-t border-[#1a1a1a]">
+          <button
+            onClick={save}
+            disabled={saving || !dirty}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? 'Saving\u2026' : dirty ? 'Save changes' : 'Saved'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────
 
-type Tab = 'backgrounds' | 'categories';
+type Tab = 'backgrounds' | 'categories' | 'seo';
 
 export default function AdminSiteSettings() {
   const [activeTab, setActiveTab]   = useState<Tab>('backgrounds');
@@ -436,6 +583,7 @@ export default function AdminSiteSettings() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'backgrounds', label: 'Page Backgrounds' },
     { id: 'categories',  label: 'Artist Categories' },
+    { id: 'seo',         label: 'SEO / Link Preview' },
   ];
 
   return (
@@ -490,6 +638,11 @@ export default function AdminSiteSettings() {
       {/* Tab: Artist Categories */}
       {activeTab === 'categories' && (
         <ArtistCategoriesTab onToast={addToast} />
+      )}
+
+      {/* Tab: SEO */}
+      {activeTab === 'seo' && (
+        <SeoSection onToast={addToast} />
       )}
 
       {/* Toast notifications */}
