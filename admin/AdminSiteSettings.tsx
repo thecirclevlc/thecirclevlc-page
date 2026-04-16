@@ -447,7 +447,8 @@ function SeoSection({ onToast }: SeoSectionProps) {
       .then(({ data, error }) => {
         if (!error && data?.value) setValues({ ...META_SEO_DEFAULTS, ...(data.value as MetaSeo) });
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const update = (field: keyof MetaSeo, v: string) => {
