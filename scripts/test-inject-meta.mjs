@@ -1,32 +1,7 @@
 // Standalone smoke test — run with: node scripts/test-inject-meta.mjs
 // Exits non-zero on failure.
-// NOTE: helpers inlined as plain JS so this script runs with plain `node`
-// (no tsx/ts-node required). The canonical implementation lives in
-// api/_lib/injectMeta.ts — keep them in sync.
 
-const ESCAPE_MAP = {
-  '&':  '&amp;',
-  '<':  '&lt;',
-  '>':  '&gt;',
-  '"':  '&quot;',
-  "'":  '&#39;',
-};
-
-function escapeHtml(input) {
-  return input.replace(/[&<>"']/g, ch => ESCAPE_MAP[ch]);
-}
-
-function injectMeta(html, values) {
-  return Object.entries(values).reduce((acc, [key, rawValue]) => {
-    if (rawValue == null) return acc;
-    const safe = escapeHtml(String(rawValue));
-    const pattern = new RegExp(
-      `<!--META:${key}-->[\\s\\S]*?<!--/META:${key}-->`,
-      'g',
-    );
-    return acc.replace(pattern, `<!--META:${key}-->${safe}<!--/META:${key}-->`);
-  }, html);
-}
+import { injectMeta, escapeHtml } from '../api/_lib/injectMeta.mjs';
 
 let failures = 0;
 function assertEq(label, actual, expected) {
@@ -78,7 +53,7 @@ function assertEq(label, actual, expected) {
 // 4. escapeHtml direct
 assertEq('escape amp', escapeHtml('A & B'), 'A &amp; B');
 
-// 5. Unknown key in values is ignored (no marker, no crash)
+// 5. Unknown key in values is ignored
 {
   const html = '<x><!--META:title-->T<!--/META:title--></x>';
   const out  = injectMeta(html, { title: 'T2', garbage: 'NO' });
@@ -86,6 +61,17 @@ assertEq('escape amp', escapeHtml('A & B'), 'A &amp; B');
     'unknown key ignored',
     out,
     '<x><!--META:title-->T2<!--/META:title--></x>',
+  );
+}
+
+// 6. Regex-metachar key in values is skipped safely (new — covers Issue B)
+{
+  const html = '<x><!--META:title-->T<!--/META:title--></x>';
+  const out  = injectMeta(html, { title: 'OK', '.*': 'BOOM' });
+  assertEq(
+    'regex metachar key skipped',
+    out,
+    '<x><!--META:title-->OK<!--/META:title--></x>',
   );
 }
 
