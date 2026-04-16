@@ -181,3 +181,22 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS partnerships JSONB DEFAULT '[]';
 --    'published', 80,
 --    ARRAY['Luna Eclipse', 'The Grid', 'Frequency Shift'],
 --    ARRAY['Experimental', 'Underground', 'Electronic', 'Genesis']);
+
+-- ── SEO / Link Preview ────────────────────────────────────────────
+-- Editable root-page metadata. Stored as a single row in site_settings:
+--
+--   id = 'meta_seo'
+--   value = {
+--     "title":               "THE CIRCLE",
+--     "description":         "An exclusive event. Request your access.",
+--     "og_title":            "THE CIRCLE",
+--     "og_description":      "An exclusive event. Request your access.",
+--     "twitter_title":       "THE CIRCLE",
+--     "twitter_description": "An exclusive event. Request your access."
+--   }
+--
+-- Read by api/index.ts on every hit of `/`. If the row is missing or
+-- Supabase is unreachable the serverless function falls back to the
+-- static defaults in index.html.
+--
+-- No new table or migration needed — reuses the existing site_settings table.
