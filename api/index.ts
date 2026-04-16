@@ -19,7 +19,7 @@ const supabase =
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
-const HTML_PATH = path.join(process.cwd(), 'dist', 'index.html');
+const HTML_PATH = path.join(process.cwd(), 'dist', '_app.html');
 
 let cachedHtml: string | null = null;
 

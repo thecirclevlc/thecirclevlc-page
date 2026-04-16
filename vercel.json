@@ -4,12 +4,12 @@
   "framework": "vite",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "dist/index.html"
+      "includeFiles": "dist/_app.html"
     }
   },
   "rewrites": [
     { "source": "/", "destination": "/api/index" },
-    { "source": "/((?!api).*)", "destination": "/index.html" }
+    { "source": "/((?!api).*)", "destination": "/_app.html" }
   ],
   "headers": [
     {
