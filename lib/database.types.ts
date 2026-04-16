@@ -179,3 +179,25 @@ export interface SiteSettings {
 }
 
 export type PageKey = 'page_events' | 'page_djs' | 'page_artists';
+
+// ── SEO / Link Preview ────────────────────────────────────────────
+
+export interface MetaSeo {
+  title:               string;
+  description:         string;
+  og_title:            string;
+  og_description:      string;
+  twitter_title:       string;
+  twitter_description: string;
+}
+
+export const META_SEO_DEFAULTS: MetaSeo = {
+  title:               'THE CIRCLE',
+  description:         'An exclusive event. Request your access.',
+  og_title:            'THE CIRCLE',
+  og_description:      'An exclusive event. Request your access.',
+  twitter_title:       'THE CIRCLE',
+  twitter_description: 'An exclusive event. Request your access.',
+};
+
+export const META_SEO_KEY = 'meta_seo' as const;
