@@ -1,9 +1,11 @@
 // Pure HTML meta-tag injector.
-// Replaces <!--META:key-->...<!--/META:key--> blocks with HTML-escaped values.
-// Unknown keys are ignored. Missing keys in `values` leave the default untouched.
+// Replaces <!--META:key-->...<!--/META:key--> blocks with HTML-escaped values,
+// then strips ALL remaining markers from the output. This is critical because
+// markers inside content="..." attributes are literal text (not HTML comments),
+// and would be visible to crawlers if left in.
 //
-// Example input HTML:
-//   <title><!--META:title-->DEFAULT<!--/META:title--></title>
+// The source HTML (dist/index.html) is re-read on each request, so markers
+// are always available for matching — no need to preserve them in output.
 //
 // This helper is safe only for HTML text-node and quoted-attribute contexts
 // (which is where the META markers live in index.html). Do not reuse the
@@ -52,7 +54,7 @@ export function escapeHtml(input) {
  * @returns {string}
  */
 export function injectMeta(html, values) {
-  return Object.entries(values).reduce((acc, [key, rawValue]) => {
+  const injected = Object.entries(values).reduce((acc, [key, rawValue]) => {
     if (rawValue == null) return acc;
     if (!ALLOWED_KEYS.has(key)) return acc;
     const safe = escapeHtml(String(rawValue));
@@ -60,6 +62,7 @@ export function injectMeta(html, values) {
       `<!--META:${key}-->[\\s\\S]*?<!--/META:${key}-->`,
       'g',
     );
-    return acc.replace(pattern, `<!--META:${key}-->${safe}<!--/META:${key}-->`);
+    return acc.replace(pattern, safe);
   }, html);
+  return injected.replace(/<!--\/?META:\w+-->/g, '');
 }

@@ -15,25 +15,25 @@ function assertEq(label, actual, expected) {
   }
 }
 
-// 1. Replaces a single marker
+// 1. Replaces a single marker and strips markers from output
 {
   const html = '<title><!--META:title-->DEFAULT<!--/META:title--></title>';
   const out  = injectMeta(html, { title: 'NEW' });
   assertEq(
-    'single replace',
+    'single replace (markers stripped)',
     out,
-    '<title><!--META:title-->NEW<!--/META:title--></title>',
+    '<title>NEW</title>',
   );
 }
 
-// 2. Leaves markers whose key is not in values
+// 2. Strips all markers — even for keys not in values (defaults shown clean)
 {
   const html = '<a><!--META:title-->A<!--/META:title--></a><b><!--META:description-->B<!--/META:description--></b>';
   const out  = injectMeta(html, { title: 'X' });
   assertEq(
-    'partial values',
+    'partial values (all markers stripped)',
     out,
-    '<a><!--META:title-->X<!--/META:title--></a><b><!--META:description-->B<!--/META:description--></b>',
+    '<a>X</a><b>B</b>',
   );
 }
 
@@ -46,7 +46,7 @@ function assertEq(label, actual, expected) {
   assertEq(
     'html escape',
     out,
-    '<t><!--META:title-->&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;<!--/META:title--></t>',
+    '<t>&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;</t>',
   );
 }
 
@@ -60,18 +60,29 @@ assertEq('escape amp', escapeHtml('A & B'), 'A &amp; B');
   assertEq(
     'unknown key ignored',
     out,
-    '<x><!--META:title-->T2<!--/META:title--></x>',
+    '<x>T2</x>',
   );
 }
 
-// 6. Regex-metachar key in values is skipped safely (new — covers Issue B)
+// 6. Regex-metachar key in values is skipped safely
 {
   const html = '<x><!--META:title-->T<!--/META:title--></x>';
   const out  = injectMeta(html, { title: 'OK', '.*': 'BOOM' });
   assertEq(
     'regex metachar key skipped',
     out,
-    '<x><!--META:title-->OK<!--/META:title--></x>',
+    '<x>OK</x>',
+  );
+}
+
+// 7. Empty values — all markers stripped, defaults shown clean
+{
+  const html = '<meta content="<!--META:og_title-->THE CIRCLE<!--/META:og_title-->">';
+  const out  = injectMeta(html, {});
+  assertEq(
+    'empty values strips markers leaving defaults',
+    out,
+    '<meta content="THE CIRCLE">',
   );
 }
 
