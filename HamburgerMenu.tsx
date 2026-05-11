@@ -179,9 +179,12 @@ export const HamburgerMenu: React.FC = () => {
       });
     }
 
-    // Cleanup: Restore body scroll if component unmounts while menu is open
+    // Cleanup: Restore body scroll AND kill in-flight tweens if component
+    // unmounts while menu is open / animating — otherwise GSAP keeps
+    // animating detached DOM nodes.
     return () => {
       document.body.style.overflow = '';
+      gsap.killTweensOf([overlay, menuItems, c1, c2, c3, ...Array.from(menuItems.querySelectorAll('.menu-item'))]);
     };
   }, [isOpen]);
 
@@ -229,17 +232,11 @@ export const HamburgerMenu: React.FC = () => {
         {/* Menu Items Container */}
         <div ref={menuItemsRef} className="relative z-10 w-full max-w-5xl px-8">
           <nav className="flex flex-col items-center justify-center gap-3 md:gap-5 lg:gap-6">
-            {/* Current production menu: HOME + JOIN US only */}
-            <MenuItem label="HOME"    onClick={() => handleMenuClick('/')} />
-            <MenuItem label="JOIN US" onClick={() => handleMenuClick('/form')} />
-            {/*
-              Future full menu — uncomment when ecosystem pages are public:
-              <MenuItem label="HOME"        onClick={() => handleMenuClick('/')} />
-              <MenuItem label="PAST EVENTS" onClick={() => handleMenuClick('/past-events')} />
-              <MenuItem label="DJS"         onClick={() => handleMenuClick('/djs')} />
-              <MenuItem label="ARTISTS"     onClick={() => handleMenuClick('/artists')} />
-              <MenuItem label="JOIN US"     onClick={() => handleMenuClick('/form')} />
-            */}
+            <MenuItem label="HOME"        onClick={() => handleMenuClick('/')} />
+            <MenuItem label="PAST EVENTS" onClick={() => handleMenuClick('/past-events')} />
+            <MenuItem label="DJS"         onClick={() => handleMenuClick('/djs')} />
+            <MenuItem label="ARTISTS"     onClick={() => handleMenuClick('/artists')} />
+            <MenuItem label="JOIN US"     onClick={() => handleMenuClick('/form')} />
           </nav>
         </div>
       </div>
@@ -255,6 +252,9 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
   const textRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
   const tlRef   = useRef<gsap.core.Timeline | null>(null);
+
+  // Kill any in-flight hover timeline if the item unmounts mid-animation
+  useEffect(() => () => { tlRef.current?.kill(); }, []);
 
   const handleMouseEnter = () => {
     tlRef.current?.kill();

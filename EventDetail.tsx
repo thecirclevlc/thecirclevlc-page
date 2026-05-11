@@ -203,7 +203,7 @@ export default function EventDetail() {
     setNotFound(false);
 
     Promise.all([
-      supabase.from('events').select('*').eq('slug', eventId).single(),
+      supabase.from('events').select('*').eq('slug', eventId).eq('status', 'published').single(),
       supabase
         .from('events')
         .select('id,title,slug,event_number,cover_image_url,date')
