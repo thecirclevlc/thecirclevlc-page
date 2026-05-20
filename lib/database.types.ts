@@ -201,3 +201,140 @@ export const META_SEO_DEFAULTS: MetaSeo = {
 };
 
 export const META_SEO_KEY = 'meta_seo' as const;
+
+// ── Navigation: Hamburger Menu + Footer ───────────────────────────
+
+export type NavItemMode = 'route' | 'external';
+
+export interface NavItem {
+  id:            string;
+  label:         string;
+  mode:          NavItemMode;
+  route?:        string;        // when mode='route' — must match AVAILABLE_ROUTES
+  external_url?: string;        // when mode='external' — must start with http(s)://
+}
+
+export interface HamburgerNavConfig {
+  items: NavItem[];
+}
+
+export interface FooterConfig {
+  brand_name:     string;
+  tagline:        string;       // e.g. "Valencia, Spain"
+  contact_email:  string;
+  copyright_year: string;
+  links:          NavItem[];
+}
+
+export const NAV_HAMBURGER_KEY = 'nav_hamburger' as const;
+export const FOOTER_CONFIG_KEY = 'footer_config' as const;
+
+export const DEFAULT_HAMBURGER: HamburgerNavConfig = {
+  items: [
+    { id: 'home',    label: 'HOME',        mode: 'route', route: '/' },
+    { id: 'events',  label: 'PAST EVENTS', mode: 'route', route: '/past-events' },
+    { id: 'djs',     label: 'DJS',         mode: 'route', route: '/djs' },
+    { id: 'artists', label: 'ARTISTS',     mode: 'route', route: '/artists' },
+    { id: 'join',    label: 'JOIN US',     mode: 'route', route: '/form' },
+  ],
+};
+
+export const DEFAULT_FOOTER: FooterConfig = {
+  brand_name:     'THE CIRCLE',
+  tagline:        'Valencia, Spain',
+  contact_email:  'contact@thecirclevlc.com',
+  copyright_year: '2026',
+  links: [
+    { id: 'l-events',  label: 'Events',  mode: 'route', route: '/past-events' },
+    { id: 'l-djs',     label: 'DJs',     mode: 'route', route: '/djs' },
+    { id: 'l-artists', label: 'Artists', mode: 'route', route: '/artists' },
+  ],
+};
+
+// ── Social Links (separate table) ─────────────────────────────────
+
+export type SocialPlatform =
+  | 'instagram' | 'tiktok' | 'spotify' | 'soundcloud'
+  | 'youtube' | 'x' | 'facebook' | 'linkedin'
+  | 'email' | 'website';
+
+export interface SocialLink {
+  id:         string;
+  platform:   SocialPlatform;
+  url:        string;
+  sort_order: number;
+  visible:    boolean;
+  created_at: string;
+}
+
+export type SocialLinkInsert = Omit<SocialLink, 'id' | 'created_at'>;
+export type SocialLinkUpdate = Partial<SocialLinkInsert>;
+
+// ── Legal Pages (Privacy / Terms) ─────────────────────────────────
+
+export interface LegalSection {
+  id:      string;
+  heading: string;
+  body:    string;     // plain text; \n\n = paragraph break; - = bullet; **x** = bold
+}
+
+export interface LegalPage {
+  last_updated:  string;       // ISO "YYYY-MM-DD"
+  intro?:        string;
+  contact_email: string;
+  sections:      LegalSection[];
+}
+
+export const LEGAL_PRIVACY_KEY = 'legal_privacy' as const;
+export const LEGAL_TERMS_KEY   = 'legal_terms'   as const;
+
+// ── Dynamic Form Builder ──────────────────────────────────────────
+
+export type FormFieldType =
+  | 'text' | 'email' | 'tel' | 'url' | 'number' | 'textarea' | 'select';
+
+export interface FormFieldSchema {
+  id:           string;
+  name:         string;          // snake_case key for submission data
+  label:        string;
+  placeholder?: string;
+  type:         FormFieldType;
+  required:     boolean;
+  options?:     string[];        // for select
+  rows?:        number;          // for textarea
+  sort_order:   number;
+}
+
+export interface FormSchema {
+  title:                  string;
+  subtitle:               string;
+  event_info:             string;
+  success_title:          string;
+  success_subtitle:       string;
+  submit_label_idle:      string;
+  submit_label_sending:   string;
+  submit_label_error:     string;
+  return_label:           string;
+  terms_text_html:        string;
+  captcha_required:       boolean;
+  fields:                 FormFieldSchema[];
+}
+
+export const FORM_SCHEMA_JOIN_KEY = 'form_schema_join' as const;
+
+// Submission table (form_submissions) — replaces the old flat shape
+export interface FormSubmissionRow {
+  id:         string;
+  form_key:   string;
+  data:       Record<string, string>;
+  status:     SubmissionStatus;
+  notes:      string | null;
+  ip_hash:    string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export type FormSubmissionRowInsert = Pick<FormSubmissionRow, 'form_key' | 'data'> & {
+  user_agent?: string | null;
+  ip_hash?:    string | null;
+};

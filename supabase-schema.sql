@@ -200,3 +200,89 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS partnerships JSONB DEFAULT '[]';
 -- static defaults in index.html.
 --
 -- No new table or migration needed — reuses the existing site_settings table.
+
+-- ================================================================
+-- MIGRATION: Navigation + Social Links + Legal + Form Submissions
+-- (May 2026 — admin-configurable site infrastructure)
+-- ================================================================
+
+-- ── Social Links ──────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS social_links (
+  id          UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  platform    TEXT        NOT NULL
+              CHECK (platform IN ('instagram','tiktok','spotify','soundcloud',
+                                  'youtube','x','facebook','linkedin','email','website')),
+  url         TEXT        NOT NULL,
+  sort_order  INT         DEFAULT 0,
+  visible     BOOLEAN     DEFAULT TRUE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS social_links_sort_idx ON social_links(sort_order);
+
+ALTER TABLE social_links ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read visible social links"
+  ON social_links FOR SELECT
+  USING (visible = TRUE);
+
+CREATE POLICY "Authenticated full access social_links"
+  ON social_links FOR ALL
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ── Form Submissions ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS form_submissions (
+  id          UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  form_key    TEXT        NOT NULL DEFAULT 'form_schema_join',
+  data        JSONB       NOT NULL,                       -- { field_name: value }
+  status      TEXT        NOT NULL DEFAULT 'new'
+              CHECK (status IN ('new','reviewed','accepted','rejected')),
+  notes       TEXT,
+  ip_hash     TEXT,
+  user_agent  TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions(created_at DESC);
+CREATE INDEX IF NOT EXISTS form_submissions_status_idx     ON form_submissions(status);
+
+ALTER TABLE form_submissions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public insert submissions"
+  ON form_submissions FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated read submissions"
+  ON form_submissions FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated update submissions"
+  ON form_submissions FOR UPDATE
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated delete submissions"
+  ON form_submissions FOR DELETE
+  USING (auth.role() = 'authenticated');
+
+-- ── Site Settings rows added by this migration (no DDL — reuses table) ──
+--
+--   id = 'nav_hamburger'
+--   value = { "items": [{ "id":"home","label":"HOME","mode":"route","route":"/" }, ...] }
+--
+--   id = 'footer_config'
+--   value = { "brand_name":"...","tagline":"...","contact_email":"...",
+--             "copyright_year":"2026","links":[{...NavItem...}] }
+--
+--   id = 'legal_privacy'  /  id = 'legal_terms'
+--   value = { "last_updated":"YYYY-MM-DD", "intro":"...", "contact_email":"...",
+--             "sections":[{ "id":"...","heading":"...","body":"..." }] }
+--
+--   id = 'form_schema_join'
+--   value = { "title":"...","subtitle":"...","event_info":"...",
+--             "success_title":"...","success_subtitle":"...",
+--             "submit_label_idle":"DONE","submit_label_sending":"SENT :)",
+--             "submit_label_error":"ERROR","return_label":"RETURN",
+--             "terms_text_html":"...","captcha_required":true,
+--             "fields":[{ "id":"...","name":"...","label":"...","type":"text",
+--                         "required":true,"sort_order":0 }] }

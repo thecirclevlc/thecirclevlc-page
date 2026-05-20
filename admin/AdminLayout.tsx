@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
   LayoutDashboard, Calendar, Music2, Users,
-  LogOut, Menu, X, ExternalLink, Settings, Paintbrush,
+  LogOut, Menu, X, ExternalLink, Settings, Paintbrush, Link2, FileText, FormInput, Inbox,
 } from 'lucide-react';
 
 const NAV = [
@@ -11,7 +11,11 @@ const NAV = [
   { label: 'Events',         to: '/admin/events',         icon: Calendar },
   { label: 'DJs',            to: '/admin/djs',            icon: Music2 },
   { label: 'Artists',        to: '/admin/artists',        icon: Users },
+  { label: 'Submissions',    to: '/admin/submissions',    icon: Inbox },
+  { label: 'Form Builder',   to: '/admin/form-builder',   icon: FormInput },
   { label: 'Visual Editor',  to: '/admin/visual-editor',  icon: Paintbrush },
+  { label: 'Navigation',     to: '/admin/navigation',     icon: Link2 },
+  { label: 'Legal Pages',    to: '/admin/legal',          icon: FileText },
   { label: 'Settings',       to: '/admin/settings',       icon: Settings },
 ];
 

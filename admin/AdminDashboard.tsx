@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Music2, Users, Plus, TrendingUp } from 'lucide-react';
+import { Calendar, Music2, Users, Plus, TrendingUp, Inbox } from 'lucide-react';
 
 interface Stats {
   totalEvents:     number;
   publishedEvents: number;
   totalDJs:        number;
   totalArtists:    number;
+  newSubmissions:  number;
 }
 
 function StatCard({
@@ -42,23 +43,25 @@ function StatCard({
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats]   = useState<Stats>({ totalEvents: 0, publishedEvents: 0, totalDJs: 0, totalArtists: 0 });
+  const [stats, setStats]   = useState<Stats>({ totalEvents: 0, publishedEvents: 0, totalDJs: 0, totalArtists: 0, newSubmissions: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [evTotal, evPub, djTotal, arTotal] = await Promise.all([
+        const [evTotal, evPub, djTotal, arTotal, subsNew] = await Promise.all([
           supabase.from('events').select('id',  { count: 'exact', head: true }),
           supabase.from('events').select('id',  { count: 'exact', head: true }).eq('status', 'published'),
           supabase.from('djs').select('id',     { count: 'exact', head: true }),
           supabase.from('artists').select('id', { count: 'exact', head: true }),
+          supabase.from('form_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new'),
         ]);
         setStats({
           totalEvents:     evTotal.count  ?? 0,
           publishedEvents: evPub.count    ?? 0,
           totalDJs:        djTotal.count  ?? 0,
           totalArtists:    arTotal.count  ?? 0,
+          newSubmissions:  subsNew.count  ?? 0,
         });
       } finally {
         setLoading(false);
@@ -83,11 +86,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Total Events"     value={stats.totalEvents}     sub={`${stats.publishedEvents} published`} icon={Calendar}    color="#C42121" loading={loading} />
         <StatCard label="Published"        value={stats.publishedEvents} sub="visible to public"                     icon={TrendingUp}   color="#f59e0b" loading={loading} />
         <StatCard label="DJs"              value={stats.totalDJs}        sub="registered"                            icon={Music2}       color="#7c3aed" loading={loading} />
         <StatCard label="Artists"          value={stats.totalArtists}    sub="registered"                            icon={Users}        color="#059669" loading={loading} />
+        <StatCard label="New Submissions"  value={stats.newSubmissions}  sub="awaiting review"                       icon={Inbox}        color="#3b82f6" loading={loading} />
       </div>
 
       {/* Quick Actions */}

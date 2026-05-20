@@ -1,9 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { useNavigate } from 'react-router-dom';
+import { useSiteBlock } from './hooks/useSiteContent';
+import { supabase } from './lib/supabase';
+import {
+  Instagram, Music, Youtube, Facebook, Linkedin, Mail, Globe, Twitter,
+} from 'lucide-react';
+import {
+  DEFAULT_HAMBURGER, NAV_HAMBURGER_KEY,
+  type HamburgerNavConfig, type NavItem, type SocialLink, type SocialPlatform,
+} from './lib/database.types';
+
+const SOCIAL_ICON: Record<SocialPlatform, React.ElementType> = {
+  instagram:  Instagram,
+  tiktok:     Music,
+  spotify:    Music,
+  soundcloud: Music,
+  youtube:    Youtube,
+  x:          Twitter,
+  facebook:   Facebook,
+  linkedin:   Linkedin,
+  email:      Mail,
+  website:    Globe,
+};
+
+function resolveHref(item: NavItem): string {
+  if (item.mode === 'external' && item.external_url) return item.external_url;
+  return item.route ?? '/';
+}
 
 export const HamburgerMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [socials, setSocials] = useState<SocialLink[]>([]);
   const overlayRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -12,9 +40,23 @@ export const HamburgerMenu: React.FC = () => {
   const circle3Ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+  const { data: nav } = useSiteBlock<HamburgerNavConfig>(NAV_HAMBURGER_KEY, DEFAULT_HAMBURGER);
+
+  // Load visible social links once
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('social_links')
+      .select('*')
+      .eq('visible', true)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (!cancelled && data) setSocials(data as SocialLink[]);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const toggleMenu = () => setIsOpen(!isOpen);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -27,181 +69,82 @@ export const HamburgerMenu: React.FC = () => {
     if (!overlay || !menuItems || !button || !c1 || !c2 || !c3) return;
 
     if (isOpen) {
-      // Get button position for circular expansion origin
       const buttonRect = button.getBoundingClientRect();
       const buttonCenterX = buttonRect.left + buttonRect.width / 2;
       const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-
-      // Calculate the radius needed to cover the entire screen from button position
       const maxDistX = Math.max(buttonCenterX, window.innerWidth - buttonCenterX);
       const maxDistY = Math.max(buttonCenterY, window.innerHeight - buttonCenterY);
       const maxRadius = Math.sqrt(maxDistX * maxDistX + maxDistY * maxDistY);
 
-      // Prevent body scroll
       document.body.style.overflow = 'hidden';
 
-      // Opening animation - Spectacular circular expansion
       const tl = gsap.timeline();
+      tl.to(c1, { rotation: 45, x: 5, y: 0, duration: 0.6, ease: 'expo.inOut' })
+        .to(c2, { opacity: 0, scale: 0, duration: 0.4, ease: 'expo.inOut' }, '-=0.5')
+        .to(c3, { rotation: -45, x: -5, y: 0, duration: 0.6, ease: 'expo.inOut' }, '-=0.6');
 
-      // Animate circles to X
-      tl.to(c1, {
-        rotation: 45,
-        x: 5,
-        y: 0,
-        duration: 0.6,
-        ease: 'expo.inOut',
-      })
-        .to(
-          c2,
-          {
-            opacity: 0,
-            scale: 0,
-            duration: 0.4,
-            ease: 'expo.inOut',
-          },
-          '-=0.5'
-        )
-        .to(
-          c3,
-          {
-            rotation: -45,
-            x: -5,
-            y: 0,
-            duration: 0.6,
-            ease: 'expo.inOut',
-          },
-          '-=0.6'
-        );
-
-      // Set initial clip-path from button position
-      const clipPathStart = `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)`;
-      const clipPathEnd = `circle(${maxRadius}px at ${buttonCenterX}px ${buttonCenterY}px)`;
-
-      // Circular expansion animation
       gsap.fromTo(
         overlay,
-        {
-          opacity: 1,
-          clipPath: clipPathStart,
-        },
-        {
-          clipPath: clipPathEnd,
-          duration: 1.2,
-          ease: 'expo.inOut',
-          delay: 0.1,
-        }
+        { opacity: 1, clipPath: `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)` },
+        { clipPath: `circle(${maxRadius}px at ${buttonCenterX}px ${buttonCenterY}px)`,
+          duration: 1.2, ease: 'expo.inOut', delay: 0.1 },
       );
 
-      // Animate menu items - They start from center and disperse
       const items = menuItems.querySelectorAll('.menu-item');
-
       gsap.fromTo(
         items,
         {
-          opacity: 0,
-          scale: 0.3,
+          opacity: 0, scale: 0.3,
           x: window.innerWidth / 2 - buttonCenterX,
           y: window.innerHeight / 2 - buttonCenterY,
         },
-        {
-          opacity: 1,
-          scale: 1,
-          x: 0,
-          y: 0,
-          duration: 1,
-          stagger: 0.1,
-          delay: 0.5,
-          ease: 'expo.out',
-        }
+        { opacity: 1, scale: 1, x: 0, y: 0,
+          duration: 1, stagger: 0.1, delay: 0.5, ease: 'expo.out' },
       );
     } else {
-      // Closing animation - Items collapse and circle shrinks
-      const tl = gsap.timeline({
-        onComplete: () => {
-          document.body.style.overflow = '';
-        },
-      });
+      const tl = gsap.timeline({ onComplete: () => { document.body.style.overflow = ''; } });
+      tl.to(c1, { rotation: 0, x: 0, y: 0, duration: 0.5, ease: 'expo.inOut' })
+        .to(c2, { opacity: 1, scale: 1, duration: 0.4, ease: 'expo.inOut' }, '-=0.4')
+        .to(c3, { rotation: 0, x: 0, y: 0, duration: 0.5, ease: 'expo.inOut' }, '-=0.5');
 
-      // Animate circles back
-      tl.to(c1, {
-        rotation: 0,
-        x: 0,
-        y: 0,
-        duration: 0.5,
-        ease: 'expo.inOut',
-      })
-        .to(
-          c2,
-          {
-            opacity: 1,
-            scale: 1,
-            duration: 0.4,
-            ease: 'expo.inOut',
-          },
-          '-=0.4'
-        )
-        .to(
-          c3,
-          {
-            rotation: 0,
-            x: 0,
-            y: 0,
-            duration: 0.5,
-            ease: 'expo.inOut',
-          },
-          '-=0.5'
-        );
-
-      // Hide menu items - collapse to center
       const items = menuItems.querySelectorAll('.menu-item');
-      gsap.to(items, {
-        opacity: 0,
-        scale: 0.3,
-        duration: 0.5,
-        stagger: 0.05,
-        ease: 'expo.in',
-      });
+      gsap.to(items, { opacity: 0, scale: 0.3, duration: 0.5, stagger: 0.05, ease: 'expo.in' });
 
-      // Get button position for collapse
       const buttonRect = button.getBoundingClientRect();
       const buttonCenterX = buttonRect.left + buttonRect.width / 2;
       const buttonCenterY = buttonRect.top + buttonRect.height / 2;
 
-      // Collapse circle back to button position
       gsap.to(overlay, {
         clipPath: `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)`,
-        duration: 0.8,
-        delay: 0.2,
-        ease: 'expo.inOut',
-        onComplete: () => {
-          gsap.set(overlay, { opacity: 0 });
-        },
+        duration: 0.8, delay: 0.2, ease: 'expo.inOut',
+        onComplete: () => { gsap.set(overlay, { opacity: 0 }); },
       });
     }
 
-    // Cleanup: Restore body scroll AND kill in-flight tweens if component
-    // unmounts while menu is open / animating — otherwise GSAP keeps
-    // animating detached DOM nodes.
     return () => {
       document.body.style.overflow = '';
       gsap.killTweensOf([overlay, menuItems, c1, c2, c3, ...Array.from(menuItems.querySelectorAll('.menu-item'))]);
     };
   }, [isOpen]);
 
-  const handleMenuClick = (path: string) => {
-    // Navigate first while menu is still open
+  const handleItemClick = (item: NavItem) => {
+    if (item.mode === 'external' && item.external_url) {
+      window.open(item.external_url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => setIsOpen(false), 200);
+      return;
+    }
     window.scrollTo(0, 0);
-    navigate(path);
+    navigate(resolveHref(item));
+    setTimeout(() => setIsOpen(false), 300);
+  };
 
-    // Close menu after navigation starts (smooth transition)
-    setTimeout(() => {
-      setIsOpen(false);
-    }, 300);
+  const handleSocialClick = (s: SocialLink) => {
+    const url = s.platform === 'email' ? `mailto:${s.url}` : s.url;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <>
-      {/* Hamburger Icon - 3 horizontal circles */}
       <button
         ref={buttonRef}
         onClick={toggleMenu}
@@ -213,68 +156,63 @@ export const HamburgerMenu: React.FC = () => {
         <div ref={circle3Ref} className="w-2.5 h-2.5 bg-[#C42121] rounded-full" />
       </button>
 
-      {/* Full Page Overlay Menu */}
       <div
         ref={overlayRef}
-        className={`fixed inset-0 bg-black z-[10000] flex items-center justify-center ${
+        className={`fixed inset-0 bg-black z-[10000] flex flex-col items-center justify-center ${
           isOpen ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         style={{ opacity: 0 }}
       >
-        {/* Subtle radial gradient for depth */}
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(196, 33, 33, 0.15) 0%, transparent 60%)',
-          }}
+          style={{ background: 'radial-gradient(circle at 50% 50%, rgba(196, 33, 33, 0.15) 0%, transparent 60%)' }}
         />
 
-        {/* Menu Items Container */}
         <div ref={menuItemsRef} className="relative z-10 w-full max-w-5xl px-8">
           <nav className="flex flex-col items-center justify-center gap-3 md:gap-5 lg:gap-6">
-            <MenuItem label="HOME"        onClick={() => handleMenuClick('/')} />
-            <MenuItem label="PAST EVENTS" onClick={() => handleMenuClick('/past-events')} />
-            <MenuItem label="DJS"         onClick={() => handleMenuClick('/djs')} />
-            <MenuItem label="ARTISTS"     onClick={() => handleMenuClick('/artists')} />
-            <MenuItem label="JOIN US"     onClick={() => handleMenuClick('/form')} />
+            {nav.items.map(item => (
+              <MenuItem key={item.id} label={item.label} onClick={() => handleItemClick(item)} />
+            ))}
           </nav>
+
+          {socials.length > 0 && (
+            <div className="menu-item mt-12 flex items-center justify-center gap-5">
+              {socials.map(s => {
+                const Icon = SOCIAL_ICON[s.platform];
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => handleSocialClick(s)}
+                    aria-label={s.platform}
+                    className="w-10 h-10 flex items-center justify-center rounded-full border border-[#C42121]/30 text-[#C42121] hover:bg-[#C42121] hover:text-black transition-colors"
+                  >
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </>
   );
 };
 
-// Menu Item — refined hover: subtle lift + color + underline sweep
-const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo(({
-  label,
-  onClick,
-}) => {
+const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo(({ label, onClick }) => {
   const textRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
-  const tlRef   = useRef<gsap.core.Timeline | null>(null);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
 
-  // Kill any in-flight hover timeline if the item unmounts mid-animation
   useEffect(() => () => { tlRef.current?.kill(); }, []);
 
   const handleMouseEnter = () => {
     tlRef.current?.kill();
     const tl = gsap.timeline();
     tlRef.current = tl;
-
-    // Text: subtle lift + brighten — everything moves together, no stagger
-    tl.to(textRef.current, {
-      y: -4,
-      color: '#FF3A3A',
-      duration: 0.45,
-      ease: 'power3.out',
-    }, 0);
-
-    // Underline: precise wipe left → right
-    tl.fromTo(
-      lineRef.current,
+    tl.to(textRef.current, { y: -4, color: '#FF3A3A', duration: 0.45, ease: 'power3.out' }, 0);
+    tl.fromTo(lineRef.current,
       { scaleX: 0, transformOrigin: '0% 50%' },
-      { scaleX: 1, transformOrigin: '0% 50%', duration: 0.5, ease: 'power3.inOut' },
-      0,
+      { scaleX: 1, transformOrigin: '0% 50%', duration: 0.5, ease: 'power3.inOut' }, 0,
     );
   };
 
@@ -282,22 +220,8 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
     tlRef.current?.kill();
     const tl = gsap.timeline();
     tlRef.current = tl;
-
-    // Text: return to rest
-    tl.to(textRef.current, {
-      y: 0,
-      color: '#C42121',
-      duration: 0.4,
-      ease: 'power2.out',
-    }, 0);
-
-    // Underline: retract right → left
-    tl.to(lineRef.current, {
-      scaleX: 0,
-      transformOrigin: '100% 50%',
-      duration: 0.35,
-      ease: 'power3.in',
-    }, 0);
+    tl.to(textRef.current, { y: 0, color: '#C42121', duration: 0.4, ease: 'power2.out' }, 0);
+    tl.to(lineRef.current, { scaleX: 0, transformOrigin: '100% 50%', duration: 0.35, ease: 'power3.in' }, 0);
   };
 
   return (
@@ -308,7 +232,6 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Single text block — GSAP owns color + transform */}
         <div
           ref={textRef}
           className="font-black tracking-tight leading-none"
@@ -316,8 +239,6 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
         >
           {label}
         </div>
-
-        {/* Underline — GSAP owns scaleX exclusively */}
         <div
           ref={lineRef}
           className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FF3A3A]"

@@ -10,6 +10,7 @@ const DJs         = lazy(() => import('./DJs'));
 const Artists     = lazy(() => import('./Artists'));
 const Terms       = lazy(() => import('./Terms'));
 const Privacy     = lazy(() => import('./Privacy'));
+const NotFound    = lazy(() => import('./NotFound'));
 
 // ── Lazy-loaded admin pages ─────────────────────────────────────
 const AdminLogin        = lazy(() => import('./admin/AdminLogin'));
@@ -23,6 +24,10 @@ const AdminArtists      = lazy(() => import('./admin/AdminArtists'));
 const AdminArtistForm   = lazy(() => import('./admin/AdminArtistForm'));
 const AdminSiteSettings  = lazy(() => import('./admin/AdminSiteSettings'));
 const AdminVisualEditor  = lazy(() => import('./admin/AdminVisualEditor'));
+const AdminNavigation    = lazy(() => import('./admin/AdminNavigation'));
+const AdminLegal         = lazy(() => import('./admin/AdminLegal'));
+const AdminFormBuilder   = lazy(() => import('./admin/AdminFormBuilder'));
+const AdminSubmissions   = lazy(() => import('./admin/AdminSubmissions'));
 
 // ── Auth wrapper (lazy) ─────────────────────────────────────────
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
@@ -77,6 +82,13 @@ export default function AppRouter() {
         <Route path="/admin/artists/:id"  element={<AdminPage><AdminArtistForm /></AdminPage>} />
         <Route path="/admin/settings"        element={<AdminPage><AdminSiteSettings /></AdminPage>} />
         <Route path="/admin/visual-editor"   element={<AdminPage><AdminVisualEditor /></AdminPage>} />
+        <Route path="/admin/navigation"      element={<AdminPage><AdminNavigation /></AdminPage>} />
+        <Route path="/admin/legal"           element={<AdminPage><AdminLegal /></AdminPage>} />
+        <Route path="/admin/form-builder"    element={<AdminPage><AdminFormBuilder /></AdminPage>} />
+        <Route path="/admin/submissions"     element={<AdminPage><AdminSubmissions /></AdminPage>} />
+
+        {/* ── 404 CATCH-ALL ── */}
+        <Route path="*" element={<NotFound />} />
 
       </Routes>
     </Suspense>
