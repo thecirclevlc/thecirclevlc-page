@@ -209,7 +209,59 @@ All types defined in `lib/database.types.ts`.
 
 ---
 
-## 6. What's still hardcoded — future work
+## 6. Row-level history & restore (audit_log)
+
+Added June 2026 after a production incident where the client overwrote
+event #2 in `/admin/events/:id` without a copy. The Free plan of Supabase
+has no PITR and no accessible daily backups, so the row was unrecoverable.
+This layer prevents a repeat.
+
+### How it works
+- One generic `audit_log` table (`table_name`, `row_id`, `operation`,
+  `old_data` JSONB, `new_data` JSONB, `changed_at`, `changed_by`).
+- `log_audit_changes()` PL/pgSQL trigger (SECURITY DEFINER) fires
+  `AFTER UPDATE OR DELETE` on every editable table: `events`, `djs`,
+  `artists`, `site_settings`, `social_links`, `event_djs`,
+  `event_artists`, `artist_categories`.
+- No-op autosaves are deduped at the trigger: rows where the only
+  diff is `updated_at` are skipped. Important because Event/DJ/Artist
+  forms autosave every 3s.
+- RLS on `audit_log`: only `authenticated` can SELECT; no INSERT/UPDATE/
+  DELETE policies → rows can only be written by the SECURITY DEFINER
+  trigger, never spoofed from the client.
+
+### UI
+- `admin/AdminHistory.tsx` — reusable right-side drawer. Props:
+  `tableName`, `rowId`, `open`, `onClose`, `onRestored`. Lists last 100
+  versions ordered DESC, per-field diff (red `-` old / green `+` new),
+  one-click "Restore this version" that strips readonly fields
+  (`id`, `created_at`, `updated_at`) and writes `old_data` back via
+  `supabase.from(table).update(...)`.
+- Wired into `AdminEventForm.tsx`, `AdminDJForm.tsx`,
+  `AdminArtistForm.tsx` via a `Clock` button in the header (visible
+  only when editing an existing row). On restore → `window.location.reload()`.
+
+### Known limitations
+- Join-table restorations: `event_djs` / `event_artists` rows are
+  logged on UPDATE/DELETE, but a restore of an `events` row does **not**
+  re-create the lineup links. A banner in the drawer surfaces this.
+- No retention policy yet. With autosave + dedup the volume is
+  manageable, but if `audit_log` ever grows past comfort, add a
+  scheduled job: `DELETE FROM audit_log WHERE changed_at < NOW() - INTERVAL '90 days'`.
+- The migration assumes all the editable tables exist in the live DB
+  (some — `event_djs`, `event_artists`, `artist_categories`,
+  `site_settings` — are not in `supabase-schema.sql` because they
+  were created directly in the Supabase dashboard before the schema
+  file was kept in sync).
+
+### Portability
+This is the next obvious Tier 1 piece for the retreats port — the SQL
+migration block at the bottom of `supabase-schema.sql` and
+`admin/AdminHistory.tsx` are entity-agnostic and copy verbatim.
+
+---
+
+## 7. What's still hardcoded — future work
 
 These are the next obvious admin-editability wins, in rough priority order.
 
@@ -232,7 +284,7 @@ These are the next obvious admin-editability wins, in rough priority order.
 
 ---
 
-## 7. Concrete port checklist for the retreats project
+## 8. Concrete port checklist for the retreats project
 
 Assumes the retreats project already exists with a basic admin. Goal: add
 the missing CMS layer without disturbing its existing admin.
@@ -288,7 +340,7 @@ the missing CMS layer without disturbing its existing admin.
 
 ---
 
-## 8. Known constraints / gotchas
+## 9. Known constraints / gotchas
 
 - TypeScript: the project has pre-existing `tsc --noEmit` errors around
   Supabase's `PromiseLike` (`.catch()` on `.then()` chains). These exist
@@ -308,7 +360,7 @@ the missing CMS layer without disturbing its existing admin.
 
 ---
 
-## 9. Files index — quick lookup
+## 10. Files index — quick lookup
 
 ```
 NotFound.tsx                          # 404 page with ASCII glitter
@@ -349,6 +401,7 @@ admin/
   AdminArtists.tsx / AdminArtistForm.tsx
   AdminSubmissions.tsx                # NEW — form submissions inbox
   AdminFormBuilder.tsx                # NEW — form schema editor
+  AdminHistory.tsx                    # NEW (Jun 2026) — row history drawer
   AdminVisualEditor.tsx               # Colors + hero texts + content blocks
   AdminNavigation.tsx                 # NEW — menu/footer/social
   AdminLegal.tsx                      # NEW — Privacy/Terms editor
