@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { uploadImage } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
 import type { ArtistInsert, ArtistCategory } from '../lib/database.types';
-import { ArrowLeft, Upload, X, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Upload, X, Loader2, Check, Clock } from 'lucide-react';
+import AdminHistory from './AdminHistory';
 
 const INPUT    = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
 const TEXTAREA = INPUT + ' resize-none';
@@ -26,6 +27,7 @@ export default function AdminArtistForm() {
   const [uploading, setUploading]     = useState(false);
   const [genreInput, setGenreInput]   = useState('');
   const [categories, setCategories]   = useState<ArtistCategory[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const photoRef = useRef<HTMLInputElement>(null);
 
@@ -130,10 +132,21 @@ export default function AdminArtistForm() {
         <button onClick={() => navigate('/admin/artists')} className="text-[#444] hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-white text-2xl font-bold">{isEdit ? 'Edit Artist' : 'New Artist'}</h1>
           <p className="text-[#444] text-sm mt-0.5">{isEdit ? 'Update artist profile' : 'Add a new artist'}</p>
         </div>
+        {isEdit && id && (
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg text-[#888] hover:text-white text-xs transition-colors"
+            title="View change history"
+          >
+            <Clock size={13} />
+            <span className="hidden sm:inline">History</span>
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -314,6 +327,16 @@ export default function AdminArtistForm() {
         </div>
 
       </form>
+
+      {isEdit && id && (
+        <AdminHistory
+          tableName="artists"
+          rowId={id}
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onRestored={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

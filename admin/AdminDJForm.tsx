@@ -4,8 +4,9 @@ import { supabase } from '../lib/supabase';
 import { uploadImage } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
 import type { DJInsert } from '../lib/database.types';
-import { ArrowLeft, Upload, X, Loader2, Check, Instagram, Globe, Plus } from 'lucide-react';
+import { ArrowLeft, Upload, X, Loader2, Check, Instagram, Globe, Plus, Clock } from 'lucide-react';
 import { useAutosave } from '../lib/useAutosave';
+import AdminHistory from './AdminHistory';
 
 const INPUT    = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#7c3aed]/40 transition-colors';
 const TEXTAREA = INPUT + ' resize-none';
@@ -32,6 +33,7 @@ export default function AdminDJForm() {
   const photoRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [uploadingGallery, setUGallery] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -152,7 +154,7 @@ export default function AdminDJForm() {
         <button onClick={() => navigate('/admin/djs')} className="text-[#444] hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-white text-2xl font-bold">{isEdit ? 'Edit DJ' : 'New DJ'}</h1>
           <p className="text-[#444] text-sm mt-0.5">{isEdit ? 'Update DJ profile' : 'Add a new DJ'}</p>
             {dbId && autosaveStatus !== 'idle' && (
@@ -167,6 +169,17 @@ export default function AdminDJForm() {
               </span>
             )}
         </div>
+        {dbId && (
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg text-[#888] hover:text-white text-xs transition-colors"
+            title="View change history"
+          >
+            <Clock size={13} />
+            <span className="hidden sm:inline">History</span>
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -360,6 +373,16 @@ export default function AdminDJForm() {
         </div>
 
       </form>
+
+      {dbId && (
+        <AdminHistory
+          tableName="djs"
+          rowId={dbId}
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onRestored={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

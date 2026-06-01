@@ -286,3 +286,137 @@ CREATE POLICY "Authenticated delete submissions"
 --             "terms_text_html":"...","captcha_required":true,
 --             "fields":[{ "id":"...","name":"...","label":"...","type":"text",
 --                         "required":true,"sort_order":0 }] }
+
+-- ================================================================
+-- MIGRATION: Row-level audit log + restore-from-history
+-- (May 2026 — protect against accidental admin overwrites)
+--
+-- Captures the OLD row on every UPDATE and DELETE on the listed
+-- tables. Restoration is done from the application layer by reading
+-- audit_log.old_data and writing it back via the normal admin UI.
+-- Runs idempotently — safe to re-execute.
+-- ================================================================
+
+-- ── audit_log table ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          BIGSERIAL   PRIMARY KEY,
+  table_name  TEXT        NOT NULL,
+  row_id      TEXT        NOT NULL,
+  operation   TEXT        NOT NULL CHECK (operation IN ('UPDATE','DELETE')),
+  old_data    JSONB       NOT NULL,
+  new_data    JSONB,
+  changed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  changed_by  UUID
+);
+
+CREATE INDEX IF NOT EXISTS audit_log_lookup_idx
+  ON audit_log (table_name, row_id, changed_at DESC);
+
+-- ── Trigger function ─────────────────────────────────────────────
+-- Snapshots OLD on UPDATE/DELETE. Skips no-op updates (where the
+-- only change is `updated_at`) to keep history clean given the
+-- 3-second autosave on event/dj/artist forms.
+CREATE OR REPLACE FUNCTION log_audit_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_row_id TEXT;
+  v_user   UUID;
+  v_old    JSONB;
+  v_new    JSONB;
+BEGIN
+  -- Best-effort current user (null if no JWT context, e.g. cron jobs)
+  BEGIN
+    v_user := auth.uid();
+  EXCEPTION WHEN OTHERS THEN
+    v_user := NULL;
+  END;
+
+  IF TG_OP = 'UPDATE' THEN
+    v_old := to_jsonb(OLD) - 'updated_at';
+    v_new := to_jsonb(NEW) - 'updated_at';
+    -- Skip no-op autosaves
+    IF v_old = v_new THEN
+      RETURN NEW;
+    END IF;
+
+    v_row_id := COALESCE((to_jsonb(NEW)->>'id'), (to_jsonb(OLD)->>'id'));
+    INSERT INTO audit_log(table_name, row_id, operation, old_data, new_data, changed_by)
+    VALUES (TG_TABLE_NAME, v_row_id, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW), v_user);
+    RETURN NEW;
+
+  ELSIF TG_OP = 'DELETE' THEN
+    v_row_id := (to_jsonb(OLD)->>'id');
+    -- Join tables (event_djs, event_artists) have no `id` column;
+    -- fall back to a composite key so we can still recover them.
+    IF v_row_id IS NULL THEN
+      v_row_id := COALESCE(
+        (to_jsonb(OLD)->>'event_id') || ':' || COALESCE(
+          (to_jsonb(OLD)->>'dj_id'),
+          (to_jsonb(OLD)->>'artist_id'),
+          ''
+        ),
+        TG_TABLE_NAME
+      );
+    END IF;
+    INSERT INTO audit_log(table_name, row_id, operation, old_data, new_data, changed_by)
+    VALUES (TG_TABLE_NAME, v_row_id, 'DELETE', to_jsonb(OLD), NULL, v_user);
+    RETURN OLD;
+  END IF;
+
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ── Attach triggers to every editable table ──────────────────────
+-- DROP first so re-running the migration replaces cleanly.
+DROP TRIGGER IF EXISTS audit_events           ON events;
+DROP TRIGGER IF EXISTS audit_djs              ON djs;
+DROP TRIGGER IF EXISTS audit_artists          ON artists;
+DROP TRIGGER IF EXISTS audit_site_settings    ON site_settings;
+DROP TRIGGER IF EXISTS audit_social_links     ON social_links;
+DROP TRIGGER IF EXISTS audit_event_djs        ON event_djs;
+DROP TRIGGER IF EXISTS audit_event_artists    ON event_artists;
+DROP TRIGGER IF EXISTS audit_artist_categories ON artist_categories;
+
+CREATE TRIGGER audit_events
+  AFTER UPDATE OR DELETE ON events
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_djs
+  AFTER UPDATE OR DELETE ON djs
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_artists
+  AFTER UPDATE OR DELETE ON artists
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_site_settings
+  AFTER UPDATE OR DELETE ON site_settings
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_social_links
+  AFTER UPDATE OR DELETE ON social_links
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_event_djs
+  AFTER UPDATE OR DELETE ON event_djs
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_event_artists
+  AFTER UPDATE OR DELETE ON event_artists
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+CREATE TRIGGER audit_artist_categories
+  AFTER UPDATE OR DELETE ON artist_categories
+  FOR EACH ROW EXECUTE FUNCTION log_audit_changes();
+
+-- ── RLS: authenticated read-only ─────────────────────────────────
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated read audit_log" ON audit_log;
+CREATE POLICY "Authenticated read audit_log"
+  ON audit_log FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- No INSERT/UPDATE/DELETE policies → rows can only be written by
+-- the SECURITY DEFINER trigger function above, never by client code.

@@ -338,3 +338,20 @@ export type FormSubmissionRowInsert = Pick<FormSubmissionRow, 'form_key' | 'data
   user_agent?: string | null;
   ip_hash?:    string | null;
 };
+
+// ── Audit Log (row history) ───────────────────────────────────────
+// Populated by the log_audit_changes() trigger on every UPDATE/DELETE
+// of the editable tables. Restoration is handled in the admin UI.
+
+export type AuditOperation = 'UPDATE' | 'DELETE';
+
+export interface AuditLogRow {
+  id:         number;
+  table_name: string;
+  row_id:     string;
+  operation:  AuditOperation;
+  old_data:   Record<string, unknown>;
+  new_data:   Record<string, unknown> | null;
+  changed_at: string;
+  changed_by: string | null;
+}

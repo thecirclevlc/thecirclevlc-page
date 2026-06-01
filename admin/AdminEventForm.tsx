@@ -5,8 +5,9 @@ import { uploadImage, uploadVideo, deleteVideo } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
 import { useAutosave } from '../lib/useAutosave';
 import type { EventInsert, EntityOption } from '../lib/database.types';
-import { ArrowLeft, Upload, X, Loader2, Plus, Check, Film } from 'lucide-react';
+import { ArrowLeft, Upload, X, Loader2, Plus, Check, Film, Clock } from 'lucide-react';
 import EntitySelector from './EntitySelector';
+import AdminHistory from './AdminHistory';
 
 // ── helpers ──────────────────────────────────────────────────────
 
@@ -49,6 +50,7 @@ export default function AdminEventForm() {
   const [partnerName, setPartnerName] = useState('');
   const [partnerUrl, setPartnerUrl] = useState('');
   const [dbId, setDbId] = useState<string | null>(id ?? null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Entity selectors
   const [selectedDJs, setSelectedDJs]         = useState<EntityOption[]>([]);
@@ -288,7 +290,7 @@ export default function AdminEventForm() {
         <button onClick={() => navigate('/admin/events')} className="text-[#444] hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-white text-2xl font-bold">{isEdit ? 'Edit Event' : 'New Event'}</h1>
           <p className="text-[#444] text-sm mt-0.5">{isEdit ? 'Update event details' : 'Fill in the details below'}</p>
             {dbId && autosaveStatus !== 'idle' && (
@@ -303,6 +305,17 @@ export default function AdminEventForm() {
               </span>
             )}
         </div>
+        {dbId && (
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg text-[#888] hover:text-white text-xs transition-colors"
+            title="View change history"
+          >
+            <Clock size={13} />
+            <span className="hidden sm:inline">History</span>
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -668,6 +681,17 @@ export default function AdminEventForm() {
         </div>
 
       </form>
+
+      {/* History drawer */}
+      {dbId && (
+        <AdminHistory
+          tableName="events"
+          rowId={dbId}
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onRestored={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }
