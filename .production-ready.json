@@ -1,0 +1,9 @@
+{
+  "fecha": "2026-07-16",
+  "lighthouse": { "perf": 72, "a11y": 100, "bp": 96, "seo": 100 },
+  "pendientes": [
+    "enable Vercel Analytics en el dashboard de Vercel (pestaña Analytics)",
+    "Search Console: verificar propiedad https://www.thecirclevlc.com/ (archivo HTML ya live) y enviar sitemap.xml",
+    "revisar cobertura de indexación en Search Console a las 48h"
+  ]
+}
