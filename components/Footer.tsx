@@ -75,7 +75,7 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={s.platform}
-              className="text-[#C42121]/60 hover:text-[#C42121] transition-colors"
+              className="text-[#D95C5C] hover:text-[#C42121] transition-colors"
             >
               <Icon size={size} />
             </a>
@@ -93,7 +93,7 @@ export default function Footer() {
           <p className="text-2xl font-black text-[#C42121] tracking-tighter uppercase leading-none">
             {cfg.brand_name}
           </p>
-          <p className="text-[10px] font-mono text-[#C42121]/60 tracking-[0.2em] uppercase mt-2">
+          <p className="text-[10px] font-mono text-[#D95C5C] tracking-[0.2em] uppercase mt-2">
             {cfg.tagline}
           </p>
         </div>
@@ -103,7 +103,7 @@ export default function Footer() {
           href="https://www.aliastudio.cc/"
           target="_blank"
           rel="noopener noreferrer"
-          className="block text-sm font-mono text-[#C42121]/70 hover:text-[#C42121] transition-colors uppercase tracking-wider"
+          className="block text-sm font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors uppercase tracking-wider"
         >
           By Alia Studio
         </a>
@@ -113,7 +113,7 @@ export default function Footer() {
             <button
               key={link.id}
               onClick={() => handleNav(link)}
-              className="text-sm font-mono text-[#C42121]/70 hover:text-[#C42121] transition-colors uppercase tracking-wider cursor-pointer"
+              className="text-sm font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors uppercase tracking-wider cursor-pointer"
             >
               {link.label}
             </button>
@@ -121,7 +121,7 @@ export default function Footer() {
           {cfg.contact_email && (
             <a
               href={`mailto:${cfg.contact_email}`}
-              className="text-sm font-mono text-[#C42121]/70 hover:text-[#C42121] transition-colors uppercase tracking-wider"
+              className="text-sm font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors uppercase tracking-wider"
             >
               Contact
             </a>
@@ -131,12 +131,12 @@ export default function Footer() {
         {renderSocials(18)}
 
         <div className="border-t border-[#C42121]/10 pt-4 flex flex-col gap-2">
-          <span className="text-xs font-mono text-[#C42121]/60 tracking-wider uppercase">
+          <span className="text-xs font-mono text-[#D95C5C] tracking-wider uppercase">
             &copy; {cfg.copyright_year} {cfg.brand_name}
           </span>
           <div className="flex gap-6">
-            <button onClick={() => handleNav({ id: 't', label: 'Terms', mode: 'route', route: '/terms' })} className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Terms &amp; Conditions</button>
-            <button onClick={() => handleNav({ id: 'p', label: 'Privacy', mode: 'route', route: '/privacy' })} className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Privacy Policy</button>
+            <button onClick={() => handleNav({ id: 't', label: 'Terms', mode: 'route', route: '/terms' })} className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Terms &amp; Conditions</button>
+            <button onClick={() => handleNav({ id: 'p', label: 'Privacy', mode: 'route', route: '/privacy' })} className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Privacy Policy</button>
           </div>
         </div>
       </div>
@@ -154,12 +154,12 @@ export default function Footer() {
               href="https://www.aliastudio.cc/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors uppercase tracking-wider"
+              className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors uppercase tracking-wider"
             >
               By Alia Studio
             </a>
             <span className="text-[#C42121]/20">|</span>
-            <span className="text-xs font-mono text-[#C42121]/60 tracking-wider uppercase">
+            <span className="text-xs font-mono text-[#D95C5C] tracking-wider uppercase">
               &copy; {cfg.copyright_year}
             </span>
           </div>
@@ -169,7 +169,7 @@ export default function Footer() {
               <button
                 key={link.id}
                 onClick={() => handleNav(link)}
-                className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors uppercase tracking-wider cursor-pointer"
+                className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors uppercase tracking-wider cursor-pointer"
               >
                 {link.label}
               </button>
@@ -177,14 +177,14 @@ export default function Footer() {
             {cfg.contact_email && (
               <a
                 href={`mailto:${cfg.contact_email}`}
-                className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors uppercase tracking-wider"
+                className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors uppercase tracking-wider"
               >
                 Contact
               </a>
             )}
             <span className="text-[#C42121]/20">|</span>
-            <button onClick={() => handleNav({ id: 't', label: 'Terms', mode: 'route', route: '/terms' })} className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Terms</button>
-            <button onClick={() => handleNav({ id: 'p', label: 'Privacy', mode: 'route', route: '/privacy' })} className="text-xs font-mono text-[#C42121]/60 hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Privacy</button>
+            <button onClick={() => handleNav({ id: 't', label: 'Terms', mode: 'route', route: '/terms' })} className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Terms</button>
+            <button onClick={() => handleNav({ id: 'p', label: 'Privacy', mode: 'route', route: '/privacy' })} className="text-xs font-mono text-[#D95C5C] hover:text-[#C42121] transition-colors tracking-wider uppercase cursor-pointer">Privacy</button>
             {socials.length > 0 && (
               <>
                 <span className="text-[#C42121]/20">|</span>

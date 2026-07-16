@@ -1,3 +1,4 @@
+import { usePageTitle } from './hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { gsap } from 'gsap';
@@ -172,6 +173,7 @@ function formatDate(date: string | null) {
 // ── Main Page ─────────────────────────────────────────────────────
 
 export default function EventDetail() {
+  usePageTitle('Event');
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
 

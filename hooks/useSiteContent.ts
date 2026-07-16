@@ -62,7 +62,7 @@ export function useSiteContent(key: ContentKey): UseSiteContentResult {
       .from('site_settings')
       .select('value')
       .eq('id', key)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
         const content = data?.value as PageContent | undefined;
@@ -109,7 +109,7 @@ export function useSiteBlock<T>(key: string, fallback: T): { data: T; loading: b
       .from('site_settings')
       .select('value')
       .eq('id', key)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
         setState({

@@ -28,7 +28,7 @@ export function usePageBackground(page: PageKey): UsePageBackgroundResult {
       .from('site_settings')
       .select('value')
       .eq('id', page)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
         const bg = data?.value as PageBackground | undefined;

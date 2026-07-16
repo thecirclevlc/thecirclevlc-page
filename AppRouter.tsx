@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 
 // ── Lazy-loaded public pages ────────────────────────────────────
 const App         = lazy(() => import('./App'));
@@ -53,6 +54,8 @@ function AdminPage({ children }: { children: React.ReactNode }) {
 // ── Router ─────────────────────────────────────────────────────
 export default function AppRouter() {
   return (
+    <>
+    <Analytics />
     <Suspense fallback={<PageLoader />}>
       <Routes>
 
@@ -92,5 +95,6 @@ export default function AppRouter() {
 
       </Routes>
     </Suspense>
+    </>
   );
 }

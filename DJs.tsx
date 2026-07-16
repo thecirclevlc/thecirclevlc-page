@@ -1,3 +1,4 @@
+import { usePageTitle } from './hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
@@ -138,6 +139,7 @@ const SkeletonDJ: React.FC = () => (
 
 // ── Main DJs Page ─────────────────────────────────────────────────
 export default function DJs() {
+  usePageTitle('DJs');
   const navigate          = useNavigate();
   const [djs, setDJs]     = useState<DJ[]>([]);
   const [loading, setLoading] = useState(true);

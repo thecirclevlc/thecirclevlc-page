@@ -1,3 +1,4 @@
+import { usePageTitle } from './hooks/usePageTitle';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from './components/Footer';
@@ -13,6 +14,7 @@ function formatMonthYear(iso: string): string {
 }
 
 export default function Terms() {
+  usePageTitle('Terms & Conditions');
   const navigate = useNavigate();
   const { data: page } = useSiteBlock<LegalPage>(LEGAL_TERMS_KEY, TERMS_DEFAULT);
 

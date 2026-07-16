@@ -79,7 +79,7 @@ To exercise any of these rights, email us. We will respond within 30 days.`,
       id: 'p-7',
       heading: '7. Cookies & Analytics',
       body:
-`This website does not use tracking cookies or third-party analytics. Google reCAPTCHA may set functional cookies required for spam prevention. No personal browsing data is collected or stored beyond the application form submission.`,
+`This website does not use tracking cookies. We measure aggregate, anonymous page visits through Vercel Analytics, which does not use cookies and does not identify individual visitors. Google reCAPTCHA may set functional cookies required for spam prevention. No personal browsing data is collected or stored beyond the application form submission.`,
     },
     {
       id: 'p-8',

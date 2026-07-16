@@ -1,3 +1,4 @@
+import { usePageTitle } from './hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
@@ -140,6 +141,7 @@ const SkeletonArtist: React.FC = () => (
 
 // ── Main Artists Page ─────────────────────────────────────────────
 export default function Artists() {
+  usePageTitle('Artists');
   const navigate              = useNavigate();
   const [artists, setArtists] = useState<ArtistWithCategory[]>([]);
   const [loading, setLoading] = useState(true);

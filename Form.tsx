@@ -1,3 +1,4 @@
+import { usePageTitle } from './hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -293,6 +294,7 @@ function renderTermsText(html: string): React.ReactNode {
 
 // ── Main ──────────────────────────────────────────────────────────
 export default function FormPage() {
+  usePageTitle('Request Access');
   const navigate = useNavigate();
   const rotation = useMotionValue(0);
   const [chaosLevel, setChaosLevel] = useState(0);

@@ -1,3 +1,4 @@
+import { usePageTitle } from './hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
@@ -145,6 +146,7 @@ const SkeletonCard: React.FC = () => (
 
 // Main Past Events Page
 export default function PastEvents() {
+  usePageTitle('Past Events');
   const navigate = useNavigate();
   const [events, setEvents]       = useState<CardEvent[]>([]);
   const [loading, setLoading]     = useState(true);

@@ -40,7 +40,7 @@ export function useSiteTheme(): UseSiteThemeResult {
       .from('site_settings')
       .select('value')
       .eq('id', 'site_theme')
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
         const theme = data?.value as SiteTheme | undefined;

@@ -651,7 +651,7 @@ export default function TheCircleApp() {
       <StandardHeader />
 
       {/* Content Container */}
-      <div className="relative z-10 opacity-100 pt-16 md:pt-20">
+      <main className="relative z-10 opacity-100 pt-16 md:pt-20">
 
         {/* Hero Section */}
         <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
@@ -791,7 +791,7 @@ export default function TheCircleApp() {
                 </div>
             </ScrollReveal>
         </section>
-      </div>
+      </main>
 
 
       <Footer />
