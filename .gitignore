@@ -41,3 +41,13 @@ lerna-debug.log*
 
 # Git worktrees
 .worktrees/
+
+# Tooling local de agentes (no pertenece al repo del cliente)
+.agent/
+.agents/
+.claude/
+.trae/
+skills/
+skills-lock.json
+docs/superpowers/
+PREMIUM_WEB_DESIGN_GUIDELINES.md
