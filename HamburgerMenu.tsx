@@ -10,6 +10,7 @@ import {
   DEFAULT_HAMBURGER, NAV_HAMBURGER_KEY,
   type HamburgerNavConfig, type NavItem, type SocialLink, type SocialPlatform,
 } from './lib/database.types';
+import { brandColor } from './lib/cssVar';
 
 const SOCIAL_ICON: Record<SocialPlatform, React.ElementType> = {
   instagram:  Instagram,
@@ -56,7 +57,17 @@ export const HamburgerMenu: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const toggleMenu = () => setIsOpen(!isOpen);
+  const toggleMenu = () => setIsOpen(o => !o);
+
+  // Escape cierra y devuelve el foco al botón que lo abrió.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setIsOpen(false); buttonRef.current?.focus(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -148,16 +159,25 @@ export const HamburgerMenu: React.FC = () => {
       <button
         ref={buttonRef}
         onClick={toggleMenu}
-        className="relative z-[10001] flex flex-row items-center justify-center gap-2 w-12 h-12 cursor-pointer group"
-        aria-label="Menu"
+        className="relative z-[10001] flex flex-row items-center justify-center gap-2 w-12 h-12 cursor-pointer group
+                   focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-full"
+        aria-label={isOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isOpen}
+        aria-controls="main-menu-overlay"
       >
-        <div ref={circle1Ref} className="w-2.5 h-2.5 bg-[#C42121] rounded-full" />
-        <div ref={circle2Ref} className="w-2.5 h-2.5 bg-[#C42121] rounded-full" />
-        <div ref={circle3Ref} className="w-2.5 h-2.5 bg-[#C42121] rounded-full" />
+        <div ref={circle1Ref} className="w-2.5 h-2.5 bg-primary rounded-full" />
+        <div ref={circle2Ref} className="w-2.5 h-2.5 bg-primary rounded-full" />
+        <div ref={circle3Ref} className="w-2.5 h-2.5 bg-primary rounded-full" />
       </button>
 
       <div
         ref={overlayRef}
+        id="main-menu-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        // @ts-expect-error — `inert` is valid HTML; React's types lag behind.
+        inert={isOpen ? undefined : ''}
         className={`fixed inset-0 bg-black z-[10000] flex flex-col items-center justify-center ${
           isOpen ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
@@ -165,7 +185,7 @@ export const HamburgerMenu: React.FC = () => {
       >
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(circle at 50% 50%, rgba(196, 33, 33, 0.15) 0%, transparent 60%)' }}
+          style={{ background: 'radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-primary) 15%, transparent) 0%, transparent 60%)' }}
         />
 
         <div ref={menuItemsRef} className="relative z-10 w-full max-w-5xl px-8">
@@ -184,7 +204,7 @@ export const HamburgerMenu: React.FC = () => {
                     key={s.id}
                     onClick={() => handleSocialClick(s)}
                     aria-label={s.platform}
-                    className="w-10 h-10 flex items-center justify-center rounded-full border border-[#C42121]/30 text-[#C42121] hover:bg-[#C42121] hover:text-black transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-full border border-primary/30 text-primary hover:bg-primary hover:text-black transition-colors"
                   >
                     <Icon size={16} />
                   </button>
@@ -209,7 +229,7 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
     tlRef.current?.kill();
     const tl = gsap.timeline();
     tlRef.current = tl;
-    tl.to(textRef.current, { y: -4, color: '#FF3A3A', duration: 0.45, ease: 'power3.out' }, 0);
+    tl.to(textRef.current, { y: -4, color: brandColor(), duration: 0.45, ease: 'power3.out' }, 0);
     tl.fromTo(lineRef.current,
       { scaleX: 0, transformOrigin: '0% 50%' },
       { scaleX: 1, transformOrigin: '0% 50%', duration: 0.5, ease: 'power3.inOut' }, 0,
@@ -220,31 +240,35 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
     tlRef.current?.kill();
     const tl = gsap.timeline();
     tlRef.current = tl;
-    tl.to(textRef.current, { y: 0, color: '#C42121', duration: 0.4, ease: 'power2.out' }, 0);
+    tl.to(textRef.current, { y: 0, color: brandColor(), duration: 0.4, ease: 'power2.out' }, 0);
     tl.to(lineRef.current, { scaleX: 0, transformOrigin: '100% 50%', duration: 0.35, ease: 'power3.in' }, 0);
   };
 
   return (
     <div className="menu-item w-full">
-      <div
-        className="relative flex items-center justify-center py-2 md:py-3 cursor-pointer select-none"
+      <button
+        type="button"
+        className="relative w-full flex items-center justify-center py-2 md:py-3 cursor-pointer select-none
+                   focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         onClick={onClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onFocus={handleMouseEnter}
+        onBlur={handleMouseLeave}
       >
         <div
           ref={textRef}
           className="font-black tracking-tight leading-none"
-          style={{ fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: '#C42121', willChange: 'transform, color' }}
+          style={{ fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: 'var(--color-primary)', willChange: 'transform, color' }}
         >
           {label}
         </div>
         <div
           ref={lineRef}
-          className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FF3A3A]"
+          className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
           style={{ transform: 'scaleX(0)', transformOrigin: '0% 50%' }}
         />
-      </div>
+      </button>
     </div>
   );
 });

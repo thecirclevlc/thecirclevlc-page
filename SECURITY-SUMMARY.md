@@ -119,7 +119,7 @@ Se ha implementado un **sistema de seguridad multi-capa** para proteger el formu
 
 ### Site Key (Pública - Frontend)
 ```
-6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6
+<VITE_RECAPTCHA_SITE_KEY — ver Vercel>
 ```
 - ✅ Se usa en el componente React
 - ✅ Visible en el código del cliente
@@ -127,7 +127,7 @@ Se ha implementado un **sistema de seguridad multi-capa** para proteger el formu
 
 ### Secret Key (Privada - Backend)
 ```
-6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
+<RECAPTCHA_SECRET_KEY — ver Vercel>
 ```
 - ✅ Solo en variables de entorno
 - ✅ Solo usada en el servidor

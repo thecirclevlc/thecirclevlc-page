@@ -14,6 +14,7 @@ import type {
   MetaSeo,
 } from '../lib/database.types';
 import { META_SEO_DEFAULTS, META_SEO_KEY } from '../lib/database.types';
+import { useSearchParams } from 'react-router-dom';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -572,7 +573,10 @@ function SeoSection({ onToast }: SeoSectionProps) {
 type Tab = 'backgrounds' | 'categories' | 'seo';
 
 export default function AdminSiteSettings() {
-  const [activeTab, setActiveTab]   = useState<Tab>('backgrounds');
+  const [params, setParams] = useSearchParams();
+  const activeTab = (params.get('tab') as Tab) || 'backgrounds';
+  const setActiveTab = (t: Tab) =>
+    setParams(t === 'backgrounds' ? {} : { tab: t }, { replace: true });
   const [toasts, setToasts]         = useState<(ToastMsg & { id: number })[]>([]);
 
   const addToast = (t: ToastMsg) => {
@@ -618,16 +622,6 @@ export default function AdminSiteSettings() {
       {/* Tab: Backgrounds */}
       {activeTab === 'backgrounds' && (
         <div className="space-y-8">
-          <div className="bg-amber-950/20 border border-amber-500/20 rounded-xl px-5 py-4 flex gap-3">
-            <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-amber-400 text-sm font-medium">SQL required</p>
-              <p className="text-amber-500/70 text-xs mt-0.5 font-mono">
-                Run the <span className="text-amber-400">supabase-schema.sql</span> additions in your Supabase SQL Editor if you haven't yet.
-              </p>
-            </div>
-          </div>
-
           <div className="grid gap-6 lg:grid-cols-1">
             {PAGES.map(p => (
               <PageSection key={p.key} config={p} onToast={addToast} />

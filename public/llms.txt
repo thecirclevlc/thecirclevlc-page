@@ -1,9 +1,40 @@
 # THE CIRCLE
 
-Exclusive invite-only music events in Valencia, Spain.
+> An invite-only electronic music and art collective in Valencia, Spain. Each
+> event is a single night at a secret location, combining electronic music,
+> performance and visual art. Attendance is by application only.
 
-- Access is by application only: https://www.thecirclevlc.com/form
-- Past events archive: https://www.thecirclevlc.com/past-events
-- Resident DJs: https://www.thecirclevlc.com/djs
-- Featured artists: https://www.thecirclevlc.com/artists
-- Contact: contact@thecirclevlc.com
+The Circle runs a limited series of gatherings, numbered by volume (VOL. I,
+VOL. II, …). Every edition has its own lineup of DJs and artists, its own
+venue, and is documented afterwards in the events archive.
+
+## Main pages
+
+- [Home](https://www.thecirclevlc.com/): what The Circle is, recent events and the mailing list.
+- [Apply for access](https://www.thecirclevlc.com/form): the application form. This is the only way to attend.
+- [Past events](https://www.thecirclevlc.com/past-events): every edition so far, with lineup, venue, photos and tags.
+- [DJs](https://www.thecirclevlc.com/djs): the selectors who play at The Circle, with biographies, genres and mixes.
+- [Artists](https://www.thecirclevlc.com/artists): performers and visual artists, grouped by discipline.
+
+## Legal
+
+- [Terms and conditions](https://www.thecirclevlc.com/terms): terms of use for the site and events.
+- [Privacy policy](https://www.thecirclevlc.com/privacy): how personal data from applications and the mailing list is handled.
+
+## Structure
+
+- Each event lives at `/past-events/<slug>` and carries Event structured data.
+- Each DJ lives at `/djs/<slug>`, each artist at `/artists/<slug>`.
+- A generated [sitemap](https://www.thecirclevlc.com/sitemap.xml) lists every published page.
+
+## Contact
+
+- Email: [contact@thecirclevlc.com](mailto:contact@thecirclevlc.com)
+- Location: Valencia, Spain
+- Site by [Alia Studio](https://www.aliastudio.cc/)
+
+## Notes for agents
+
+- There is no public ticketing or checkout; access is granted by the organisers after reviewing an application.
+- Event locations are deliberately not published in advance and are sent to accepted applicants.
+- `/admin` is a private area and is excluded in [robots.txt](https://www.thecirclevlc.com/robots.txt).

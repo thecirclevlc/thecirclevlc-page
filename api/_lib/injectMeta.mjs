@@ -38,6 +38,13 @@ const ALLOWED_KEYS = new Set([
   'og_description',
   'twitter_title',
   'twitter_description',
+  // Per-page canonical and share URL. Without these every page declared the
+  // home page as its canonical, which tells Google they are all duplicates.
+  'canonical',
+  'og_url',
+  'twitter_url',
+  'og_image',
+  'twitter_image',
 ]);
 
 /**
@@ -53,11 +60,42 @@ export function escapeHtml(input) {
  * @param {MetaValues} values
  * @returns {string}
  */
+/**
+ * Keys injected as raw HTML rather than escaped text.
+ *
+ * `head_extra` carries a <script type="application/ld+json"> block and an
+ * optional robots meta. Running it through escapeHtml would turn the whole
+ * thing into visible text; the caller is responsible for building it safely
+ * with jsonLdScript() below.
+ */
+const RAW_KEYS = new Set(['head_extra']);
+
+/**
+ * Serialises a value into a <script type="application/ld+json"> block.
+ *
+ * The only escaping that matters inside a script element is preventing the
+ * literal sequence `</script` and `<!--` from ending it early. JSON.stringify
+ * cannot emit those unless they came from the data, so `<` is escaped to its
+ * \u003c form — valid JSON, inert HTML. NEVER use escapeHtml here: it would
+ * turn quotes into entities and produce invalid JSON.
+ *
+ * @param {unknown} data
+ * @returns {string}
+ */
+export function jsonLdScript(data) {
+  if (!data) return '';
+  const json = JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
 export function injectMeta(html, values) {
   const injected = Object.entries(values).reduce((acc, [key, rawValue]) => {
     if (rawValue == null) return acc;
-    if (!ALLOWED_KEYS.has(key)) return acc;
-    const safe = escapeHtml(String(rawValue));
+    if (!ALLOWED_KEYS.has(key) && !RAW_KEYS.has(key)) return acc;
+    const safe = RAW_KEYS.has(key) ? String(rawValue) : escapeHtml(String(rawValue));
     const pattern = new RegExp(
       `<!--META:${key}-->[\\s\\S]*?<!--/META:${key}-->`,
       'g',

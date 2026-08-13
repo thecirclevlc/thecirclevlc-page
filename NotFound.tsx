@@ -3,8 +3,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
-import { HamburgerMenu } from './HamburgerMenu';
 import Footer from './components/Footer';
+import { brandColor } from './lib/cssVar';
+import { StandardHeader } from './StandardHeader';
 
 // ── ASCII "404" art — 7 rows × 33 cols (10-col digits + 3-col gutters) ────
 // Each digit is 9 cols wide, joined with 3 spaces. '#' = filled cell, ' ' = empty.
@@ -47,6 +48,17 @@ interface Cell {
 
 export default function NotFound() {
   usePageTitle('Not Found');
+
+  // Sin esto Google indexa las URL rotas como si fueran páginas buenas.
+  // El servidor ya manda noindex, pero una ruta que solo el router del cliente
+  // resuelve como 404 (por ejemplo tras navegar dentro de la app) no pasa por él.
+  useEffect(() => {
+    const tag = document.createElement('meta');
+    tag.name = 'robots';
+    tag.content = 'noindex,follow';
+    document.head.appendChild(tag);
+    return () => { tag.remove(); };
+  }, []);
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const rowsRef = useRef<HTMLDivElement>(null);
@@ -133,8 +145,8 @@ export default function NotFound() {
   return (
     <div
       ref={containerRef}
-      className="relative min-h-screen bg-[#050000] text-[#C42121] overflow-hidden flex flex-col"
-      style={{ fontFamily: 'Poppins, sans-serif' }}
+      className="relative min-h-screen bg-bg text-primary overflow-hidden flex flex-col"
+      style={{ fontFamily: 'var(--font-display)' }}
     >
       {/* CRT vignette */}
       <div
@@ -153,10 +165,7 @@ export default function NotFound() {
         }}
       />
 
-      {/* Header — minimal, just hamburger top-right */}
-      <header className="fixed top-0 w-full bg-[#050000]/80 backdrop-blur-sm border-b border-[#C42121]/20 z-50 h-16 md:h-20 flex items-center justify-end px-4 md:px-10">
-        <HamburgerMenu />
-      </header>
+      <StandardHeader />
 
       {/* Main */}
       <main className="relative z-[2] flex-1 flex flex-col items-center justify-center px-4 pt-24 pb-12">
@@ -175,7 +184,7 @@ export default function NotFound() {
                 <span
                   key={ci}
                   style={{
-                    color: cell.white ? '#ffffff' : '#C42121',
+                    color: cell.white ? '#ffffff' : brandColor(),
                     textShadow: cell.white
                       ? '0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.4)'
                       : '0 0 6px rgba(196,33,33,0.4)',
@@ -192,7 +201,7 @@ export default function NotFound() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 0.6, y: 0 }}
           transition={{ delay: 0.9, duration: 0.8, ease: 'easeOut' }}
-          className="mt-10 md:mt-14 text-xs md:text-sm font-mono tracking-[0.5em] uppercase text-[#f5f5f0]/70"
+          className="mt-10 md:mt-14 text-xs md:text-sm font-mono tracking-[0.5em] uppercase text-fg/70"
         >
           PAGE NOT FOUND // SIGNAL LOST
         </motion.p>
@@ -202,9 +211,9 @@ export default function NotFound() {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
           onClick={() => navigate('/')}
-          whileHover={{ scale: 1.03, backgroundColor: '#C42121' }}
+          whileHover={{ scale: 1.03, backgroundColor: brandColor() }}
           whileTap={{ scale: 0.97 }}
-          className="mt-10 border border-[#C42121] px-10 py-3 text-xs tracking-[0.3em] transition-colors uppercase font-bold mix-blend-exclusion hover:text-black"
+          className="mt-10 border border-primary px-10 py-3 text-xs tracking-[0.3em] transition-colors uppercase font-bold mix-blend-exclusion hover:text-black"
         >
           RETURN
         </motion.button>

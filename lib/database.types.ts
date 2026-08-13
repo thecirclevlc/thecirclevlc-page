@@ -91,17 +91,68 @@ export type ArtistCategoryUpdate = Partial<ArtistCategoryInsert>;
 // ── Social Links ───────────────────────────────────────────────────
 
 export interface SocialLinks {
-  instagram?: string;
+  instagram?:  string;
   soundcloud?: string;
-  spotify?: string;
-  facebook?: string;
-  website?: string;
+  spotify?:    string;
+  facebook?:   string;
+  website?:    string;
+  // The footer already renders ten platforms from `social_links`; profiles
+  // only ever offered five. Same icon set, no schema change — this is JSONB.
+  tiktok?:     string;
+  youtube?:    string;
+  x?:          string;
+  linkedin?:   string;
+  email?:      string;
+}
+
+/** Platforms offered in the profile editor, in display order. */
+export const PROFILE_SOCIAL_KEYS: { key: keyof SocialLinks; label: string }[] = [
+  { key: 'instagram',  label: 'Instagram' },
+  { key: 'soundcloud', label: 'SoundCloud' },
+  { key: 'spotify',    label: 'Spotify' },
+  { key: 'youtube',    label: 'YouTube' },
+  { key: 'tiktok',     label: 'TikTok' },
+  { key: 'facebook',   label: 'Facebook' },
+  { key: 'x',          label: 'X' },
+  { key: 'linkedin',   label: 'LinkedIn' },
+  { key: 'website',    label: 'Website' },
+  { key: 'email',      label: 'Email' },
+];
+
+// ── Profile extras (DJs + Artists share these) ────────────────────
+// Stored as JSONB on the profile row rather than in side tables: they are
+// short lists always read together with the profile, never queried on their
+// own, and this way they inherit the row's audit history for free.
+
+/** "añadir videos" — a link, never an uploaded file. */
+export interface ProfileVideo {
+  id:     string;
+  url:    string;
+  title?: string;
+}
+
+/** "anadir botones" — book me, portfolio, donate… */
+export interface ProfileLink {
+  id:       string;
+  label:    string;
+  url:      string;
+  primary?: boolean;
+}
+
+/** "crear nuevas informaciones" — she writes both the label and the value. */
+export interface ProfileFact {
+  id:    string;
+  label: string;
+  value: string;
 }
 
 // ── DJ ─────────────────────────────────────────────────────────────
 
-export interface DJ {
+/** Fields every profile has, whatever its type. */
+export interface ProfileBase {
   id: string;
+  /** Manual position in the public grid. */
+  sort_order: number;
   name: string;
   slug: string;
   bio: string | null;
@@ -112,28 +163,23 @@ export interface DJ {
   photo_position: string;
   genres: string[];
   social_links: SocialLinks;
+  videos: ProfileVideo[];
+  links: ProfileLink[];
+  facts: ProfileFact[];
   featured: boolean;
   created_at: string;
   updated_at: string;
 }
+
+export interface DJ extends ProfileBase {}
 
 export type DJInsert = Omit<DJ, 'id' | 'created_at' | 'updated_at'>;
 export type DJUpdate = Partial<DJInsert>;
 
 // ── Artist ─────────────────────────────────────────────────────────
 
-export interface Artist {
-  id: string;
-  name: string;
-  slug: string;
-  bio: string | null;
-  photo_url: string | null;
-  genres: string[];
-  social_links: SocialLinks;
-  featured: boolean;
+export interface Artist extends ProfileBase {
   category_id: string | null;    // FK → artist_categories.id
-  created_at: string;
-  updated_at: string;
 }
 
 export type ArtistInsert = Omit<Artist, 'id' | 'created_at' | 'updated_at'>;
@@ -148,22 +194,9 @@ export interface ArtistWithCategory extends Artist {
 
 export type SubmissionStatus = 'new' | 'reviewed' | 'accepted' | 'rejected';
 
-export interface FormSubmission {
-  id: string;
-  full_name: string | null;
-  age: string | null;
-  where_from: string | null;
-  instagram: string | null;
-  email: string | null;
-  unexpected: string | null;
-  expectations: string | null;
-  artist_link: string | null;
-  status: SubmissionStatus;
-  notes: string | null;
-  created_at: string;
-}
-
-export type FormSubmissionInsert = Omit<FormSubmission, 'id' | 'created_at' | 'status' | 'notes'>;
+// The flat-column shape was replaced in May 2026 by `form_submissions`
+// (JSONB `data` + `form_key`). See FormSubmissionRow at the bottom of
+// this file — that is the live shape.
 
 // ── Site Settings ──────────────────────────────────────────────────
 
@@ -216,6 +249,11 @@ export interface NavItem {
 
 export interface HamburgerNavConfig {
   items: NavItem[];
+  /**
+   * Optional call-to-action button pinned to the right of the header.
+   * Empty label = no button, which is the state the site shipped with.
+   */
+  cta?: { label: string; route: string };
 }
 
 export interface FooterConfig {
@@ -228,6 +266,17 @@ export interface FooterConfig {
 
 export const NAV_HAMBURGER_KEY = 'nav_hamburger' as const;
 export const FOOTER_CONFIG_KEY = 'footer_config' as const;
+
+/** Home JOIN block — the big APPLY button. */
+export interface HomeJoinBlock {
+  title: string;
+  desc1: string;
+  desc2: string;
+  /** Button wording. Empty keeps the built-in "APPLY". */
+  cta_label: string;
+  /** Where it goes. Empty keeps the default form. */
+  cta_route: string;
+}
 
 export const DEFAULT_HAMBURGER: HamburgerNavConfig = {
   items: [
@@ -291,21 +340,30 @@ export const LEGAL_TERMS_KEY   = 'legal_terms'   as const;
 // ── Dynamic Form Builder ──────────────────────────────────────────
 
 export type FormFieldType =
-  | 'text' | 'email' | 'tel' | 'url' | 'number' | 'textarea' | 'select';
+  | 'text' | 'email' | 'tel' | 'url' | 'number' | 'textarea' | 'select'
+  | 'checkbox'    // single yes/no — "I agree to receive emails"
+  | 'radio'       // pick one from options
+  | 'date';
+
+/** Field types whose answer is a yes/no rather than free text. */
+export const BOOLEAN_FIELD_TYPES: readonly FormFieldType[] = ['checkbox'] as const;
 
 export interface FormFieldSchema {
   id:           string;
   name:         string;          // snake_case key for submission data
   label:        string;
   placeholder?: string;
+  help_text?:   string;          // small print under the field
   type:         FormFieldType;
   required:     boolean;
-  options?:     string[];        // for select
+  options?:     string[];        // for select + radio
   rows?:        number;          // for textarea
   sort_order:   number;
 }
 
 export interface FormSchema {
+  /** Human name, shown only in the admin form picker. */
+  name:                   string;
   title:                  string;
   subtitle:               string;
   event_info:             string;
@@ -316,11 +374,92 @@ export interface FormSchema {
   submit_label_error:     string;
   return_label:           string;
   terms_text_html:        string;
+  /** When false the terms checkbox is not shown at all. */
+  terms_required:         boolean;
   captcha_required:       boolean;
+  /**
+   * Public form endpoint of the client's CRM — e.g. the Mailchimp embedded
+   * form action URL (`https://….list-manage.com/subscribe/post?u=…&id=…`).
+   * NOT a secret: it is designed to sit in public HTML, which is exactly why
+   * the client can paste it herself and swap CRM without touching env vars.
+   * Empty string = submissions are stored in Supabase only.
+   */
+  crm_post_url:           string;
+  /** Field `name` whose value carries the subscriber email to the CRM. */
+  crm_email_field:        string;
   fields:                 FormFieldSchema[];
 }
 
+// ── Multi-form storage ────────────────────────────────────────────
+// Every form is one `site_settings` row keyed `form_schema_<slug>`.
+// Listing them is a `like('id', 'form_schema_%')` — no registry row to
+// keep in sync, so it cannot drift.
+
+export const FORM_SCHEMA_PREFIX = 'form_schema_' as const;
+
+/** The original form. `/form` still resolves here, so old links keep working. */
 export const FORM_SCHEMA_JOIN_KEY = 'form_schema_join' as const;
+export const DEFAULT_FORM_SLUG = 'join' as const;
+
+export const formKeyForSlug  = (slug: string) => `${FORM_SCHEMA_PREFIX}${slug}`;
+export const slugFromFormKey = (key: string)  => key.slice(FORM_SCHEMA_PREFIX.length);
+
+/** `/form` for the default form, `/form/<slug>` for the rest. */
+export const formPath = (slug: string) =>
+  slug === DEFAULT_FORM_SLUG ? '/form' : `/form/${slug}`;
+
+/**
+ * Whether a required field has been left unanswered.
+ *
+ * Checkboxes are the reason this is not a plain `!value.trim()`: an unticked
+ * box stores the literal string 'no', which is truthy, so a required opt-in
+ * would sail through validation.
+ */
+export function isFieldBlank(field: Pick<FormFieldSchema, 'type'>, value: string): boolean {
+  const v = (value ?? '').trim();
+  return field.type === 'checkbox' ? v !== 'yes' : !v;
+}
+
+/**
+ * A slug that is unique among `taken` and safe as a URL segment. Suffixes
+ * -2, -3, … on collision instead of reusing the key, which would overwrite
+ * an existing form and destroy it silently.
+ */
+export function uniqueFormSlug(name: string, taken: string[], slugify: (s: string) => string): string {
+  const base = slugify(name).slice(0, 40) || 'form';
+  if (!taken.includes(base)) return base;
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base}-${n}`;
+    if (!taken.includes(candidate)) return candidate;
+  }
+  return `${base}-${Date.now()}`;
+}
+
+// ── Call-to-action blocks ─────────────────────────────────────────
+// One per page (content_cta_events / _djs / _artists) plus the home
+// JOIN block. `form_slug` is what lets the client point the Artists CTA
+// at an artists-only form and the DJs CTA at a DJs-only one — the thing
+// she asked for after finding all four hardcoded to `/form`.
+
+export interface CtaBlock {
+  title:      string;
+  subtitle:   string;
+  /** Form the button opens. Empty = the default form, i.e. today's behaviour. */
+  form_slug:  string;
+  /** Button text. Empty = keep the page's built-in wording. */
+  cta_label:  string;
+}
+
+export type CtaKey =
+  | 'content_cta_events'
+  | 'content_cta_djs'
+  | 'content_cta_artists';
+
+export const CTA_BLOCKS: { key: CtaKey; label: string }[] = [
+  { key: 'content_cta_events',  label: 'Past Events — bottom CTA' },
+  { key: 'content_cta_djs',     label: 'DJs — bottom CTA' },
+  { key: 'content_cta_artists', label: 'Artists — bottom CTA' },
+];
 
 // Submission table (form_submissions) — replaces the old flat shape
 export interface FormSubmissionRow {
@@ -338,6 +477,107 @@ export type FormSubmissionRowInsert = Pick<FormSubmissionRow, 'form_key' | 'data
   user_agent?: string | null;
   ip_hash?:    string | null;
 };
+
+// ── Pages (admin-created) ─────────────────────────────────────────
+// One row per page the client builds from the panel. `blocks` is an
+// ordered list; rendering is a switch, so an unknown type from a future
+// version renders as nothing instead of crashing the page.
+
+/**
+ * How an uploaded image is fitted into its frame.
+ *
+ * `cover` fills the frame and crops — good for a face or a wide shot.
+ * `contain` shows the whole image and pads — good for a poster or a logo,
+ * which `cover` would slice.
+ * `focus` moves the crop, so a subject near the top does not lose their head.
+ */
+export interface ImageDisplay {
+  fit?:    'cover' | 'contain';
+  focus?:  'center' | 'top' | 'bottom' | 'left' | 'right';
+  /** Frame shape. `auto` keeps the image's own proportions. */
+  ratio?:  'auto' | 'square' | 'wide' | 'portrait';
+}
+
+export const IMAGE_FIT_OPTIONS = [
+  { value: 'cover',   label: 'Fill the frame', hint: 'Crops the edges' },
+  { value: 'contain', label: 'Show it whole',  hint: 'Adds space around it' },
+] as const;
+
+export const IMAGE_FOCUS_OPTIONS = [
+  { value: 'center', label: 'Centre' }, { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' }, { value: 'left', label: 'Left' },
+  { value: 'right',  label: 'Right' },
+] as const;
+
+export const IMAGE_RATIO_OPTIONS = [
+  { value: 'auto',     label: 'Original shape' },
+  { value: 'wide',     label: 'Wide (16:10)' },
+  { value: 'square',   label: 'Square' },
+  { value: 'portrait', label: 'Tall (3:4)' },
+] as const;
+
+/** Tailwind classes for a chosen frame shape. */
+export const ratioClass = (r?: string) =>
+  r === 'square' ? 'aspect-square'
+  : r === 'wide' ? 'aspect-[16/10]'
+  : r === 'portrait' ? 'aspect-[3/4]'
+  : '';
+
+export type PageBlock =
+  | { id: string; type: 'text';    hidden?: boolean; heading?: string; body: string }
+  | { id: string; type: 'image';   hidden?: boolean; url: string; alt?: string; caption?: string; display?: ImageDisplay }
+  | { id: string; type: 'gallery'; hidden?: boolean; heading?: string; images: string[]; display?: ImageDisplay }
+  | { id: string; type: 'video';   hidden?: boolean; heading?: string; url: string; caption?: string }
+  | { id: string; type: 'buttons'; hidden?: boolean; heading?: string; items: PageButton[] }
+  | { id: string; type: 'form';    hidden?: boolean; heading?: string; form_slug: string };
+
+export type PageBlockType = PageBlock['type'];
+
+export interface PageButton {
+  id:    string;
+  label: string;
+  url:   string;
+  /** Renders as the loud primary button rather than an outline. */
+  primary?: boolean;
+}
+
+export interface Page {
+  id:              string;
+  slug:            string;
+  title:           string;
+  status:          'draft' | 'published';
+  blocks:          PageBlock[];
+  seo_title:       string | null;
+  seo_description: string | null;
+  sort_order:      number;
+  show_in_nav:     boolean;
+  created_at:      string;
+  updated_at:      string;
+}
+
+export type PageInsert = Omit<Page, 'id' | 'created_at' | 'updated_at'>;
+export type PageUpdate = Partial<PageInsert>;
+
+/**
+ * Slugs the router already owns. A page using one of these would be
+ * unreachable — the static route always wins — and the client would have no
+ * way to understand why. Mirrored by a CHECK constraint on the table so it
+ * holds even if something writes around this file.
+ */
+export const RESERVED_PAGE_SLUGS: readonly string[] = [
+  'admin', 'api', 'form', 'djs', 'artists', 'past-events', 'terms', 'privacy',
+  'assets', 'static', 'robots', 'sitemap', 'index', 'app', '_app',
+] as const;
+
+/** Returns the reason a slug is unusable, or null when it is fine. */
+export function validatePageSlug(slug: string, takenSlugs: string[] = []): string | null {
+  if (!slug) return 'Give the page a web address.';
+  if (slug.length < 2 || slug.length > 60) return 'The address must be between 2 and 60 characters.';
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return 'Use lowercase letters, numbers and hyphens only.';
+  if (RESERVED_PAGE_SLUGS.includes(slug)) return `"${slug}" is already used by the site. Pick another address.`;
+  if (takenSlugs.includes(slug)) return 'Another page already uses this address.';
+  return null;
+}
 
 // ── Audit Log (row history) ───────────────────────────────────────
 // Populated by the log_audit_changes() trigger on every UPDATE/DELETE

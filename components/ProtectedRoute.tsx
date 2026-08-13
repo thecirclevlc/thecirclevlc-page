@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children }: Props) {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-[#C42121] border-t-transparent rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

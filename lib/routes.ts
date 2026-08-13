@@ -18,7 +18,3 @@ export const AVAILABLE_ROUTES: readonly RouteOption[] = [
   { path: '/terms',       label: 'Terms' },
   { path: '/privacy',     label: 'Privacy' },
 ] as const;
-
-export function isValidRoute(path: string): boolean {
-  return AVAILABLE_ROUTES.some(r => r.path === path);
-}

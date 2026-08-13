@@ -33,12 +33,12 @@ Las siguientes claves de reCAPTCHA han sido configuradas:
 
 ### Site Key (Pública - Frontend)
 ```
-6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6
+<VITE_RECAPTCHA_SITE_KEY — ver Vercel>
 ```
 
 ### Secret Key (Privada - Backend)
 ```
-6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
+<RECAPTCHA_SECRET_KEY — ver Vercel>
 ```
 
 ⚠️ **IMPORTANTE**: La Secret Key está protegida en variables de entorno y **nunca se expone al cliente**.
@@ -75,8 +75,8 @@ Las siguientes claves de reCAPTCHA han sido configuradas:
 
 | Variable | Valor | Entorno |
 |----------|-------|---------|
-| `VITE_RECAPTCHA_SITE_KEY` | `6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6` | Production, Preview, Development |
-| `RECAPTCHA_SECRET_KEY` | `6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb` | Production, Preview, Development |
+| `VITE_RECAPTCHA_SITE_KEY` | `<VITE_RECAPTCHA_SITE_KEY — ver Vercel>` | Production, Preview, Development |
+| `RECAPTCHA_SECRET_KEY` | `<RECAPTCHA_SECRET_KEY — ver Vercel>` | Production, Preview, Development |
 
 ### Paso 2: Redeploy
 
@@ -145,8 +145,8 @@ cat .env
 
 Deberías ver:
 ```
-VITE_RECAPTCHA_SITE_KEY=6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6
-RECAPTCHA_SECRET_KEY=6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
+VITE_RECAPTCHA_SITE_KEY=<VITE_RECAPTCHA_SITE_KEY — ver Vercel>
+RECAPTCHA_SECRET_KEY=<RECAPTCHA_SECRET_KEY — ver Vercel>
 ```
 
 ### 2. Ejecutar en desarrollo
@@ -250,7 +250,7 @@ curl -X POST http://localhost:3000/api/verify-captcha \
 **Problema:** La Site Key no es válida.
 
 **Solución:**
-1. Verifica que la Site Key sea exactamente: `6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6`
+1. Verifica que la Site Key sea exactamente: `<VITE_RECAPTCHA_SITE_KEY — ver Vercel>`
 2. Confirma que el dominio coincida con el registrado en Google
 3. Limpia la caché del navegador
 

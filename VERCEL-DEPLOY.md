@@ -18,7 +18,7 @@
 
 ```
 Name: VITE_RECAPTCHA_SITE_KEY
-Value: 6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6
+Value: <VITE_RECAPTCHA_SITE_KEY — ver Vercel>
 Environments: ✅ Production ✅ Preview ✅ Development
 ```
 
@@ -28,7 +28,7 @@ Environments: ✅ Production ✅ Preview ✅ Development
 
 ```
 Name: RECAPTCHA_SECRET_KEY
-Value: 6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
+Value: <RECAPTCHA_SECRET_KEY — ver Vercel>
 Environments: ✅ Production ✅ Preview ✅ Development
 ```
 
@@ -118,7 +118,7 @@ Esto es correcto! ✅ Significa que la API está funcionando y verificando token
 
 **Solución:**
 1. Ve a Vercel → Settings → Environment Variables
-2. Verifica que `RECAPTCHA_SECRET_KEY` tenga el valor: `6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb`
+2. Verifica que `RECAPTCHA_SECRET_KEY` tenga el valor: `<RECAPTCHA_SECRET_KEY — ver Vercel>`
 3. Asegúrate de haber seleccionado los 3 entornos (Production, Preview, Development)
 4. Redeploy el proyecto
 
@@ -142,7 +142,7 @@ Esto es correcto! ✅ Significa que la API está funcionando y verificando token
 
 **Solución:**
 1. Ve a Vercel → Settings → Environment Variables
-2. Verifica que `VITE_RECAPTCHA_SITE_KEY` tenga el valor: `6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6`
+2. Verifica que `VITE_RECAPTCHA_SITE_KEY` tenga el valor: `<VITE_RECAPTCHA_SITE_KEY — ver Vercel>`
 3. **IMPORTANTE:** Esta variable debe tener el prefijo `VITE_` para que Vite la exponga al cliente
 4. Redeploy
 

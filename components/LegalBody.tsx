@@ -9,7 +9,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   return parts.map((p, i) => {
     if (p.startsWith('**') && p.endsWith('**')) {
       return (
-        <strong key={`${keyPrefix}-b-${i}`} className="text-[#f5f5f0]/80">
+        <strong key={`${keyPrefix}-b-${i}`} className="text-fg/80">
           {p.slice(2, -2)}
         </strong>
       );
@@ -27,7 +27,7 @@ export default function LegalBody({ body }: { body: string }) {
         const allBullets = lines.length > 0 && lines.every(l => l.trim().startsWith('- '));
         if (allBullets) {
           return (
-            <ul key={bi} className="list-disc list-inside space-y-1 text-[#f5f5f0]/60 mt-2">
+            <ul key={bi} className="list-disc list-inside space-y-1 text-fg/60 mt-2">
               {lines.map((l, li) => (
                 <li key={`${bi}-${li}`}>
                   {renderInline(l.replace(/^\s*-\s/, ''), `${bi}-${li}`)}

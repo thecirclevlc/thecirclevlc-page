@@ -31,8 +31,8 @@ git push origin main
 # Tu Proyecto → Settings → Environment Variables
 # Agrega:
 
-VITE_RECAPTCHA_SITE_KEY = 6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6
-RECAPTCHA_SECRET_KEY = 6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
+VITE_RECAPTCHA_SITE_KEY = <VITE_RECAPTCHA_SITE_KEY — ver Vercel>
+RECAPTCHA_SECRET_KEY = <RECAPTCHA_SECRET_KEY — ver Vercel>
 
 # 3. Redeploy desde Vercel Dashboard
 # Deployments → ... → Redeploy
@@ -71,8 +71,8 @@ RECAPTCHA_SECRET_KEY = 6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
 
 ## 🔑 Claves Configuradas
 
-✅ **Site Key:** `6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6`
-✅ **Secret Key:** `6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb`
+✅ **Site Key:** `<VITE_RECAPTCHA_SITE_KEY — ver Vercel>`
+✅ **Secret Key:** `<RECAPTCHA_SECRET_KEY — ver Vercel>`
 
 ---
 

@@ -5,7 +5,8 @@ import {
   Linkedin, Mail, Globe, Twitter,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { AVAILABLE_ROUTES } from '../lib/routes';
+import { useAvailableRoutes } from '../hooks/useAvailableRoutes';
+import { useSearchParams } from 'react-router-dom';
 import {
   DEFAULT_FOOTER, DEFAULT_HAMBURGER, FOOTER_CONFIG_KEY, NAV_HAMBURGER_KEY,
   type FooterConfig, type HamburgerNavConfig, type NavItem,
@@ -38,9 +39,10 @@ function uuid() {
 
 // ── NavItem editor (shared by Menu + Footer tabs) ─────────────────
 function NavItemEditor({
-  item, onChange, onMoveUp, onMoveDown, onDelete, canUp, canDown,
+  item, routes, onChange, onMoveUp, onMoveDown, onDelete, canUp, canDown,
 }: {
   item:       NavItem;
+  routes:     readonly { path: string; label: string }[];
   onChange:   (next: NavItem) => void;
   onMoveUp:   () => void;
   onMoveDown: () => void;
@@ -79,9 +81,14 @@ function NavItemEditor({
                 onChange={e => onChange({ ...item, route: e.target.value })}
                 className={INPUT}
               >
-                {AVAILABLE_ROUTES.map(r => (
+                {routes.map(r => (
                   <option key={r.path} value={r.path}>{r.label} — {r.path}</option>
                 ))}
+                {/* A link saved before its page was deleted would silently
+                    show the first option instead. Surface it. */}
+                {item.route && !routes.some(r => r.path === item.route) && (
+                  <option value={item.route}>⚠ {item.route} — page no longer exists</option>
+                )}
               </select>
             ) : (
               <input
@@ -125,6 +132,7 @@ function MenuTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const routes = useAvailableRoutes();
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('id', NAV_HAMBURGER_KEY).single()
@@ -179,6 +187,7 @@ function MenuTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
       <div className="space-y-3">
         {cfg.items.map((item, idx) => (
           <NavItemEditor
+            routes={routes}
             key={item.id}
             item={item}
             onChange={next => updateItem(idx, next)}
@@ -220,6 +229,7 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const routes = useAvailableRoutes();
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('id', FOOTER_CONFIG_KEY).single()
@@ -283,6 +293,7 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
         <p className="text-white text-sm font-medium">Footer Links</p>
         {cfg.links.map((item, idx) => (
           <NavItemEditor
+            routes={routes}
             key={item.id}
             item={item}
             onChange={next => setLinks(cfg.links.map((l, i) => i === idx ? next : l))}
@@ -482,7 +493,12 @@ function Spinner() {
 type Tab = 'menu' | 'footer' | 'social';
 
 export default function AdminNavigation() {
-  const [tab, setTab] = useState<Tab>('menu');
+  // La pestaña vive en la URL para que el menú lateral pueda enlazar
+  // "Redes sociales" directamente — era la tercera pestaña de una pantalla
+  // llamada "Navigation", y por eso la clienta pidió Instagram como si no existiera.
+  const [params, setParams] = useSearchParams();
+  const tab = (params.get('tab') as Tab) || 'menu';
+  const setTab = (t: Tab) => setParams(t === 'menu' ? {} : { tab: t }, { replace: true });
   const [toasts, setToasts] = useState<(ToastMsg & { id: number })[]>([]);
 
   const addToast = (t: ToastMsg) => {

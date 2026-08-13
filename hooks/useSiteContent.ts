@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { mergeBlock } from '../lib/mergeBlock';
 
 // ── Content keys correspond to site_settings rows ────────────────
 export type ContentKey =
@@ -85,14 +86,28 @@ export function useSiteContent(key: ContentKey): UseSiteContentResult {
 
 // ── Generic content block hook ──────────────────────────────────
 
+interface SiteBlockResult<T> {
+  data:    T;
+  loading: boolean;
+  /**
+   * Whether the row actually exists in the database, as opposed to `data`
+   * being the fallback. Callers that address a row by a user-supplied key
+   * (e.g. `/form/:slug`) need this to tell "empty form" from "no such form"
+   * and 404 properly. Most callers can ignore it.
+   */
+  exists:  boolean;
+  setData: React.Dispatch<React.SetStateAction<T>>;
+}
+
 /**
  * Fetches any JSON content block from `site_settings` by key.
  * Falls back to the provided default if the key doesn't exist yet.
  */
-export function useSiteBlock<T>(key: string, fallback: T): { data: T; loading: boolean; setData: React.Dispatch<React.SetStateAction<T>> } {
-  const [state, setState] = useState<{ data: T; loading: boolean }>({
+export function useSiteBlock<T>(key: string, fallback: T): SiteBlockResult<T> {
+  const [state, setState] = useState<{ data: T; loading: boolean; exists: boolean }>({
     data: fallback,
     loading: true,
+    exists: false,
   });
 
   const setData = useCallback((action: React.SetStateAction<T>) => {
@@ -104,6 +119,7 @@ export function useSiteBlock<T>(key: string, fallback: T): { data: T; loading: b
 
   useEffect(() => {
     let cancelled = false;
+    setState(prev => ({ ...prev, loading: true }));
 
     supabase
       .from('site_settings')
@@ -113,8 +129,9 @@ export function useSiteBlock<T>(key: string, fallback: T): { data: T; loading: b
       .then(({ data }) => {
         if (cancelled) return;
         setState({
-          data: (data?.value as T) ?? fallback,
+          data: mergeBlock(fallback, data?.value),
           loading: false,
+          exists: data != null,
         });
       })
       .catch(() => {

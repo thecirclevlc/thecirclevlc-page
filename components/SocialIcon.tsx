@@ -1,4 +1,5 @@
 import React from 'react';
+import { Youtube, Music, Facebook, Twitter, Linkedin, Mail, Globe } from 'lucide-react';
 
 // Official brand SVG paths (Simple Icons)
 const icons: Record<string, React.FC<{ size?: number }>> = {
@@ -26,7 +27,26 @@ const icons: Record<string, React.FC<{ size?: number }>> = {
   ),
 };
 
+/**
+ * Fallback for platforms with no hand-copied brand path. The footer already
+ * maps these to lucide icons, so reuse that rather than pasting six more SVG
+ * blobs in here — and, more importantly, so a platform never silently renders
+ * nothing when the client adds it to a profile.
+ */
+const FALLBACK: Record<string, React.ElementType> = {
+  youtube:  Youtube,
+  tiktok:   Music,
+  facebook: Facebook,
+  x:        Twitter,
+  linkedin: Linkedin,
+  email:    Mail,
+  mixcloud: Music,
+  bandcamp: Music,
+};
+
 export default function SocialIcon({ platform, size = 14 }: { platform: string; size?: number }) {
-  const Icon = icons[platform];
-  return Icon ? <Icon size={size} /> : null;
+  const Brand = icons[platform];
+  if (Brand) return <Brand size={size} />;
+  const Fallback = FALLBACK[platform];
+  return Fallback ? <Fallback size={size} /> : <Globe size={size} />;
 }

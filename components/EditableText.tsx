@@ -13,10 +13,58 @@ interface EditableTextProps {
   style?: React.CSSProperties;
   multiline?: boolean;
   children?: React.ReactNode;
+  /**
+   * Where the new value gets written.
+   *
+   * Default: merge the field into a `site_settings` row keyed `contentKey` —
+   * which is every text on the home page and the section headers.
+   *
+   * Pages the client builds store their copy inside `pages.blocks`, not in
+   * `site_settings`, so they pass their own writer here. Without this the
+   * whole live-edit experience simply stopped existing the moment she created
+   * a page of her own.
+   */
+  persist?: (value: string) => Promise<void>;
+  /** Overrides the label shown in the popover. */
+  label?: string;
+}
+
+/**
+ * Turns `content_home_join` + `title` into "Home · Join block · Title".
+ *
+ * The popover printed the raw database key, which means nothing to the person
+ * editing and makes the whole thing look like a debug tool.
+ */
+const AREA_LABELS: Record<string, string> = {
+  content_home_manifesto:  'Home · Manifesto',
+  content_home_marquee:    'Home · Scrolling banner',
+  content_home_join:       'Home · Join block',
+  content_home_headings:   'Home · Big headings',
+  content_home_events:     'Home · Events section',
+  content_home_newsletter: 'Home · Newsletter',
+  content_events_hero:     'Past events · Header',
+  content_djs_hero:        'DJs · Header',
+  content_artists_hero:    'Artists · Header',
+  content_cta_events:      'Past events · Bottom call to action',
+  content_cta_djs:         'DJs · Bottom call to action',
+  content_cta_artists:     'Artists · Bottom call to action',
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  title: 'Title', subtitle: 'Subtitle', desc1: 'First paragraph',
+  desc2: 'Second paragraph', text: 'Text', consent: 'Consent text',
+  h1: 'First line', h2: 'Second line', h3: 'Third line',
+  p1: 'First paragraph', p2: 'Second paragraph', p3: 'Third paragraph',
+  cta: 'Button text', success: 'Thank-you message', button: 'Button text',
+};
+
+function humanLabel(contentKey: string, field: string): string {
+  const area  = AREA_LABELS[contentKey] ?? contentKey.replace(/^content_/, '').replace(/_/g, ' ');
+  return `${area} · ${FIELD_LABELS[field] ?? field}`;
 }
 
 const EditableText = forwardRef<HTMLElement, EditableTextProps>(
-  ({ contentKey, field, value, onSave, as: Tag = 'span', className, style, multiline = false, children }, ref) => {
+  ({ contentKey, field, value, onSave, as: Tag = 'span', className, style, multiline = false, children, persist, label }, ref) => {
     const { editMode } = useEditMode();
     const [open, setOpen] = useState(false);
     const [draft, setDraft] = useState(value);
@@ -52,19 +100,23 @@ const EditableText = forwardRef<HTMLElement, EditableTextProps>(
     async function handleSave() {
       setSaving(true);
       try {
-        // Fetch current JSON for key
-        const { data } = await supabase
-          .from('site_settings')
-          .select('value')
-          .eq('id', contentKey)
-          .single();
+        if (persist) {
+          await persist(draft);
+        } else {
+          // Read-modify-write so editing one field never blanks its siblings.
+          const { data } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('id', contentKey)
+            .maybeSingle();
 
-        const current = (data?.value as Record<string, unknown>) ?? {};
-        const merged = { ...current, [field]: draft };
+          const current = (data?.value as Record<string, unknown>) ?? {};
+          const merged = { ...current, [field]: draft };
 
-        await supabase
-          .from('site_settings')
-          .upsert({ id: contentKey, value: merged }, { onConflict: 'id' });
+          await supabase
+            .from('site_settings')
+            .upsert({ id: contentKey, value: merged }, { onConflict: 'id' });
+        }
 
         onSave(draft);
         setOpen(false);
@@ -133,10 +185,10 @@ const EditableText = forwardRef<HTMLElement, EditableTextProps>(
             <div
               ref={popoverRef}
               style={{ position: 'absolute', top: pos.top, left: pos.left, zIndex: 9999 }}
-              className="w-[400px] bg-[#111] border border-[#C42121]/40 rounded-lg shadow-2xl p-4 space-y-3"
+              className="w-[400px] bg-[#111] border border-primary/40 rounded-lg shadow-2xl p-4 space-y-3"
             >
-              <p className="text-[10px] font-mono text-[#C42121]/50 tracking-widest uppercase">
-                {contentKey} &rarr; {field}
+              <p className="text-[10px] font-mono text-primary/50 tracking-widest uppercase">
+                {label ?? humanLabel(contentKey, field)}
               </p>
               {multiline ? (
                 <textarea
@@ -145,7 +197,7 @@ const EditableText = forwardRef<HTMLElement, EditableTextProps>(
                   onChange={e => setDraft(e.target.value)}
                   onKeyDown={handleKeyDown}
                   rows={4}
-                  className="w-full bg-[#0a0a0a] border border-[#1e1e1e] rounded px-3 py-2 text-white text-sm resize-y focus:outline-none focus:border-[#C42121]/60"
+                  className="w-full bg-[#0a0a0a] border border-[#1e1e1e] rounded px-3 py-2 text-white text-sm resize-y focus:outline-none focus:border-primary/60"
                 />
               ) : (
                 <input
@@ -154,20 +206,20 @@ const EditableText = forwardRef<HTMLElement, EditableTextProps>(
                   value={draft}
                   onChange={e => setDraft(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full bg-[#0a0a0a] border border-[#1e1e1e] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-[#C42121]/60"
+                  className="w-full bg-[#0a0a0a] border border-[#1e1e1e] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-primary/60"
                 />
               )}
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => { setOpen(false); setDraft(value); }}
-                  className="px-3 py-1.5 text-xs font-mono text-[#C42121]/60 border border-[#C42121]/20 rounded hover:bg-[#C42121]/10 transition-colors"
+                  className="px-3 py-1.5 text-xs font-mono text-primary/60 border border-primary/20 rounded hover:bg-primary/10 transition-colors"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-3 py-1.5 text-xs font-mono text-black bg-[#C42121] rounded hover:bg-[#ff3333] transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs font-mono text-black bg-primary rounded hover:opacity-80 transition-colors disabled:opacity-50"
                 >
                   {saving ? 'SAVING...' : 'SAVE'}
                 </button>
