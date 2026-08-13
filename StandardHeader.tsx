@@ -86,31 +86,36 @@ export const StandardHeader: React.FC = () => {
         </motion.div>
       </button>
 
-      {/* Desktop: the entries, written out */}
-      <nav aria-label="Main" className="hidden lg:flex items-center gap-1">
-        {items.map(item => {
-          const current = isCurrent(item);
-          return (
-            <button
-              key={item.id}
-              onClick={() => go(item)}
-              aria-current={current ? 'page' : undefined}
-              className={`group relative px-4 py-2 text-xs font-mono tracking-[0.2em] uppercase transition-colors cursor-pointer
-                          focus:outline-none focus-visible:ring-1 focus-visible:ring-primary
-                          ${current ? 'text-primary' : 'text-primary/55 hover:text-primary'}`}
-            >
-              {item.label}
-              {/* Underline marks the page you are on, and grows on hover */}
-              <span
-                className={`absolute left-4 right-4 bottom-1 h-px bg-primary origin-left transition-transform duration-300
-                            ${current ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100 group-focus-visible:scale-x-100'}`}
-              />
-            </button>
-          );
-        })}
-      </nav>
+      {/* Everything else sits together on the right.
+          Grouped rather than left as separate flex children: with
+          `justify-between` and three children the nav floated in the middle of
+          the bar, adrift from the logo and from the button it belongs with. */}
+      <div className="flex items-center gap-2 md:gap-4">
 
-      <div className="flex items-center gap-2">
+        {/* Desktop: the entries, written out */}
+        <nav aria-label="Main" className="hidden lg:flex items-center gap-1">
+          {items.map(item => {
+            const current = isCurrent(item);
+            return (
+              <button
+                key={item.id}
+                onClick={() => go(item)}
+                aria-current={current ? 'page' : undefined}
+                className={`group relative px-3 xl:px-4 py-2 text-xs font-mono tracking-[0.2em] uppercase transition-colors cursor-pointer
+                            focus:outline-none focus-visible:ring-1 focus-visible:ring-primary
+                            ${current ? 'text-primary' : 'text-primary/55 hover:text-primary'}`}
+              >
+                {item.label}
+                {/* Underline marks the page you are on, and grows on hover */}
+                <span
+                  className={`absolute left-3 right-3 xl:left-4 xl:right-4 bottom-1 h-px bg-primary origin-left transition-transform duration-300
+                              ${current ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100 group-focus-visible:scale-x-100'}`}
+                />
+              </button>
+            );
+          })}
+        </nav>
+
         {/* Optional call-to-action, text and destination set in the admin */}
         {nav.cta?.label && (
           <button
