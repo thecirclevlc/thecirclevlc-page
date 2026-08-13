@@ -14,6 +14,7 @@ import HomeEvents from './components/HomeEvents';
 import NewsletterBlock from './components/NewsletterBlock';
 import type { HomeJoinBlock } from './lib/database.types';
 import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
+import CircleLogo from './components/CircleLogo';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -154,6 +155,11 @@ void main() {
 
 // 1. WebGL Background
 const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({ chaosLevel, bg }) => {
+  // Read inside the render loop rather than captured by the setup effect,
+  // whose deps are [] — the sliders were written once, before the theme row
+  // had even arrived, and never again.
+  const bgRef = useRef(bg);
+  bgRef.current = bg;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
@@ -215,7 +221,7 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
     // brand colour, or picking a new accent leaves a red grid behind it.
     gl.uniform3f(uBrandLoc, ...hexToRgb01(brandColor()));
     const uBgLoc = gl.getUniformLocation(program, 'uBg');
-    gl.uniform4f(uBgLoc, bg.density, bg.weight, bg.speed, bg.intensity);
+
 
     let mouse = { x: 0.5, y: 0.5 };
     let targetMouse = { x: 0.5, y: 0.5 };
@@ -246,6 +252,8 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
       mouse.x += (targetMouse.x - mouse.x) * 0.08;
       mouse.y += (targetMouse.y - mouse.y) * 0.08;
 
+      const b = bgRef.current;
+      gl.uniform4f(uBgLoc, b.density, b.weight, b.speed, b.intensity);
       gl.uniform1f(uTimeLoc, time);
       gl.uniform2f(uMouseLoc, mouse.x, mouse.y);
       // uChaos is updated via a property attached to the canvas element for bridge
@@ -275,6 +283,11 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
         (canvasRef.current as any).updateChaos(chaosLevel);
     }
   }, [chaosLevel]);
+
+  // 'Plain background' has to actually stop painting. Returning null also
+  // tears down the WebGL context and its 60fps loop — the setting saves
+  // battery, which is half of why someone picks it.
+  if (bg.style === 'none') return null;
 
   return (
     <canvas 
@@ -697,18 +710,7 @@ export default function TheCircleApp() {
                 }}
                 className="absolute top-1/2 left-1/2 w-[85vw] h-[85vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
             >
-                <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'var(--font-display)' }}>
-                  <defs>
-                    <path id="circlePath" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
-                  </defs>
-                  <text fill="var(--color-primary)" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
-                    <textPath href="#circlePath" startOffset="0%" textAnchor="start">
-                      <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
-                      <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-                      <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-                    </textPath>
-                  </text>
-                </svg>
+                <CircleLogo className="w-full h-full" title="The Circle" />
             </motion.div>
 
             {/* Central Text */}

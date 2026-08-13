@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { HamburgerMenu } from './HamburgerMenu';
+import CircleLogo from './components/CircleLogo';
 import { useSiteBlock } from './hooks/useSiteContent';
 import {
   DEFAULT_HAMBURGER, NAV_HAMBURGER_KEY,
@@ -71,18 +72,7 @@ export const StandardHeader: React.FC = () => {
           style={{ rotate: rotation }}
           className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center"
         >
-          <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'var(--font-display)' }} aria-hidden="true">
-            <defs>
-              <path id="circlePathSmall" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
-            </defs>
-            <text fill="var(--color-primary)" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
-              <textPath href="#circlePathSmall" startOffset="0%">
-                <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
-                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-              </textPath>
-            </text>
-          </svg>
+          <CircleLogo className="w-full h-full" />
         </motion.div>
       </button>
 

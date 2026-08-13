@@ -92,6 +92,11 @@ const fragmentShaderSource = `
 `;
 
 const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({ chaosLevel, bg }) => {
+  // Read inside the render loop rather than captured by the setup effect,
+  // whose deps are [] — the sliders were written once, before the theme row
+  // had even arrived, and never again.
+  const bgRef = useRef(bg);
+  bgRef.current = bg;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
@@ -120,7 +125,7 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
     const uRes = gl.getUniformLocation(prog, 'uResolution');
     const uChaos = gl.getUniformLocation(prog, 'uChaos');
     gl.uniform3f(gl.getUniformLocation(prog, 'uBrand'), ...hexToRgb01(brandColor()));
-    gl.uniform4f(gl.getUniformLocation(prog, 'uBg'), bg.density, bg.weight, bg.speed, bg.intensity);
+    const uBg = gl.getUniformLocation(prog, 'uBg');
     let mouse = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 };
     const start = performance.now(); let raf = 0;
     const onResize = () => {
@@ -134,6 +139,8 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
     const render = () => {
       const t = (performance.now() - start) * 0.001;
       mouse.x += (target.x - mouse.x) * 0.1; mouse.y += (target.y - mouse.y) * 0.1;
+      const b = bgRef.current;
+      gl.uniform4f(uBg, b.density, b.weight, b.speed, b.intensity);
       gl.uniform1f(uTime, t); gl.uniform2f(uMouse, mouse.x, mouse.y);
       gl.drawArrays(gl.TRIANGLES, 0, 6); raf = requestAnimationFrame(render);
     };
@@ -149,6 +156,11 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
       (canvasRef.current as any).updateChaos(chaosLevel);
     }
   }, [chaosLevel]);
+  // 'Plain background' has to actually stop painting. Returning null also
+  // tears down the WebGL context and its 60fps loop — the setting saves
+  // battery, which is half of why someone picks it.
+  if (bg.style === 'none') return null;
+
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;
 };
 

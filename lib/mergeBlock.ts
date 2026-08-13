@@ -20,9 +20,26 @@ export function mergeBlock<T>(fallback: T, stored: unknown): T {
   if (stored === null || stored === undefined) return fallback;
   if (!isPlainObject(stored) || !isPlainObject(fallback)) return stored as T;
 
-  // Drop null/undefined stored fields so they can't blank out a default.
-  const defined = Object.fromEntries(
-    Object.entries(stored).filter(([, v]) => v !== null && v !== undefined),
-  );
-  return { ...fallback, ...defined } as T;
+  const out: Record<string, unknown> = { ...fallback };
+
+  for (const [key, value] of Object.entries(stored)) {
+    // A stored null must not blank out a default.
+    if (value === null || value === undefined) continue;
+
+    const base = (fallback as Record<string, unknown>)[key];
+
+    // Recurse into nested settings groups.
+    //
+    // This is not theoretical tidiness. `site_theme.background` is a nested
+    // object, and a row holding only `{ background: { style: 'none' } }` used
+    // to arrive with density, weight, speed and intensity all undefined —
+    // which reached the shader as gl.uniform4f(NaN) and painted nothing.
+    // A shallow merge silently drops every sibling of whichever nested field
+    // was written last.
+    out[key] = isPlainObject(value) && isPlainObject(base)
+      ? mergeBlock(base, value)
+      : value;
+  }
+
+  return out as T;
 }
