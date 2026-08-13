@@ -1,10 +1,14 @@
 import React, { useState, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LegalBody from './LegalBody';
 import ImageLightbox from './ImageLightbox';
 import ProfileGallery from './ProfileGallery';
-import GSAPReveal from './GSAPReveal';
+import BlockReveal, { SplitWords } from './BlockReveal';
+import BlockToolbar from './BlockToolbar';
 import EditableText from './EditableText';
+import { useEditMode } from '../contexts/EditModeContext';
+import { sectionClasses, contentClasses, isWordReveal, type BlockStyle } from '../lib/blockStyle';
 import { supabase } from '../lib/supabase';
 import { embedUrl } from '../lib/embedUrl';
 import { formPath, ratioClass, type PageBlock } from '../lib/database.types';
@@ -33,11 +37,11 @@ interface BlocksProps {
 const objectPosition = (focus?: string) =>
   focus && focus !== 'center' ? focus : 'center';
 
-function BlockHeading({ text }: { text?: string }) {
+function BlockHeading({ text, style }: { text?: string; style?: BlockStyle }) {
   if (!text) return null;
   return (
     <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-primary mb-8">
-      {text}
+      {isWordReveal(style) ? <SplitWords text={text} /> : text}
     </h2>
   );
 }
@@ -136,7 +140,7 @@ function VideoBlock({ block }: { block: Extract<PageBlock, { type: 'video' }> })
     // ends up thinking the panel is broken.
     return block.url ? (
       <>
-        <BlockHeading text={block.heading} />
+        <BlockHeading text={block.heading} style={block.style} />
         <a href={block.url} target="_blank" rel="noopener noreferrer"
            className="text-primary underline underline-offset-4 hover:text-fg transition-colors break-all">
           {block.url}
@@ -146,7 +150,7 @@ function VideoBlock({ block }: { block: Extract<PageBlock, { type: 'video' }> })
   }
   return (
     <>
-      <BlockHeading text={block.heading} />
+      <BlockHeading text={block.heading} style={block.style} />
       <div className="max-w-4xl">
         <div className="relative w-full aspect-video border border-primary/15 bg-black">
           {embed.kind === 'iframe' ? (
@@ -189,7 +193,7 @@ function ButtonsBlock({ block }: { block: Extract<PageBlock, { type: 'buttons' }
 
   return (
     <>
-      <BlockHeading text={block.heading} />
+      <BlockHeading text={block.heading} style={block.style} />
       <div className="flex flex-col sm:flex-row flex-wrap gap-4">
         {items.map(b => (
           <button
@@ -212,7 +216,7 @@ function FormBlock({ block }: { block: Extract<PageBlock, { type: 'form' }> }) {
   if (!block.form_slug) return null;
   return (
     <>
-      <BlockHeading text={block.heading} />
+      <BlockHeading text={block.heading} style={block.style} />
       <button
         onClick={() => { window.scrollTo(0, 0); navigate(formPath(block.form_slug)); }}
         className="bg-primary text-black font-black text-lg md:text-xl py-5 px-12 uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer"
@@ -223,36 +227,169 @@ function FormBlock({ block }: { block: Extract<PageBlock, { type: 'form' }> }) {
   );
 }
 
+/** A new block, with the site's defaults already applied. */
+function newBlock(type: PageBlock['type']): PageBlock {
+  const id = (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
+    ?? Math.random().toString(36).slice(2);
+  const base = { id, style: {} as BlockStyle };
+  switch (type) {
+    case 'text':    return { ...base, type, heading: 'New section', body: 'Write here.' };
+    case 'image':   return { ...base, type, url: '', alt: '', caption: '' };
+    case 'gallery': return { ...base, type, heading: '', images: [] };
+    case 'video':   return { ...base, type, heading: '', url: '', caption: '' };
+    case 'buttons': return { ...base, type, heading: '', items: [] };
+    case 'form':    return { ...base, type, heading: '', form_slug: '' };
+  }
+}
+
+const ADD_TYPES: { type: PageBlock['type']; label: string }[] = [
+  { type: 'text',    label: 'Text' },
+  { type: 'image',   label: 'Photo' },
+  { type: 'gallery', label: 'Gallery' },
+  { type: 'video',   label: 'Video' },
+  { type: 'buttons', label: 'Buttons' },
+  { type: 'form',    label: 'Form' },
+];
+
+/**
+ * The thin strip between blocks that adds a new one.
+ *
+ * Nearly invisible until you approach it — the page has to stay readable while
+ * being edited, or she cannot judge what she is making.
+ */
+function AddBlockRail({ onAdd }: { onAdd: (t: PageBlock['type']) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative h-8 group/rail flex items-center justify-center px-5">
+      <span className="absolute inset-x-5 h-px bg-primary/15 group-hover/rail:bg-primary/40 transition-colors" />
+      {open ? (
+        <div className="relative z-20 flex flex-wrap gap-1 rounded-lg bg-black/90 backdrop-blur-md border border-white/15 p-1">
+          {ADD_TYPES.map(t => (
+            <button
+              key={t.type}
+              onClick={() => { onAdd(t.type); setOpen(false); }}
+              className="px-3 py-1.5 rounded text-[11px] text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {t.label}
+            </button>
+          ))}
+          <button onClick={() => setOpen(false)} aria-label="Cancel"
+            className="px-2 py-1.5 rounded text-[11px] text-white/40 hover:text-white transition-colors cursor-pointer">
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="relative z-20 w-7 h-7 rounded-full bg-black/80 border border-primary/40 text-primary
+                     flex items-center justify-center opacity-0 group-hover/rail:opacity-100 focus:opacity-100
+                     transition-opacity cursor-pointer"
+          aria-label="Add a block here"
+        >
+          <Plus size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksProps) {
-  /**
-   * Writes one field of one block straight back to the `pages` row.
-   *
-   * Re-reads before writing so two quick edits in different blocks cannot
-   * clobber each other — the whole `blocks` array is one JSONB column.
-   */
+  const { editMode } = useEditMode();
+  const editing = Boolean(pageId) && editMode;
+
+  /** Writes the whole block list back, re-reading first so edits cannot clobber. */
+  const write = useCallback(async (mutate: (current: PageBlock[]) => PageBlock[]) => {
+    if (!pageId) return;
+    const { data } = await supabase.from('pages').select('blocks').eq('id', pageId).single();
+    const next = mutate(((data?.blocks as PageBlock[]) ?? []));
+    const { error } = await supabase.from('pages').update({ blocks: next }).eq('id', pageId);
+    if (error) throw error;
+    onBlocksChange?.(next);
+  }, [pageId, onBlocksChange]);
+
   const makePersist = useCallback(
     (blockId: string) => (field: string) => async (value: string) => {
-      if (!pageId) return;
-      const { data } = await supabase.from('pages').select('blocks').eq('id', pageId).single();
-      const current = ((data?.blocks as PageBlock[]) ?? []);
-      const next = current.map(b => b.id === blockId ? { ...b, [field]: value } : b);
-      const { error } = await supabase.from('pages').update({ blocks: next }).eq('id', pageId);
-      if (error) throw error;
-      onBlocksChange?.(next);
+      await write(cur => cur.map(b => b.id === blockId ? { ...b, [field]: value } : b));
     },
-    [pageId, onBlocksChange],
+    [write],
   );
+
+  const setStyle = (blockId: string, style: BlockStyle) =>
+    void write(cur => cur.map(b => b.id === blockId ? { ...b, style } : b));
+
+  const move = (blockId: string, dir: -1 | 1) =>
+    void write(cur => {
+      const i = cur.findIndex(b => b.id === blockId);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= cur.length) return cur;
+      const out = cur.slice();
+      [out[i], out[j]] = [out[j], out[i]];
+      return out;
+    });
+
+  const duplicate = (blockId: string) =>
+    void write(cur => {
+      const i = cur.findIndex(b => b.id === blockId);
+      if (i < 0) return cur;
+      const copy = {
+        ...structuredClone(cur[i]),
+        id: (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
+          ?? Math.random().toString(36).slice(2),
+      };
+      return [...cur.slice(0, i + 1), copy, ...cur.slice(i + 1)];
+    });
+
+  const remove = (blockId: string) => {
+    if (!confirm('Delete this block? You can put it back from Change history.')) return;
+    void write(cur => cur.filter(b => b.id !== blockId));
+  };
+
+  const toggleHidden = (blockId: string) =>
+    void write(cur => cur.map(b => b.id === blockId ? { ...b, hidden: !b.hidden } : b));
+
+  // Hidden blocks stay on the page while editing — greyed out — so she can put
+  // them back. Visitors never see them.
+  const shown = (blocks ?? []).filter(b => editing || !b.hidden);
+
+  const add = (type: PageBlock['type'], afterId: string | null) =>
+    void write(cur => {
+      const block = newBlock(type);
+      if (afterId === null) return [block, ...cur];
+      const i = cur.findIndex(b => b.id === afterId);
+      return i < 0 ? [...cur, block] : [...cur.slice(0, i + 1), block, ...cur.slice(i + 1)];
+    });
 
   return (
     <>
-      {(blocks ?? []).filter(b => !b.hidden).map((block, i) => {
-        const edit = pageId
-          ? (field: string) => makePersist(block.id)(field)
-          : undefined;
+      {editing && <AddBlockRail onAdd={t => add(t, null)} />}
+      {shown.map((block, i) => {
+        const edit = pageId ? (field: string) => makePersist(block.id)(field) : undefined;
+        const all = blocks ?? [];
+        const realIndex = all.findIndex(b => b.id === block.id);
+
         return (
-          <GSAPReveal key={block.id} delay={Math.min(i, 4) * 0.05}>
-            <section className="px-5 md:px-20 py-12 md:py-20">
-              <div className="max-w-6xl mx-auto">
+          <section
+            key={block.id}
+            className={`group/block ${sectionClasses(block.style)} ${
+              editing ? 'outline-1 outline-dashed outline-primary/25 hover:outline-primary/60 -outline-offset-1' : ''
+            } ${block.hidden ? 'opacity-40' : ''}`}
+          >
+            {editing && (
+              <BlockToolbar
+                style={block.style}
+                hidden={block.hidden}
+                canUp={realIndex > 0}
+                canDown={realIndex < all.length - 1}
+                onStyle={s => setStyle(block.id, s)}
+                onMove={d => move(block.id, d)}
+                onDuplicate={() => duplicate(block.id)}
+                onDelete={() => remove(block.id)}
+                onToggleHidden={() => toggleHidden(block.id)}
+              />
+            )}
+
+            <BlockReveal kind={block.style?.reveal} delay={Math.min(i, 4) * 0.05}>
+              <div className={contentClasses(block.style)}>
                 {block.type === 'text'    ? <TextBlock    block={block} edit={edit as any} />
                : block.type === 'image'   ? <ImageBlock   block={block} />
                : block.type === 'gallery' ? <GalleryBlock block={block} />
@@ -263,10 +400,13 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
                   nothing rather than crash the whole page. */
                : null}
               </div>
-            </section>
-          </GSAPReveal>
+            </BlockReveal>
+          </section>
         );
       })}
+      {editing && shown.length > 0 && (
+        <AddBlockRail onAdd={t => add(t, shown[shown.length - 1].id)} />
+      )}
     </>
   );
 }

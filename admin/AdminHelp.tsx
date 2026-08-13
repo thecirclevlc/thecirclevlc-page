@@ -140,9 +140,18 @@ export default function AdminHelp() {
               <strong className="text-[#aaa]">Show in the menu</strong>. Until you publish it, only you
               can see it — that is your preview, no special link needed.
             </Step>
-            <Step n={5} title="Edit it live from then on">
-              Open the page on the site, turn on edit mode and click any heading or paragraph. You do not
-              need to come back here for wording.
+            <Step n={5} title="Compose it live from then on">
+              Open the page on the site and turn on edit mode. Hover any section and a small toolbar
+              appears: move it, duplicate it, hide it, delete it, or open{' '}
+              <strong className="text-[#aaa]">Layout</strong> to set its width, alignment, breathing room,
+              surface and how it arrives when you scroll to it. Every change saves as you make it. The
+              thin line between sections adds a new one.
+            </Step>
+            <Step n={6} title="A note on entrances">
+              <strong className="text-[#aaa]">Rise up</strong> is the site's default and always safe.{' '}
+              <strong className="text-[#aaa]">Word by word</strong> looks best on short headings.{' '}
+              <strong className="text-[#aaa]">Wipe across</strong> is loud — one per page at most, or it
+              stops feeling special.
             </Step>
           </>}
         />

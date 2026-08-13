@@ -523,13 +523,19 @@ export const ratioClass = (r?: string) =>
   : r === 'portrait' ? 'aspect-[3/4]'
   : '';
 
+/**
+ * Layout for one block. See lib/blockStyle.ts — a small set of named steps
+ * rather than free numbers, so any combination still looks like this site.
+ */
+export type PageBlockStyle = import('./blockStyle').BlockStyle;
+
 export type PageBlock =
-  | { id: string; type: 'text';    hidden?: boolean; heading?: string; body: string }
-  | { id: string; type: 'image';   hidden?: boolean; url: string; alt?: string; caption?: string; display?: ImageDisplay }
-  | { id: string; type: 'gallery'; hidden?: boolean; heading?: string; images: string[]; display?: ImageDisplay }
-  | { id: string; type: 'video';   hidden?: boolean; heading?: string; url: string; caption?: string }
-  | { id: string; type: 'buttons'; hidden?: boolean; heading?: string; items: PageButton[] }
-  | { id: string; type: 'form';    hidden?: boolean; heading?: string; form_slug: string };
+  | { id: string; type: 'text';    hidden?: boolean; style?: PageBlockStyle; heading?: string; body: string }
+  | { id: string; type: 'image';   hidden?: boolean; style?: PageBlockStyle; url: string; alt?: string; caption?: string; display?: ImageDisplay }
+  | { id: string; type: 'gallery'; hidden?: boolean; style?: PageBlockStyle; heading?: string; images: string[]; display?: ImageDisplay }
+  | { id: string; type: 'video';   hidden?: boolean; style?: PageBlockStyle; heading?: string; url: string; caption?: string }
+  | { id: string; type: 'buttons'; hidden?: boolean; style?: PageBlockStyle; heading?: string; items: PageButton[] }
+  | { id: string; type: 'form';    hidden?: boolean; style?: PageBlockStyle; heading?: string; form_slug: string };
 
 export type PageBlockType = PageBlock['type'];
 
