@@ -13,6 +13,7 @@ import { brandColor, hexToRgb01 } from './lib/cssVar';
 import HomeEvents from './components/HomeEvents';
 import NewsletterBlock from './components/NewsletterBlock';
 import type { HomeJoinBlock } from './lib/database.types';
+import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -98,6 +99,7 @@ uniform vec2 uMouse;
 uniform vec2 uResolution;
 uniform float uChaos;
 uniform vec3 uBrand;
+uniform vec4 uBg;   // x density · y weight · z speed · w intensity
 
 varying vec2 vUv;
 
@@ -119,7 +121,7 @@ void main() {
   
   // Normal wave ripple effect
   float decay = clamp(1.0 - dist * 3.0, 0.0, 1.0);
-  float normalRipple = sin(dist * 40.0 - uTime * 5.0) * 0.03 * decay;
+  float normalRipple = sin(dist * 40.0 - uTime * uBg.z) * 0.03 * decay;
   
   // Chaos effect - destruction
   float chaosNoise = (random(st * uTime) - 0.5) * uChaos * 0.2;
@@ -129,9 +131,9 @@ void main() {
   vec2 distortedSt = vUv + normalRipple + chaosRipple + chaosNoise;
   
   // Draw Grid
-  float gridSize = 40.0;
+  float gridSize = uBg.x;
   vec2 gridUV = distortedSt * gridSize;
-  float thickness = 0.02 + (uChaos * 0.1); 
+  float thickness = uBg.y + (uChaos * 0.1); 
   vec2 gridLine = smoothstep(0.5 - thickness, 0.5, fract(gridUV)) * 
                   smoothstep(0.5 + thickness, 0.5, fract(gridUV));
   
@@ -142,7 +144,7 @@ void main() {
   vec3 red = uBrand;   // fed from the admin's brand colour
   
   // Color mixing - during chaos, color becomes more intense
-  vec3 color = mix(black, red, lines * (0.2 + decay * 0.8 + uChaos));
+  vec3 color = mix(black, red, lines * (uBg.w + decay * 0.8 + uChaos));
 
   gl_FragColor = vec4(color, 1.0);
 }
@@ -151,7 +153,7 @@ void main() {
 // --- Components ---
 
 // 1. WebGL Background
-const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
+const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({ chaosLevel, bg }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
@@ -212,6 +214,8 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
     // Resolved once at setup: the animated background must follow the
     // brand colour, or picking a new accent leaves a red grid behind it.
     gl.uniform3f(uBrandLoc, ...hexToRgb01(brandColor()));
+    const uBgLoc = gl.getUniformLocation(program, 'uBg');
+    gl.uniform4f(uBgLoc, bg.density, bg.weight, bg.speed, bg.intensity);
 
     let mouse = { x: 0.5, y: 0.5 };
     let targetMouse = { x: 0.5, y: 0.5 };
@@ -550,8 +554,17 @@ const ManifestoSection: React.FC = () => {
 };
 
 // --- Main App ---
+const THEME_FALLBACK: SiteTheme = {
+  primary_color: '#C42121', bg_color: '#050000', font: 'poppins',
+  type_scale: 1, background: DEFAULT_BACKGROUND,
+};
+
 export default function TheCircleApp() {
-  // Theme is applied once in AppRouter so it covers every route.
+  // Theme is applied in AppRouter; here we only read the background settings
+  // the shader needs. Re-reading is cheap (one row, already cached by the CDN)
+  // and keeps the shader honest when she changes them.
+  const { data: theme } = useSiteBlock<SiteTheme>(SITE_THEME_KEY, THEME_FALLBACK);
+  const background = theme.background ?? DEFAULT_BACKGROUND;
   const navigate = useNavigate();
 
   const { data: marquee, setData: setMarquee } = useSiteBlock('content_home_marquee', {
@@ -641,7 +654,7 @@ export default function TheCircleApp() {
         animate={{ opacity: showGrid ? 1 : 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
       >
-        <WebGLBackground chaosLevel={0} />
+        <WebGLBackground chaosLevel={0} bg={background} />
       </motion.div>
       
       {/* Noise Overlay (CSS) */}

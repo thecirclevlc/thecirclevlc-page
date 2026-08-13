@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { mergeBlock } from '../lib/mergeBlock';
 import { contrastRatio, wcagVerdict } from '../lib/contrast';
 import {
-  SITE_FONTS, SITE_THEME_KEY, applyTheme, fontStack, type SiteTheme,
+  SITE_FONTS, SITE_THEME_KEY, applyTheme, fontStack,
+  DEFAULT_BACKGROUND, TYPE_SCALE_MIN, TYPE_SCALE_MAX, type SiteTheme,
 } from '../hooks/useSiteTheme';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
@@ -13,10 +14,36 @@ const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
 const LABEL   = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
 const INPUT   = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40 transition-colors';
 
-const DEFAULTS: SiteTheme = { primary_color: '#C42121', bg_color: '#050000', font: 'poppins' };
+const DEFAULTS: SiteTheme = {
+  primary_color: '#C42121', bg_color: '#050000', font: 'poppins',
+  type_scale: 1, background: DEFAULT_BACKGROUND,
+};
+
+/** A labelled slider. Shows the value, because "somewhere in the middle" is not a setting. */
+function Slider({ label, hint, value, min, max, step, format, onChange }: {
+  label: string; hint?: string; value: number; min: number; max: number; step: number;
+  format?: (v: number) => string; onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-1.5">
+        <label className={LABEL + ' mb-0'}>{label}</label>
+        <span className="text-[#666] text-xs font-mono tabular-nums">
+          {format ? format(value) : value}
+        </span>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="w-full accent-[#059669] cursor-pointer"
+      />
+      {hint && <p className="text-[#444] text-xs mt-1">{hint}</p>}
+    </div>
+  );
+}
 
 /** Named starting points, so she is not left alone with a colour wheel. */
-const PRESETS: { label: string; note: string; theme: Omit<SiteTheme, 'font'> }[] = [
+const PRESETS: { label: string; note: string; theme: Pick<SiteTheme, 'primary_color' | 'bg_color'> }[] = [
   { label: 'Original red', note: 'What the site launched with',
     theme: { primary_color: '#C42121', bg_color: '#050000' } },
   { label: 'Readable red', note: 'Same red, light enough to pass accessibility',
@@ -95,6 +122,7 @@ export default function AdminAppearance() {
     return <div className="flex items-center justify-center py-16"><Loader2 size={20} className="text-[#444] animate-spin" /></div>;
   }
 
+  const bg      = theme.background ?? DEFAULT_BACKGROUND;
   const ratio   = contrastRatio(theme.primary_color, theme.bg_color);
   const verdict = wcagVerdict(ratio);
 
@@ -204,6 +232,74 @@ export default function AdminAppearance() {
             </button>
           ))}
         </div>
+
+        <div className="pt-2 border-t border-[#1a1a1a]">
+          <Slider
+            label="Overall text size"
+            hint="Typefaces disagree about how big a size looks. After changing font, nudge this until it feels right — everything scales together, so the layout keeps its proportions."
+            value={theme.type_scale ?? 1}
+            min={TYPE_SCALE_MIN} max={TYPE_SCALE_MAX} step={0.01}
+            format={v => `${Math.round(v * 100)}%`}
+            onChange={v => update({ type_scale: v })}
+          />
+          <div className="mt-4 rounded-lg border border-[#1e1e1e] p-5" style={{ background: theme.bg_color }}>
+            <p className="font-black uppercase tracking-tighter leading-none"
+               style={{ color: theme.primary_color, fontFamily: fontStack(theme.font),
+                        fontSize: `${2.25 * (theme.type_scale ?? 1)}rem` }}>
+              The Circle
+            </p>
+            <p className="mt-2 leading-relaxed"
+               style={{ color: theme.primary_color, opacity: 0.7, fontFamily: fontStack(theme.font),
+                        fontSize: `${0.95 * (theme.type_scale ?? 1)}rem` }}>
+              Secret location, electronic music, bold art and performance — one night, once.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Animated background */}
+      <section className={SECTION}>
+        <div>
+          <p className="text-white text-sm font-medium">Animated background</p>
+          <p className="text-[#555] text-xs mt-1">
+            The moving grid behind the home page and the application form. It follows your main colour.
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          {([['grid', 'Animated grid'], ['none', 'Plain background']] as const).map(([v, label]) => (
+            <button key={v}
+              onClick={() => update({ background: { ...bg, style: v } })}
+              className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                bg.style === v ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]' : 'text-[#555] hover:text-[#888] border border-transparent'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {bg.style === 'grid' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+            <Slider label="Grid density" hint="Low is a few big cells, high is a fine mesh."
+              value={bg.density} min={12} max={80} step={1}
+              onChange={v => update({ background: { ...bg, density: v } })} />
+            <Slider label="Line weight" value={bg.weight} min={0.008} max={0.06} step={0.002}
+              format={v => v.toFixed(3)}
+              onChange={v => update({ background: { ...bg, weight: v } })} />
+            <Slider label="Movement speed" hint="Zero freezes it completely."
+              value={bg.speed} min={0} max={14} step={0.5}
+              onChange={v => update({ background: { ...bg, speed: v } })} />
+            <Slider label="Strength" hint="How much the lines read against the background."
+              value={bg.intensity} min={0} max={0.6} step={0.02}
+              format={v => `${Math.round(v * 100 / 0.6)}%`}
+              onChange={v => update({ background: { ...bg, intensity: v } })} />
+          </div>
+        )}
+
+        <p className="text-[#444] text-xs">
+          The background reacts to the pointer, so it only really shows itself on the live site —
+          open it in another tab after saving.
+        </p>
       </section>
 
       <div className="flex justify-end sticky bottom-4 z-20">

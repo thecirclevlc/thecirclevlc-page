@@ -16,11 +16,38 @@ export type SiteFontId = typeof SITE_FONTS[number]['id'];
 export const fontStack = (id: string): string =>
   SITE_FONTS.find(f => f.id === id)?.stack ?? SITE_FONTS[0].stack;
 
+/**
+ * The animated grid behind the home page and the form.
+ *
+ * Four numbers that were previously only tunable by editing a shader. They are
+ * exposed because the client asked — and because with a live preview they stop
+ * being "four numbers you can only get right by trial" and become a dial she
+ * can turn while watching.
+ */
+export interface SiteBackground {
+  /** `none` turns the animation off entirely — cheaper, calmer, and a valid look. */
+  style:     'grid' | 'none';
+  /** Grid density. Low = big cells, high = fine mesh. */
+  density:   number;
+  /** Line weight. */
+  weight:    number;
+  /** How fast the ripple travels. 0 freezes it. */
+  speed:     number;
+  /** How strongly the lines read against the background. */
+  intensity: number;
+}
+
+export const DEFAULT_BACKGROUND: SiteBackground = {
+  style: 'grid', density: 40, weight: 0.02, speed: 5, intensity: 0.2,
+};
+
 // Must match the @theme block in index.css.
 const DEFAULTS: SiteTheme = {
   primary_color: '#C42121',
   bg_color:      '#050000',
   font:          'poppins',
+  type_scale:    1,
+  background:    DEFAULT_BACKGROUND,
 };
 
 export interface SiteTheme {
@@ -28,7 +55,23 @@ export interface SiteTheme {
   bg_color:      string;
   /** One of SITE_FONTS[].id */
   font:          string;
+  /**
+   * Multiplies every text size on the site at once.
+   *
+   * Exists because typefaces do not agree on how big "16px" looks — League
+   * Spartan runs noticeably smaller than Poppins at the same size, so changing
+   * the font left everything looking wrong with no way to correct it.
+   *
+   * Applied to the root font size, so every rem-based size follows in
+   * proportion and the layout keeps its rhythm. Range is deliberately narrow:
+   * beyond it, headings start colliding with their containers.
+   */
+  type_scale:    number;
+  background:    SiteBackground;
 }
+
+export const TYPE_SCALE_MIN = 0.9;
+export const TYPE_SCALE_MAX = 1.15;
 
 export const SITE_THEME_KEY = 'site_theme' as const;
 
@@ -42,6 +85,8 @@ export function applyTheme(theme: SiteTheme): void {
   root.setProperty('--color-primary', theme.primary_color);
   root.setProperty('--color-bg', theme.bg_color);
   root.setProperty('--font-display', fontStack(theme.font));
+  const scale = Math.min(TYPE_SCALE_MAX, Math.max(TYPE_SCALE_MIN, theme.type_scale ?? 1));
+  root.setProperty('--type-scale', String(scale));
   // The browser chrome on mobile picks this up.
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.bg_color);
 }

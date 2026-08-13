@@ -16,6 +16,7 @@ import { DEFAULT_FORM_SCHEMA } from './lib/formSchema';
 import NotFound from './NotFound';
 import { brandColor, fgColor, hexToRgb01 } from './lib/cssVar';
 import { StandardHeader } from './StandardHeader';
+import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
 
 // ── Smooth scroll utility ─────────────────────────────────────────
 let scrollAnimationId: number | null = null;
@@ -54,7 +55,7 @@ const vertexShaderSource = `
 `;
 const fragmentShaderSource = `
   precision mediump float;
-  uniform float uTime; uniform vec2 uMouse; uniform vec2 uResolution; uniform float uChaos; uniform vec3 uBrand;
+  uniform float uTime; uniform vec2 uMouse; uniform vec2 uResolution; uniform float uChaos; uniform vec3 uBrand; uniform vec4 uBg;
   varying vec2 vUv;
   float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
   float noise(vec2 st) {
@@ -69,28 +70,28 @@ const fragmentShaderSource = `
     vec2 mouse = uMouse; mouse.x *= aspect;
     float dist = distance(st, mouse);
     float decay = clamp(1.0 - dist * 2.5, 0.0, 1.0);
-    float ripple = sin(dist * 30.0 - uTime * 3.0) * 0.02 * decay;
+    float ripple = sin(dist * 30.0 - uTime * uBg.z * 0.6) * 0.02 * decay;
     vec2 center = vec2(0.5 * aspect, 0.5);
     vec2 toCenter = center - st; float distToCenter = length(toCenter);
     vec2 suction = normalize(toCenter) * uChaos * 0.1 * sin(uTime * 10.0);
     float chaosNoise = (random(st * uTime) - 0.5) * uChaos * 0.1;
     vec2 distortedSt = vUv + ripple + suction + chaosNoise;
-    float gridSize = 30.0; vec2 gridUV = distortedSt * gridSize;
-    float thickness = 0.03 + (uChaos * 0.05);
+    float gridSize = uBg.x * 0.75; vec2 gridUV = distortedSt * gridSize;
+    float thickness = uBg.y * 1.5 + (uChaos * 0.05);
     vec2 gridLine = smoothstep(0.5 - thickness, 0.5, fract(gridUV)) * smoothstep(0.5 + thickness, 0.5, fract(gridUV));
     float lines = max(gridLine.x, gridLine.y);
     float vignette = smoothstep(0.8, 0.2, distance(vUv, vec2(0.5)));
     vec3 black = vec3(0.05, 0.0, 0.02); vec3 red = uBrand;
     float fog = noise(distortedSt * 3.0 + uTime * 0.2);
     vec3 color = mix(black, red * 0.3, fog);
-    float gridIntensity = 0.05 + (uChaos * 0.8);
+    float gridIntensity = uBg.w * 0.25 + (uChaos * 0.8);
     color = mix(color, red, lines * gridIntensity * vignette);
     if (uChaos > 0.0) color *= smoothstep(0.0, 0.5, distToCenter + (1.0 - uChaos));
     gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
+const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({ chaosLevel, bg }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
@@ -119,6 +120,7 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
     const uRes = gl.getUniformLocation(prog, 'uResolution');
     const uChaos = gl.getUniformLocation(prog, 'uChaos');
     gl.uniform3f(gl.getUniformLocation(prog, 'uBrand'), ...hexToRgb01(brandColor()));
+    gl.uniform4f(gl.getUniformLocation(prog, 'uBg'), bg.density, bg.weight, bg.speed, bg.intensity);
     let mouse = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 };
     const start = performance.now(); let raf = 0;
     const onResize = () => {
@@ -345,6 +347,11 @@ export default function FormPage() {
   const formKey = formKeyForSlug(slug);
 
   const rotation = useMotionValue(0);
+  const { data: theme } = useSiteBlock<SiteTheme>(SITE_THEME_KEY, {
+    primary_color: '#C42121', bg_color: '#050000', font: 'poppins',
+    type_scale: 1, background: DEFAULT_BACKGROUND,
+  });
+  const background = theme.background ?? DEFAULT_BACKGROUND;
   const [chaosLevel, setChaosLevel] = useState(0);
   const { data: schema, loading: schemaLoading, exists: formExists } =
     useSiteBlock<FormSchema>(formKey, DEFAULT_FORM_SCHEMA);
@@ -519,7 +526,7 @@ export default function FormPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-bg text-primary flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 relative overflow-hidden cursor-crosshair">
-        <WebGLBackground chaosLevel={0} />
+        <WebGLBackground chaosLevel={0} bg={background} />
         <StandardHeader />
 
         <motion.div
@@ -565,7 +572,7 @@ export default function FormPage() {
   // ── Form view ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-bg text-primary selection:bg-primary selection:text-black cursor-crosshair overflow-x-hidden">
-      <WebGLBackground chaosLevel={chaosLevel} />
+      <WebGLBackground chaosLevel={chaosLevel} bg={background} />
 
       <StandardHeader />
 

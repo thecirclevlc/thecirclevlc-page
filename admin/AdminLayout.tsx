@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -54,6 +54,23 @@ const NAV_GROUPS: { title: string; items: { label: string; to: string; icon: Rea
     ],
   },
 ];
+
+/**
+ * The public site scales its text from the root font size, so the admin would
+ * scale with it. Pin it back to 1 here: her panel should not shrink because
+ * she made the website's headings smaller.
+ */
+function useUnscaledAdmin() {
+  useEffect(() => {
+    const root = document.documentElement.style;
+    const previous = root.getPropertyValue('--type-scale');
+    root.setProperty('--type-scale', '1');
+    return () => {
+      if (previous) root.setProperty('--type-scale', previous);
+      else root.removeProperty('--type-scale');
+    };
+  }, []);
+}
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {
   const location    = useLocation();
@@ -139,6 +156,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  useUnscaledAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (

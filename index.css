@@ -49,6 +49,16 @@ body {
   font-family: var(--font-display);
 }
 
+/* Every text size on the site scales from here.
+ *
+ * Typefaces disagree about how big a given size looks — League Spartan reads
+ * noticeably smaller than Poppins at the same value — so switching font used
+ * to leave everything either cramped or oversized with no way to fix it.
+ * One multiplier on the root size keeps every proportion intact. */
+html {
+  font-size: calc(100% * var(--type-scale, 1));
+}
+
 /*
  * TheCircle - Custom Styles
  */
