@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
+import { useSiteTheme } from './hooks/useSiteTheme';
 
 // ── Lazy-loaded public pages ────────────────────────────────────
 const App         = lazy(() => import('./App'));
@@ -12,6 +13,8 @@ const Artists     = lazy(() => import('./Artists'));
 const Terms       = lazy(() => import('./Terms'));
 const Privacy     = lazy(() => import('./Privacy'));
 const NotFound    = lazy(() => import('./NotFound'));
+const DynamicPage = lazy(() => import('./DynamicPage'));
+const ProfileDetail = lazy(() => import('./ProfileDetail'));
 
 // ── Lazy-loaded admin pages ─────────────────────────────────────
 const AdminLogin        = lazy(() => import('./admin/AdminLogin'));
@@ -24,11 +27,15 @@ const AdminDJForm       = lazy(() => import('./admin/AdminDJForm'));
 const AdminArtists      = lazy(() => import('./admin/AdminArtists'));
 const AdminArtistForm   = lazy(() => import('./admin/AdminArtistForm'));
 const AdminSiteSettings  = lazy(() => import('./admin/AdminSiteSettings'));
-const AdminVisualEditor  = lazy(() => import('./admin/AdminVisualEditor'));
 const AdminNavigation    = lazy(() => import('./admin/AdminNavigation'));
 const AdminLegal         = lazy(() => import('./admin/AdminLegal'));
 const AdminFormBuilder   = lazy(() => import('./admin/AdminFormBuilder'));
 const AdminSubmissions   = lazy(() => import('./admin/AdminSubmissions'));
+const AdminAppearance    = lazy(() => import('./admin/AdminAppearance'));
+const AdminHelp          = lazy(() => import('./admin/AdminHelp'));
+const AdminHistoryPage   = lazy(() => import('./admin/AdminHistoryPage'));
+const AdminPages         = lazy(() => import('./admin/AdminPages'));
+const AdminPageForm      = lazy(() => import('./admin/AdminPageForm'));
 
 // ── Auth wrapper (lazy) ─────────────────────────────────────────
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
@@ -36,8 +43,8 @@ const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
 // ── Full-screen spinner shown during lazy chunk load ───────────
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-[#050000] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-[#C42121] border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -53,6 +60,10 @@ function AdminPage({ children }: { children: React.ReactNode }) {
 
 // ── Router ─────────────────────────────────────────────────────
 export default function AppRouter() {
+  // Mounted here, not in App.tsx, so the admin's colours apply on EVERY
+  // route. Previously only the home page ever read the theme.
+  useSiteTheme();
+
   return (
     <>
     <Analytics />
@@ -62,10 +73,13 @@ export default function AppRouter() {
         {/* ── PUBLIC ── */}
         <Route path="/"                     element={<App />} />
         <Route path="/form"                 element={<Form />} />
+        <Route path="/form/:slug"           element={<Form />} />
         <Route path="/past-events"          element={<PastEvents />} />
         <Route path="/past-events/:eventId" element={<EventDetail />} />
         <Route path="/djs"                  element={<DJs />} />
+        <Route path="/djs/:slug"            element={<ProfileDetail type="dj" />} />
         <Route path="/artists"              element={<Artists />} />
+        <Route path="/artists/:slug"        element={<ProfileDetail type="artist" />} />
         <Route path="/terms"                element={<Terms />} />
         <Route path="/privacy"              element={<Privacy />} />
 
@@ -84,11 +98,24 @@ export default function AppRouter() {
         <Route path="/admin/artists/new"  element={<AdminPage><AdminArtistForm /></AdminPage>} />
         <Route path="/admin/artists/:id"  element={<AdminPage><AdminArtistForm /></AdminPage>} />
         <Route path="/admin/settings"        element={<AdminPage><AdminSiteSettings /></AdminPage>} />
-        <Route path="/admin/visual-editor"   element={<AdminPage><AdminVisualEditor /></AdminPage>} />
+        <Route path="/admin/appearance"      element={<AdminPage><AdminAppearance /></AdminPage>} />
+        {/* Legacy path — the toolbar and old bookmarks still point here. */}
+        <Route path="/admin/visual-editor"   element={<AdminPage><AdminAppearance /></AdminPage>} />
         <Route path="/admin/navigation"      element={<AdminPage><AdminNavigation /></AdminPage>} />
         <Route path="/admin/legal"           element={<AdminPage><AdminLegal /></AdminPage>} />
         <Route path="/admin/form-builder"    element={<AdminPage><AdminFormBuilder /></AdminPage>} />
         <Route path="/admin/submissions"     element={<AdminPage><AdminSubmissions /></AdminPage>} />
+        <Route path="/admin/help"            element={<AdminPage><AdminHelp /></AdminPage>} />
+        <Route path="/admin/history"         element={<AdminPage><AdminHistoryPage /></AdminPage>} />
+        <Route path="/admin/pages"           element={<AdminPage><AdminPages /></AdminPage>} />
+        <Route path="/admin/pages/:id"       element={<AdminPage><AdminPageForm /></AdminPage>} />
+
+        {/* ── ADMIN-CREATED PAGES ──
+            Last but one. React Router ranks static segments above dynamic
+            ones, so every route above still wins; this only catches
+            single-segment addresses nothing else claims. Reserved slugs are
+            also blocked by a CHECK on the table. */}
+        <Route path="/:slug" element={<DynamicPage />} />
 
         {/* ── 404 CATCH-ALL ── */}
         <Route path="*" element={<NotFound />} />

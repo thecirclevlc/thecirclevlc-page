@@ -204,6 +204,21 @@ export default function AdminEventForm() {
     setPartnerUrl('');
   }
 
+  // The event page has always rendered `p.logo_url` (EventDetail.tsx:493);
+  // the form simply never offered a way to set it, so every partner showed
+  // as plain text.
+  async function uploadPartnerLogo(i: number, file?: File) {
+    if (!file) return;
+    try {
+      const url = await uploadImage(file, 'general');
+      const partnerships = ((form.partnerships as any[]) ?? []).map(
+        (p: any, idx: number) => idx === i ? { ...p, logo_url: url } : p);
+      set('partnerships', partnerships as any);
+    } catch (err: any) {
+      showToast('Logo upload failed: ' + err.message, 'err');
+    }
+  }
+
   function removePartnership(i: number) {
     const partnerships = ((form.partnerships as any[]) ?? []).filter((_: any, idx: number) => idx !== i);
     set('partnerships', partnerships as any);
@@ -598,10 +613,18 @@ export default function AdminEventForm() {
 
           <div className="space-y-2">
             {((form.partnerships as any[]) ?? []).map((p: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2">
-                <span className="text-sm text-white flex-1">{p.name}</span>
-                {p.url && <span className="text-xs text-[#444] font-mono truncate max-w-[150px]">{p.url}</span>}
-                <button type="button" onClick={() => removePartnership(i)} className="text-[#444] hover:text-red-400 transition-colors">
+              <div key={i} className="flex items-center gap-3 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2">
+                {p.logo_url
+                  ? <img src={p.logo_url} alt="" className="h-7 w-auto max-w-[80px] object-contain flex-shrink-0" />
+                  : <span className="h-7 w-10 flex-shrink-0 rounded border border-dashed border-[#222]" />}
+                <span className="text-sm text-white flex-1 truncate">{p.name}</span>
+                {p.url && <span className="text-xs text-[#444] font-mono truncate max-w-[130px]">{p.url}</span>}
+                <label className="px-2 py-1 text-xs text-[#666] hover:text-white border border-[#1e1e1e] rounded cursor-pointer transition-colors flex-shrink-0">
+                  {p.logo_url ? 'Replace' : 'Logo'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => uploadPartnerLogo(i, e.target.files?.[0])} />
+                </label>
+                <button type="button" onClick={() => removePartnership(i)} className="text-[#444] hover:text-red-400 transition-colors flex-shrink-0">
                   <X size={12} />
                 </button>
               </div>

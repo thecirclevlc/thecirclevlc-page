@@ -232,6 +232,27 @@ CREATE POLICY "Authenticated full access social_links"
   WITH CHECK (auth.role() = 'authenticated');
 
 -- ── Form Submissions ──────────────────────────────────────────────
+--
+-- ⚠️  INCIDENTE (agosto 2026) — LEER ANTES DE COPIAR ESTE PATRÓN.
+--
+-- Este CREATE TABLE IF NOT EXISTS NO se aplicó nunca en producción. La tabla
+-- ya existía con la forma plana anterior (full_name, age, where_from, ...) y
+-- el `IF NOT EXISTS` lo convirtió en un no-op SILENCIOSO: sin error, sin aviso.
+-- Resultado: las columnas form_key/data/ip_hash/user_agent no existían, el
+-- insert de Form.tsx fallaba con 400 y se perdieron TODAS las candidaturas
+-- entre mayo y agosto de 2026. La tabla tenía 0 filas.
+--
+-- Reparado con dos migraciones aditivas (ver Supabase → Migrations):
+--   add_form_submissions_jsonb_columns
+--   form_submissions_data_no_default
+--
+-- REGLA: `CREATE TABLE IF NOT EXISTS` sirve para crear, nunca para migrar.
+-- Si una tabla puede existir ya con otra forma, la migración va con ALTER
+-- explícito. Y después se verifica el camino real (un insert como anon),
+-- no solo que el SQL no diera error.
+--
+-- Estado real en producción tras la reparación: las 8 columnas planas siguen
+-- ahí, vacías y sin que ningún código las lea. Se eliminan en la fase 2.
 CREATE TABLE IF NOT EXISTS form_submissions (
   id          UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
   form_key    TEXT        NOT NULL DEFAULT 'form_schema_join',
@@ -246,6 +267,7 @@ CREATE TABLE IF NOT EXISTS form_submissions (
 
 CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions(created_at DESC);
 CREATE INDEX IF NOT EXISTS form_submissions_status_idx     ON form_submissions(status);
+CREATE INDEX IF NOT EXISTS form_submissions_form_key_idx   ON form_submissions(form_key);
 
 ALTER TABLE form_submissions ENABLE ROW LEVEL SECURITY;
 

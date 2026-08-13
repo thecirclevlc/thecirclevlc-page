@@ -1,25 +1,62 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
-  LayoutDashboard, Calendar, Music2, Users,
-  LogOut, Menu, X, ExternalLink, Settings, Paintbrush, Link2, FileText, FormInput, Inbox,
+  LayoutDashboard, Calendar, Music2, Users, Search, History, Tags, Image,
+  LogOut, Menu, X, ExternalLink, Paintbrush, Link2, FileText, FormInput, Inbox, Files,
+  PanelBottom, Share2, HelpCircle,
 } from 'lucide-react';
 
-const NAV = [
-  { label: 'Dashboard',      to: '/admin',                icon: LayoutDashboard, end: true },
-  { label: 'Events',         to: '/admin/events',         icon: Calendar },
-  { label: 'DJs',            to: '/admin/djs',            icon: Music2 },
-  { label: 'Artists',        to: '/admin/artists',        icon: Users },
-  { label: 'Submissions',    to: '/admin/submissions',    icon: Inbox },
-  { label: 'Form Builder',   to: '/admin/form-builder',   icon: FormInput },
-  { label: 'Visual Editor',  to: '/admin/visual-editor',  icon: Paintbrush },
-  { label: 'Navigation',     to: '/admin/navigation',     icon: Link2 },
-  { label: 'Legal Pages',    to: '/admin/legal',          icon: FileText },
-  { label: 'Settings',       to: '/admin/settings',       icon: Settings },
+/**
+ * Grouped, and named for what each screen contains.
+ *
+ * There are more entries than before, not fewer, and that is the point: the
+ * client asked for Instagram in the footer while it sat in the third tab of a
+ * screen called "Navigation". Tabs are addressable by URL, so each one gets to
+ * be its own destination instead of hiding behind a sibling.
+ */
+const NAV_GROUPS: { title: string; items: { label: string; to: string; icon: React.ElementType; end?: boolean }[] }[] = [
+  {
+    title: 'Content',
+    items: [
+      { label: 'Dashboard',    to: '/admin',          icon: LayoutDashboard, end: true },
+      { label: 'How it works', to: '/admin/help',     icon: HelpCircle },
+      { label: 'Events',       to: '/admin/events',   icon: Calendar },
+      { label: 'DJs',          to: '/admin/djs',      icon: Music2 },
+      { label: 'Artists',      to: '/admin/artists',  icon: Users },
+      { label: 'Pages',        to: '/admin/pages',    icon: Files },
+    ],
+  },
+  {
+    title: 'People writing in',
+    items: [
+      { label: 'Submissions',  to: '/admin/submissions',  icon: Inbox },
+      { label: 'Forms',        to: '/admin/form-builder', icon: FormInput },
+    ],
+  },
+  {
+    title: 'Look & navigation',
+    items: [
+      { label: 'Appearance',     to: '/admin/appearance',               icon: Paintbrush },
+      { label: 'Menu',           to: '/admin/navigation',               icon: Link2 },
+      { label: 'Footer',         to: '/admin/navigation?tab=footer',    icon: PanelBottom },
+      { label: 'Social links',   to: '/admin/navigation?tab=social',    icon: Share2 },
+      { label: 'Page backgrounds', to: '/admin/settings',               icon: Image },
+    ],
+  },
+  {
+    title: 'Settings',
+    items: [
+      { label: 'Google & sharing',  to: '/admin/settings?tab=seo',        icon: Search },
+      { label: 'Artist categories', to: '/admin/settings?tab=categories', icon: Tags },
+      { label: 'Legal pages',       to: '/admin/legal',                   icon: FileText },
+      { label: 'Change history',    to: '/admin/history',                 icon: History },
+    ],
+  },
 ];
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {
+  const location    = useLocation();
   const { signOut } = useAuth();
   const navigate    = useNavigate();
 
@@ -46,23 +83,35 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {NAV.map(item => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            onClick={onNav}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                isActive
-                  ? 'bg-[#C42121]/10 text-[#C42121] border border-[#C42121]/15 font-medium'
-                  : 'text-[#666] hover:text-[#ccc] hover:bg-[#161616] border border-transparent'
-              }`
-            }
-          >
-            <item.icon size={15} strokeWidth={1.8} />
-            <span className="tracking-wide">{item.label}</span>
-          </NavLink>
+        {NAV_GROUPS.map(group => (
+          <div key={group.title} className="mb-5 last:mb-0">
+            <p className="px-3 mb-1.5 text-[10px] tracking-[0.18em] uppercase text-[#3a3a3a]">
+              {group.title}
+            </p>
+            {group.items.map(item => {
+              const [path, query] = item.to.split('?');
+              const wantedTab = new URLSearchParams(query ?? '').get('tab');
+              const active = item.end
+                ? location.pathname === path
+                : location.pathname.startsWith(path)
+                  && (new URLSearchParams(location.search).get('tab') ?? null) === wantedTab;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={onNav}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                    active
+                      ? 'bg-[#C42121]/10 text-[#C42121] border border-[#C42121]/15 font-medium'
+                      : 'text-[#666] hover:text-[#ccc] hover:bg-[#161616] border border-transparent'
+                  }`}
+                >
+                  <item.icon size={15} strokeWidth={1.8} />
+                  <span className="tracking-wide">{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
         ))}
       </nav>
 

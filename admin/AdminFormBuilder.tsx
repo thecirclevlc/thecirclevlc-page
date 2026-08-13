@@ -1,21 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Loader2, Save, Plus, Trash2, ArrowUp, ArrowDown,
-  CheckCircle, AlertCircle, RotateCcw,
+  CheckCircle, AlertCircle, Copy, ExternalLink, FilePlus2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { slugify } from '../lib/slugify';
+import { mergeBlock } from '../lib/mergeBlock';
 import {
-  FORM_SCHEMA_JOIN_KEY,
+  DEFAULT_FORM_SLUG, formKeyForSlug, formPath, CTA_BLOCKS,
   type FormSchema, type FormFieldSchema, type FormFieldType,
+  type CtaBlock, type CtaKey,
 } from '../lib/database.types';
-import { DEFAULT_FORM_SCHEMA } from '../lib/formSchema';
+import {
+  DEFAULT_FORM_SCHEMA, blankFormSchema, listForms, uniqueFormSlug,
+  type FormListItem,
+} from '../lib/formSchema';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
 const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
 const TEXTAREA = INPUT + ' min-h-[80px] resize-y';
 const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
+const LABEL = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
 
 const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: 'text',     label: 'Text' },
@@ -23,19 +29,28 @@ const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: 'tel',      label: 'Phone' },
   { value: 'url',      label: 'URL' },
   { value: 'number',   label: 'Number' },
-  { value: 'textarea', label: 'Textarea' },
-  { value: 'select',   label: 'Select (dropdown)' },
+  { value: 'date',     label: 'Date' },
+  { value: 'textarea', label: 'Long text' },
+  { value: 'select',   label: 'Dropdown' },
+  { value: 'radio',    label: 'Pick one' },
+  { value: 'checkbox', label: 'Yes / No' },
 ];
+
+/** Field names the submission row uses for its own bookkeeping. */
+const RESERVED_NAMES = ['id', 'status', 'notes', 'created_at', 'form_key', 'data', 'ip_hash', 'user_agent'];
 
 function uuid() {
   return (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
     ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+const toKey = (s: string) => slugify(s).replace(/-/g, '_');
+
 function FieldEditor({
-  field, onChange, onMoveUp, onMoveDown, onDelete, canUp, canDown,
+  field, siblings, onChange, onMoveUp, onMoveDown, onDelete, canUp, canDown,
 }: {
   field: FormFieldSchema;
+  siblings: FormFieldSchema[];
   onChange: (next: FormFieldSchema) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -44,35 +59,42 @@ function FieldEditor({
   canDown: boolean;
 }) {
   const setLabel = (label: string) => {
-    // Auto-sync name slug only if the current name looks auto-derived
-    const autoName = slugify(field.label).replace(/-/g, '_');
-    const newName = field.name === autoName || field.name === '' ? slugify(label).replace(/-/g, '_') : field.name;
+    // Auto-sync the key only while it still looks auto-derived, so renaming a
+    // question never silently orphans the answers already collected under it.
+    const autoName = toKey(field.label);
+    const newName = field.name === autoName || field.name === '' ? toKey(label) : field.name;
     onChange({ ...field, label, name: newName });
   };
+
+  const nameClash = siblings.some(f => f.id !== field.id && f.name === field.name);
+  const nameReserved = RESERVED_NAMES.includes(field.name);
+  const needsOptions = field.type === 'select' || field.type === 'radio';
 
   return (
     <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4 space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-start">
         <div className="space-y-3">
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Label (shown to user)</label>
+            <label className={LABEL}>Question (shown to visitor)</label>
             <input className={INPUT} value={field.label} onChange={e => setLabel(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Name (key)</label>
-              <input
-                className={INPUT + ' font-mono'}
-                value={field.name}
-                onChange={e => onChange({ ...field, name: slugify(e.target.value).replace(/-/g, '_') })}
-              />
-            </div>
-            <div>
-              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Type</label>
+              <label className={LABEL}>Type</label>
               <select
                 value={field.type}
-                onChange={e => onChange({ ...field, type: e.target.value as FormFieldType })}
+                onChange={e => {
+                  const type = e.target.value as FormFieldType;
+                  onChange({
+                    ...field,
+                    type,
+                    // Seed two options so a new "pick one" is never an empty group.
+                    options: (type === 'select' || type === 'radio') && !field.options?.length
+                      ? ['Option A', 'Option B']
+                      : field.options,
+                  });
+                }}
                 className={INPUT}
               >
                 {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -89,29 +111,47 @@ function FieldEditor({
                 Required
               </label>
             </div>
+            <div className="flex items-end">
+              {field.type === 'textarea' && (
+                <div className="w-full">
+                  <label className={LABEL}>Rows</label>
+                  <input
+                    type="number" min={1} max={20}
+                    value={field.rows ?? 3}
+                    onChange={e => onChange({ ...field, rows: Math.max(1, Number(e.target.value) || 3) })}
+                    className={INPUT}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Placeholder</label>
-            <input className={INPUT} value={field.placeholder ?? ''} onChange={e => onChange({ ...field, placeholder: e.target.value })} />
-          </div>
-
-          {field.type === 'textarea' && (
-            <div className="max-w-[160px]">
-              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Rows</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className={LABEL}>
+                {field.type === 'checkbox' ? 'Text next to the box' : 'Placeholder'}
+              </label>
               <input
-                type="number"
-                min={1} max={20}
-                value={field.rows ?? 3}
-                onChange={e => onChange({ ...field, rows: Math.max(1, Number(e.target.value) || 3) })}
                 className={INPUT}
+                value={field.placeholder ?? ''}
+                onChange={e => onChange({ ...field, placeholder: e.target.value })}
+                placeholder={field.type === 'checkbox' ? 'Yes' : ''}
               />
             </div>
-          )}
-
-          {field.type === 'select' && (
             <div>
-              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Options (one per line)</label>
+              <label className={LABEL}>Help text (optional)</label>
+              <input
+                className={INPUT}
+                value={field.help_text ?? ''}
+                onChange={e => onChange({ ...field, help_text: e.target.value })}
+                placeholder="Small print under the field"
+              />
+            </div>
+          </div>
+
+          {needsOptions && (
+            <div>
+              <label className={LABEL}>Options (one per line)</label>
               <textarea
                 value={(field.options ?? []).join('\n')}
                 onChange={e => onChange({ ...field, options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
@@ -119,8 +159,32 @@ function FieldEditor({
                 className={TEXTAREA + ' font-mono'}
                 placeholder={'Option A\nOption B\nOption C'}
               />
+              {(field.options ?? []).length === 0 && (
+                <p className="text-amber-500/80 text-xs mt-1">Add at least one option or this question renders empty.</p>
+              )}
             </div>
           )}
+
+          <details className="group">
+            <summary className="text-[#444] text-xs cursor-pointer hover:text-[#666] select-none">Advanced</summary>
+            <div className="mt-2">
+              <label className={LABEL}>Answer key</label>
+              <input
+                className={INPUT + ' font-mono'}
+                value={field.name}
+                onChange={e => onChange({ ...field, name: toKey(e.target.value) })}
+              />
+              <p className="text-[#444] text-xs mt-1">
+                The column name in your CSV export. Changing it means older answers no longer line up under this question.
+              </p>
+              {nameClash && (
+                <p className="text-red-400 text-xs mt-1">Another question already uses this key — one will overwrite the other.</p>
+              )}
+              {nameReserved && (
+                <p className="text-red-400 text-xs mt-1">"{field.name}" is reserved. Pick another key.</p>
+              )}
+            </div>
+          </details>
         </div>
 
         <div className="flex md:flex-col gap-1 items-end md:items-stretch justify-end">
@@ -140,26 +204,58 @@ function FieldEditor({
 }
 
 export default function AdminFormBuilder() {
-  const [schema, setSchema] = useState<FormSchema>(DEFAULT_FORM_SCHEMA);
+  const [forms, setForms]     = useState<FormListItem[]>([]);
+  const [slug, setSlug]       = useState<string>(DEFAULT_FORM_SLUG);
+  const [schema, setSchema]   = useState<FormSchema>(DEFAULT_FORM_SCHEMA);
+  const [ctas, setCtas]       = useState<Record<CtaKey, CtaBlock | null>>({
+    content_cta_events: null, content_cta_djs: null, content_cta_artists: null,
+  });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [toasts, setToasts] = useState<(ToastMsg & { id: number })[]>([]);
+  const [saving, setSaving]   = useState(false);
+  const [dirty, setDirty]     = useState(false);
+  const [toasts, setToasts]   = useState<(ToastMsg & { id: number })[]>([]);
 
   const addToast = (t: ToastMsg) => {
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { ...t, id }]);
     setTimeout(() => setToasts(prev => prev.filter(x => x.id !== id)), 3500);
   };
 
-  useEffect(() => {
-    supabase.from('site_settings').select('value').eq('id', FORM_SCHEMA_JOIN_KEY).single()
-      .then(({ data }) => {
-        if (data?.value) setSchema({ ...DEFAULT_FORM_SCHEMA, ...(data.value as FormSchema) });
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  // ── Load the form list + the CTA rows once ──────────────────────
+  const refreshForms = useCallback(async () => {
+    const list = await listForms();
+    setForms(list);
+    return list;
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      await refreshForms();
+      const { data } = await supabase
+        .from('site_settings')
+        .select('id, value')
+        .in('id', CTA_BLOCKS.map(c => c.key));
+      const next = { ...ctas };
+      (data ?? []).forEach(r => { next[r.id as CtaKey] = r.value as CtaBlock; });
+      setCtas(next);
+      setLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Load the selected form ──────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    supabase.from('site_settings').select('value').eq('id', formKeyForSlug(slug)).maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setSchema(mergeBlock(DEFAULT_FORM_SCHEMA, data?.value));
+        setDirty(false);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [slug]);
 
   const update = (patch: Partial<FormSchema>) => { setSchema(prev => ({ ...prev, ...patch })); setDirty(true); };
   const setFields = (fields: FormFieldSchema[]) =>
@@ -170,7 +266,7 @@ export default function AdminFormBuilder() {
     {
       id: uuid(),
       name: `field_${schema.fields.length + 1}`,
-      label: 'New field',
+      label: 'New question',
       type: 'text',
       required: false,
       sort_order: schema.fields.length,
@@ -188,30 +284,81 @@ export default function AdminFormBuilder() {
     setFields(arr);
   };
 
-  const removeField = (idx: number) =>
-    setFields(schema.fields.filter((_, i) => i !== idx));
+  const removeField = (idx: number) => setFields(schema.fields.filter((_, i) => i !== idx));
 
+  // ── Save ────────────────────────────────────────────────────────
   const save = async () => {
     setSaving(true);
     try {
-      const sorted = [...schema.fields].sort((a, b) => a.sort_order - b.sort_order).map((f, i) => ({ ...f, sort_order: i }));
+      const sorted = [...schema.fields]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((f, i) => ({ ...f, sort_order: i }));
       const toSave = { ...schema, fields: sorted };
+
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ id: FORM_SCHEMA_JOIN_KEY, value: toSave, updated_at: new Date().toISOString() });
+        .upsert({ id: formKeyForSlug(slug), value: toSave, updated_at: new Date().toISOString() });
       if (error) throw error;
+
       setSchema(toSave);
       setDirty(false);
-      addToast({ text: 'Form schema saved', type: 'success' });
+      await refreshForms();
+      addToast({ text: 'Form saved', type: 'success' });
     } catch (err: any) {
       addToast({ text: err.message ?? 'Save failed', type: 'error' });
     } finally { setSaving(false); }
   };
 
-  const resetDefaults = () => {
-    if (!confirm('Reset all settings to defaults? Unsaved changes will be lost.')) return;
-    setSchema(DEFAULT_FORM_SCHEMA);
-    setDirty(true);
+  // ── Create / duplicate / delete ─────────────────────────────────
+  const createForm = async (source?: FormSchema) => {
+    const name = prompt(source ? 'Name for the copy:' : 'Name for the new form:',
+      source ? `${source.name} copy` : 'Artists application');
+    if (!name?.trim()) return;
+
+    const newSlug = uniqueFormSlug(name, forms.map(f => f.slug));
+    const value: FormSchema = source
+      ? { ...source, name: name.trim() }
+      : blankFormSchema(name.trim());
+
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert({ id: formKeyForSlug(newSlug), value, updated_at: new Date().toISOString() });
+    if (error) { addToast({ text: error.message, type: 'error' }); return; }
+
+    await refreshForms();
+    setSlug(newSlug);
+    addToast({ text: `"${name.trim()}" created`, type: 'success' });
+  };
+
+  const deleteForm = async () => {
+    if (slug === DEFAULT_FORM_SLUG) {
+      addToast({ text: 'The main form cannot be deleted', type: 'error' });
+      return;
+    }
+    const usedBy = CTA_BLOCKS.filter(c => ctas[c.key]?.form_slug === slug).map(c => c.label);
+    const warning = usedBy.length
+      ? `\n\nIt is currently used by: ${usedBy.join(', ')}. Those buttons will fall back to the main form.`
+      : '';
+    if (!confirm(`Delete "${schema.name}" permanently?${warning}\n\nAnswers already received are kept.`)) return;
+
+    const { error } = await supabase.from('site_settings').delete().eq('id', formKeyForSlug(slug));
+    if (error) { addToast({ text: error.message, type: 'error' }); return; }
+
+    await refreshForms();
+    setSlug(DEFAULT_FORM_SLUG);
+    addToast({ text: 'Form deleted', type: 'success' });
+  };
+
+  // ── "Appears in": point a page's CTA button at this form ─────────
+  const toggleCta = async (key: CtaKey, on: boolean) => {
+    const current = ctas[key] ?? { title: '', subtitle: '', form_slug: '', cta_label: '' };
+    const next: CtaBlock = { ...current, form_slug: on ? slug : '' };
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert({ id: key, value: next, updated_at: new Date().toISOString() });
+    if (error) { addToast({ text: error.message, type: 'error' }); return; }
+    setCtas(prev => ({ ...prev, [key]: next }));
+    addToast({ text: on ? 'Button now opens this form' : 'Button reset to the main form', type: 'success' });
   };
 
   if (loading) {
@@ -222,112 +369,129 @@ export default function AdminFormBuilder() {
     );
   }
 
+  const publicPath = formPath(slug);
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Form Builder</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Forms</h1>
           <p className="text-[#555] text-sm mt-1">
-            Edit the "Join The Circle" application form: title, fields, validation, captcha, and labels.
+            Build any number of forms — one for the public, one for artists, one for DJs — and choose where each appears.
           </p>
         </div>
-        <button
-          onClick={resetDefaults}
-          className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#999] transition-colors"
-          title="Reset to defaults"
-        >
-          <RotateCcw size={12} /> Reset
-        </button>
       </div>
 
+      {/* Form picker */}
+      <section className={SECTION}>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[220px]">
+            <label className={LABEL}>Editing</label>
+            <select
+              className={INPUT}
+              value={slug}
+              onChange={e => {
+                if (dirty && !confirm('Switch form and discard unsaved changes?')) return;
+                setSlug(e.target.value);
+              }}
+            >
+              {forms.map(f => (
+                <option key={f.slug} value={f.slug}>
+                  {f.name}{f.is_default ? ' — main form' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button onClick={() => createForm()}
+            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            <FilePlus2 size={13} /> New form
+          </button>
+          <button onClick={() => createForm(schema)}
+            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            <Copy size={13} /> Duplicate
+          </button>
+          <a href={publicPath} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            <ExternalLink size={13} /> View
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>Form name (admin only)</label>
+            <input className={INPUT} value={schema.name} onChange={e => update({ name: e.target.value })} />
+          </div>
+          <div>
+            <label className={LABEL}>Web address</label>
+            <input className={INPUT + ' font-mono text-[#666]'} value={publicPath} readOnly />
+          </div>
+        </div>
+      </section>
+
+      {/* Appears in */}
+      <section className={SECTION}>
+        <div>
+          <p className="text-white text-sm font-medium">Appears in</p>
+          <p className="text-[#555] text-xs mt-1">
+            Tick a page and its button opens this form instead of the main one.
+          </p>
+        </div>
+        <div className="space-y-2">
+          {CTA_BLOCKS.map(c => {
+            const assigned = ctas[c.key]?.form_slug === slug;
+            const takenBy  = ctas[c.key]?.form_slug;
+            const other    = takenBy && takenBy !== slug
+              ? forms.find(f => f.slug === takenBy)?.name ?? takenBy
+              : null;
+            return (
+              <label key={c.key} className="flex items-center gap-3 cursor-pointer text-sm text-[#ccc] py-1">
+                <input
+                  type="checkbox"
+                  checked={assigned}
+                  onChange={e => toggleCta(c.key, e.target.checked)}
+                  className="w-4 h-4 accent-[#059669]"
+                />
+                <span>{c.label}</span>
+                {other && <span className="text-[#555] text-xs">— currently opens "{other}"</span>}
+              </label>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Page text */}
       <section className={SECTION}>
         <p className="text-white text-sm font-medium">Page text</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Title</label>
+            <label className={LABEL}>Title</label>
             <input className={INPUT} value={schema.title} onChange={e => update({ title: e.target.value })} />
-            <p className="text-[#333] text-xs mt-1 font-mono">Big animated title. Spaces split into lines.</p>
+            <p className="text-[#333] text-xs mt-1">Big animated title. Spaces split it into lines.</p>
           </div>
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Subtitle</label>
+            <label className={LABEL}>Subtitle</label>
             <input className={INPUT} value={schema.subtitle} onChange={e => update({ subtitle: e.target.value })} />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Event Info</label>
+            <label className={LABEL}>Event info</label>
             <input className={INPUT} value={schema.event_info} onChange={e => update({ event_info: e.target.value })} />
           </div>
         </div>
       </section>
 
-      <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Success screen</p>
-        <div>
-          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Success Title</label>
-          <input className={INPUT} value={schema.success_title} onChange={e => update({ success_title: e.target.value })} />
-        </div>
-        <div>
-          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Success Subtitle</label>
-          <textarea className={TEXTAREA} rows={2} value={schema.success_subtitle} onChange={e => update({ success_subtitle: e.target.value })} />
-        </div>
-      </section>
-
-      <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Submit button labels</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Idle</label>
-            <input className={INPUT} value={schema.submit_label_idle} onChange={e => update({ submit_label_idle: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Sending</label>
-            <input className={INPUT} value={schema.submit_label_sending} onChange={e => update({ submit_label_sending: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Error</label>
-            <input className={INPUT} value={schema.submit_label_error} onChange={e => update({ submit_label_error: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Return</label>
-            <input className={INPUT} value={schema.return_label} onChange={e => update({ return_label: e.target.value })} />
-          </div>
-        </div>
-      </section>
-
-      <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Terms checkbox + CAPTCHA</p>
-        <div>
-          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Terms text</label>
-          <textarea
-            className={TEXTAREA}
-            rows={2}
-            value={schema.terms_text_html}
-            onChange={e => update({ terms_text_html: e.target.value })}
-          />
-          <p className="text-[#333] text-xs mt-1 font-mono">
-            Use <code className="text-amber-400">{'{terms_link:LABEL}'}</code> and <code className="text-amber-400">{'{privacy_link:LABEL}'}</code> as link placeholders.
-          </p>
-        </div>
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
-          <input
-            type="checkbox"
-            checked={schema.captcha_required}
-            onChange={e => update({ captcha_required: e.target.checked })}
-            className="w-4 h-4 accent-[#059669]"
-          />
-          Require Google reCAPTCHA verification
-        </label>
-      </section>
-
+      {/* Fields */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-white text-sm font-medium">Fields ({schema.fields.length})</p>
-          <p className="text-[#555] text-xs font-mono">Reorder with ↑ ↓ — name is the JSON key in submissions.</p>
+          <p className="text-white text-sm font-medium">Questions ({schema.fields.length})</p>
+          <p className="text-[#555] text-xs">Reorder with ↑ ↓</p>
         </div>
 
         {[...schema.fields].sort((a, b) => a.sort_order - b.sort_order).map((field, idx, arr) => (
           <FieldEditor
             key={field.id}
             field={field}
+            siblings={schema.fields}
             onChange={next => editField(schema.fields.findIndex(f => f.id === field.id), next)}
             onMoveUp={() => moveField(schema.fields.findIndex(f => f.id === field.id), -1)}
             onMoveDown={() => moveField(schema.fields.findIndex(f => f.id === field.id), 1)}
@@ -337,13 +501,122 @@ export default function AdminFormBuilder() {
           />
         ))}
 
-        <button
-          onClick={addField}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-sm text-[#ccc] transition-colors"
-        >
-          <Plus size={13} /> Add field
+        <button onClick={addField}
+          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-sm text-[#ccc] transition-colors">
+          <Plus size={13} /> Add question
         </button>
       </section>
+
+      {/* Mailing list */}
+      <section className={SECTION}>
+        <div>
+          <p className="text-white text-sm font-medium">Send to your mailing list</p>
+          <p className="text-[#555] text-xs mt-1">
+            In Mailchimp open <span className="text-[#888]">Audience → Signup forms → Embedded form</span> and copy the
+            address inside <code className="text-amber-400/80">form action="…"</code>. Paste it here.
+            Brevo, MailerLite and ConvertKit work the same way — you can change provider yourself, any time.
+          </p>
+        </div>
+        <div>
+          <label className={LABEL}>Mailing list address</label>
+          <input
+            className={INPUT + ' font-mono text-xs'}
+            value={schema.crm_post_url}
+            onChange={e => update({ crm_post_url: e.target.value.trim() })}
+            placeholder="https://your-account.us1.list-manage.com/subscribe/post?u=…&id=…"
+          />
+        </div>
+        <div className="max-w-xs">
+          <label className={LABEL}>Which question holds the email</label>
+          <select
+            className={INPUT}
+            value={schema.crm_email_field}
+            onChange={e => update({ crm_email_field: e.target.value })}
+          >
+            {schema.fields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
+          </select>
+        </div>
+        <p className="text-[#444] text-xs">
+          Every answer is stored here first, so nothing is lost if the mailing list is down or the address is wrong.
+        </p>
+      </section>
+
+      {/* Terms + captcha */}
+      <section className={SECTION}>
+        <p className="text-white text-sm font-medium">Terms &amp; anti-spam</p>
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
+          <input
+            type="checkbox"
+            checked={schema.terms_required}
+            onChange={e => update({ terms_required: e.target.checked })}
+            className="w-4 h-4 accent-[#059669]"
+          />
+          Ask visitors to accept the terms before sending
+        </label>
+        {schema.terms_required && (
+          <div>
+            <label className={LABEL}>Terms text</label>
+            <textarea
+              className={TEXTAREA} rows={2}
+              value={schema.terms_text_html}
+              onChange={e => update({ terms_text_html: e.target.value })}
+            />
+            <p className="text-[#333] text-xs mt-1">
+              Use <code className="text-amber-400">{'{terms_link:LABEL}'}</code> and <code className="text-amber-400">{'{privacy_link:LABEL}'}</code> to insert links.
+              The exact wording is stored with every answer as proof of consent.
+            </p>
+          </div>
+        )}
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
+          <input
+            type="checkbox"
+            checked={schema.captcha_required}
+            onChange={e => update({ captcha_required: e.target.checked })}
+            className="w-4 h-4 accent-[#059669]"
+          />
+          Require the "I'm not a robot" check
+        </label>
+      </section>
+
+      {/* Success + buttons */}
+      <section className={SECTION}>
+        <p className="text-white text-sm font-medium">After sending</p>
+        <div>
+          <label className={LABEL}>Thank-you title</label>
+          <input className={INPUT} value={schema.success_title} onChange={e => update({ success_title: e.target.value })} />
+        </div>
+        <div>
+          <label className={LABEL}>Thank-you message</label>
+          <textarea className={TEXTAREA} rows={2} value={schema.success_subtitle} onChange={e => update({ success_subtitle: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {([
+            ['submit_label_idle',    'Send button'],
+            ['submit_label_sending', 'While sending'],
+            ['submit_label_error',   'On error'],
+            ['return_label',         'Back button'],
+          ] as const).map(([key, label]) => (
+            <div key={key}>
+              <label className={LABEL}>{label}</label>
+              <input className={INPUT} value={schema[key]} onChange={e => update({ [key]: e.target.value } as Partial<FormSchema>)} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Danger zone */}
+      {slug !== DEFAULT_FORM_SLUG && (
+        <section className="bg-[#140b0b] border border-red-900/30 rounded-xl p-5">
+          <p className="text-red-300/90 text-sm font-medium">Delete this form</p>
+          <p className="text-[#666] text-xs mt-1 mb-3">
+            The form and its page disappear. Answers already received stay in the inbox.
+          </p>
+          <button onClick={deleteForm}
+            className="flex items-center gap-2 px-3 py-2 bg-red-950/40 hover:bg-red-950/70 border border-red-900/40 rounded-lg text-xs text-red-300 transition-colors">
+            <Trash2 size={13} /> Delete "{schema.name}"
+          </button>
+        </section>
+      )}
 
       <div className="flex justify-end sticky bottom-4 z-20">
         <button
@@ -352,7 +625,7 @@ export default function AdminFormBuilder() {
           className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {saving ? 'Saving…' : dirty ? 'Save form schema' : 'Saved'}
+          {saving ? 'Saving…' : dirty ? 'Save form' : 'Saved'}
         </button>
       </div>
 

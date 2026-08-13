@@ -5,12 +5,14 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 import { StandardHeader } from './StandardHeader';
-import { useSiteTheme } from './hooks/useSiteTheme';
 import { useSiteBlock } from './hooks/useSiteContent';
 import AdminToolbar from './components/AdminToolbar';
 import Footer from './components/Footer';
 import EditableText from './components/EditableText';
-// import { CustomCursor } from './CustomCursor';
+import { brandColor, hexToRgb01 } from './lib/cssVar';
+import HomeEvents from './components/HomeEvents';
+import NewsletterBlock from './components/NewsletterBlock';
+import type { HomeJoinBlock } from './lib/database.types';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -95,6 +97,7 @@ uniform float uTime;
 uniform vec2 uMouse;
 uniform vec2 uResolution;
 uniform float uChaos;
+uniform vec3 uBrand;
 
 varying vec2 vUv;
 
@@ -136,7 +139,7 @@ void main() {
   
   // Colors
   vec3 black = vec3(0.02, 0.0, 0.01);
-  vec3 red = vec3(0.769, 0.129, 0.129); // #C42121
+  vec3 red = uBrand;   // fed from the admin's brand colour
   
   // Color mixing - during chaos, color becomes more intense
   vec3 color = mix(black, red, lines * (0.2 + decay * 0.8 + uChaos));
@@ -205,6 +208,10 @@ const WebGLBackground: React.FC<{ chaosLevel: number }> = ({ chaosLevel }) => {
     const uMouseLoc = gl.getUniformLocation(program, 'uMouse');
     const uResolutionLoc = gl.getUniformLocation(program, 'uResolution');
     const uChaosLoc = gl.getUniformLocation(program, 'uChaos');
+    const uBrandLoc = gl.getUniformLocation(program, 'uBrand');
+    // Resolved once at setup: the animated background must follow the
+    // brand colour, or picking a new accent leaves a red grid behind it.
+    gl.uniform3f(uBrandLoc, ...hexToRgb01(brandColor()));
 
     let mouse = { x: 0.5, y: 0.5 };
     let targetMouse = { x: 0.5, y: 0.5 };
@@ -460,7 +467,7 @@ const ManifestoSection: React.FC = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="relative py-32 md:py-40 px-6 md:px-20 border-t border-[#C42121]/20 backdrop-blur-[2px]">
+        <section ref={sectionRef} className="relative py-32 md:py-40 px-6 md:px-20 border-t border-primary/20 backdrop-blur-[2px]">
             <div className="max-w-6xl mx-auto">
                 {/* Mobile: Description first, Desktop: Grid layout */}
                 <div className="flex flex-col md:grid md:grid-cols-2 gap-12 md:gap-16">
@@ -493,7 +500,7 @@ const ManifestoSection: React.FC = () => {
                             field="p3"
                             value={manifesto.p3}
                             onSave={v => setManifesto(prev => ({ ...prev, p3: v }))}
-                            className="text-base md:text-2xl font-light leading-relaxed pt-4 md:pt-6 border-t border-[#C42121]/20 opacity-80"
+                            className="text-base md:text-2xl font-light leading-relaxed pt-4 md:pt-6 border-t border-primary/20 opacity-80"
                             multiline
                         />
                     </div>
@@ -508,7 +515,7 @@ const ManifestoSection: React.FC = () => {
                                 field="h1"
                                 value={headings.h1}
                                 onSave={v => setHeadings(prev => ({ ...prev, h1: v }))}
-                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4 text-[#C42121]"
+                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4 text-primary"
                             />
                         </ScrollReveal>
 
@@ -520,7 +527,7 @@ const ManifestoSection: React.FC = () => {
                                 field="h2"
                                 value={headings.h2}
                                 onSave={v => setHeadings(prev => ({ ...prev, h2: v }))}
-                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4 text-[#330000] selection:bg-white selection:text-black"
+                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter mb-4 text-primary selection:bg-white selection:text-black"
                             />
                         </ScrollReveal>
 
@@ -532,7 +539,7 @@ const ManifestoSection: React.FC = () => {
                                 field="h3"
                                 value={headings.h3}
                                 onSave={v => setHeadings(prev => ({ ...prev, h3: v }))}
-                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter text-[#C42121]"
+                                className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tighter text-primary"
                             />
                         </ScrollReveal>
                     </div>
@@ -544,16 +551,18 @@ const ManifestoSection: React.FC = () => {
 
 // --- Main App ---
 export default function TheCircleApp() {
-  useSiteTheme(); // applies --color-primary and --color-bg CSS vars globally
+  // Theme is applied once in AppRouter so it covers every route.
   const navigate = useNavigate();
 
   const { data: marquee, setData: setMarquee } = useSiteBlock('content_home_marquee', {
     text: 'SECRET LOCATION • ELECTRONIC MUSIC • BOLD ART • PERFORMANCES •',
   });
-  const { data: joinBlock, setData: setJoinBlock } = useSiteBlock('content_home_join', {
+  const { data: joinBlock, setData: setJoinBlock } = useSiteBlock<HomeJoinBlock>('content_home_join', {
     title: 'JOIN THE NEXT EVENT',
     desc1: 'We review every submission carefully. If selected, you will receive the link to the event ticket.',
     desc2: 'Attendance is limited. Each night is designed to maintain a creative, intimate, and connected community.',
+    cta_label: 'APPLY',
+    cta_route: '/form',
   });
   const { scrollY } = useScroll();
   const rotation = useMotionValue(0);
@@ -625,8 +634,7 @@ export default function TheCircleApp() {
 
 
   return (
-    <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black cursor-crosshair overflow-hidden">
-      {/* <CustomCursor /> */}
+    <div className="min-h-screen bg-bg text-primary selection:bg-primary selection:text-black cursor-crosshair overflow-hidden">
 
       {/* Background Layer */}
       <motion.div
@@ -676,11 +684,11 @@ export default function TheCircleApp() {
                 }}
                 className="absolute top-1/2 left-1/2 w-[85vw] h-[85vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
             >
-                <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'var(--font-display)' }}>
                   <defs>
                     <path id="circlePath" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
                   </defs>
-                  <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
+                  <text fill="var(--color-primary)" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
                     <textPath href="#circlePath" startOffset="0%" textAnchor="start">
                       <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
                       <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
@@ -702,7 +710,7 @@ export default function TheCircleApp() {
 
             {/* Scroll Indicator */}
             {/* <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 mix-blend-exclusion">
-                <div className="w-[1px] h-16 bg-[#C42121] origin-top animate-pulse" />
+                <div className="w-[1px] h-16 bg-primary origin-top animate-pulse" />
                 <span className="font-mono text-[10px] tracking-widest">SCROLL TO BREACH</span>
             </div> */}
         </section>
@@ -711,7 +719,7 @@ export default function TheCircleApp() {
         <ManifestoSection />
 
         {/* Marquee Banner - Pauses on hover */}
-        <div className="py-6 md:py-8 bg-[#C42121] text-black overflow-hidden border-y border-black group">
+        <div className="py-6 md:py-8 bg-primary text-black overflow-hidden border-y border-black group">
              <motion.div 
                 className="whitespace-nowrap flex gap-8"
                 animate={{ x: ["0%", "-50%"] }}
@@ -736,15 +744,17 @@ export default function TheCircleApp() {
              </motion.div>
         </div>
 
+        <HomeEvents />
+
         {/* Inner Circle Access Form - Enhanced */}
         <section className="relative md:min-h-screen flex items-center justify-center px-6 pt-14 pb-12 md:py-40">
             <ScrollReveal delay={0.1} className="w-full max-w-2xl">
-                <div className="bg-black/90 border border-[#C42121]/30 p-8 md:p-20 backdrop-blur-xl shadow-[0_0_50px_rgba(196,33,33,0.1)]">
+                <div className="bg-black/90 border border-primary/30 p-8 md:p-20 backdrop-blur-xl shadow-[0_0_50px_rgba(196,33,33,0.1)]">
                     <div className="text-center mb-12">
                         <motion.div 
                             animate={{ rotate: 360 }}
                             transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
-                            className="w-16 h-16 border-2 border-[#C42121] rounded-full mx-auto mb-8"
+                            className="w-16 h-16 border-2 border-primary rounded-full mx-auto mb-8"
                             style={{ willChange: 'transform' }}
                         />
                         <EditableText
@@ -755,7 +765,7 @@ export default function TheCircleApp() {
                             onSave={v => setJoinBlock(prev => ({ ...prev, title: v }))}
                             className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6"
                         />
-                        <div className="text-sm tracking-wide text-[#C42121]/60 leading-relaxed space-y-4 transition-opacity duration-300">
+                        <div className="text-sm tracking-wide text-primary/60 leading-relaxed space-y-4 transition-opacity duration-300">
                             <EditableText
                                 as="p"
                                 contentKey="content_home_join"
@@ -777,20 +787,21 @@ export default function TheCircleApp() {
 
                     <div className="flex justify-center">
                         <MagneticButton 
-                            className="group relative bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] active:animate-glitch transition-all duration-300 overflow-hidden pointer-events-auto cursor-pointer"
+                            className="group relative bg-primary text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:opacity-80 active:animate-glitch transition-all duration-300 overflow-hidden pointer-events-auto cursor-pointer"
                             onClick={() => {
                               window.scrollTo(0, 0);
-                              setTimeout(() => navigate('/form'), 50);
+                              setTimeout(() => navigate(joinBlock.cta_route || '/form'), 50);
                             }}
                         >
                             <span className="relative z-10">
-                                APPLY
+                                {joinBlock.cta_label || 'APPLY'}
                             </span>
                         </MagneticButton>
                     </div>
                 </div>
             </ScrollReveal>
         </section>
+        <NewsletterBlock />
       </main>
 
 

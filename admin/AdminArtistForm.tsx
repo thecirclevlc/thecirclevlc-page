@@ -4,15 +4,18 @@ import { supabase } from '../lib/supabase';
 import { uploadImage } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
 import type { ArtistInsert, ArtistCategory } from '../lib/database.types';
-import { ArrowLeft, Upload, X, Loader2, Check, Clock } from 'lucide-react';
+import { ArrowLeft, Upload, X, Loader2, Check, Clock, Plus } from 'lucide-react';
 import AdminHistory from './AdminHistory';
+import { VideosEditor, LinksEditor, FactsEditor, SocialsEditor } from './ProfileExtras';
 
 const INPUT    = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
 const TEXTAREA = INPUT + ' resize-none';
 
 const BLANK: ArtistInsert = {
   name: '', slug: '', bio: null, photo_url: null,
+  based_in: null, press_kit_url: null, gallery_images: [], photo_position: 'center',
   genres: [], social_links: {}, featured: false, category_id: null,
+  videos: [], links: [], facts: [], sort_order: 0,
 };
 
 export default function AdminArtistForm() {
@@ -28,8 +31,28 @@ export default function AdminArtistForm() {
   const [genreInput, setGenreInput]   = useState('');
   const [categories, setCategories]   = useState<ArtistCategory[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [uploadingGallery, setUGallery] = useState(false);
 
-  const photoRef = useRef<HTMLInputElement>(null);
+  const photoRef   = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+
+  // Same gallery handlers as the DJ form — artists were missing them for
+  // no reason other than the two forms having drifted apart.
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setUGallery(true);
+    try {
+      const urls = await Promise.all(Array.from(files).map(file => uploadImage(file, 'artists')));
+      set('gallery_images', [...(form.gallery_images ?? []), ...urls]);
+    } catch (err: any) {
+      showToast('Gallery upload failed: ' + err.message, 'err');
+    } finally { setUGallery(false); }
+  }
+
+  function removeGalleryImage(i: number) {
+    set('gallery_images', (form.gallery_images ?? []).filter((_, j) => j !== i));
+  }
 
   // Load categories on mount
   useEffect(() => {
@@ -202,6 +225,43 @@ export default function AdminArtistForm() {
               onChange={e => set('bio', e.target.value || null)}
               className={TEXTAREA} placeholder="Short bio…" />
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Based in</label>
+              <input type="text" value={form.based_in ?? ''}
+                onChange={e => set('based_in', e.target.value || null)}
+                className={INPUT} placeholder="Valencia, Spain" />
+            </div>
+            <div>
+              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Press Kit URL</label>
+              <input type="url" value={form.press_kit_url ?? ''}
+                onChange={e => set('press_kit_url', e.target.value || null)}
+                className={INPUT} placeholder="https://…" />
+            </div>
+          </div>
+        </section>
+
+        {/* ── GALLERY ──────────────────────────────────────── */}
+        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
+          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Photo Gallery</p>
+          <p className="text-[#333] text-xs font-mono">Additional photos shown in the artist profile.</p>
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+            {(form.gallery_images ?? []).map((url, i) => (
+              <div key={i} className="relative group aspect-square">
+                <img src={url} alt="" className="w-full h-full object-cover rounded-lg" />
+                <button type="button" onClick={() => removeGalleryImage(i)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900">
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={() => galleryRef.current?.click()} disabled={uploadingGallery}
+              className="aspect-square border border-dashed border-[#222] hover:border-[#333] rounded-lg flex items-center justify-center text-[#444] hover:text-[#888] transition-all">
+              {uploadingGallery ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            </button>
+          </div>
+          <input ref={galleryRef} type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" />
         </section>
 
         {/* ── CATEGORY ────────────────────────────────────── */}
@@ -280,23 +340,13 @@ export default function AdminArtistForm() {
           </div>
         </section>
 
-        {/* ── SOCIAL LINKS ─────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Social Links</p>
-          {[
-            { key: 'instagram',  label: 'Instagram',  placeholder: 'https://instagram.com/…' },
-            { key: 'soundcloud', label: 'SoundCloud', placeholder: 'https://soundcloud.com/…' },
-            { key: 'spotify',    label: 'Spotify',    placeholder: 'https://open.spotify.com/…' },
-            { key: 'website',    label: 'Website',    placeholder: 'https://…' },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">{label}</label>
-              <input type="url" value={socials[key] ?? ''}
-                onChange={e => setSocial(key, e.target.value)}
-                className={INPUT} placeholder={placeholder} />
-            </div>
-          ))}
-        </section>
+        <SocialsEditor socials={form.social_links ?? {}} onChange={v => set('social_links', v)} />
+
+        <VideosEditor videos={form.videos ?? []} onChange={v => set('videos', v)} />
+
+        <LinksEditor links={form.links ?? []} onChange={v => set('links', v)} />
+
+        <FactsEditor facts={form.facts ?? []} onChange={v => set('facts', v)} />
 
         {/* ── SETTINGS ─────────────────────────────────────── */}
         <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">

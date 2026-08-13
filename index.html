@@ -12,10 +12,10 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.thecirclevlc.com/" />
+    <meta property="og:url" content="<!--META:og_url-->https://www.thecirclevlc.com/<!--/META:og_url-->" />
     <meta property="og:title" content="<!--META:og_title-->THE CIRCLE<!--/META:og_title-->" />
     <meta property="og:description" content="<!--META:og_description-->An exclusive event. Request your access.<!--/META:og_description-->" />
-    <meta property="og:image" content="https://www.thecirclevlc.com/og-image.png" />
+    <meta property="og:image" content="<!--META:og_image-->https://www.thecirclevlc.com/og-image.png<!--/META:og_image-->" />
     <meta property="og:image:secure_url" content="https://www.thecirclevlc.com/og-image.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
@@ -24,10 +24,10 @@
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://www.thecirclevlc.com/" />
+    <meta property="twitter:url" content="<!--META:twitter_url-->https://www.thecirclevlc.com/<!--/META:twitter_url-->" />
     <meta property="twitter:title" content="<!--META:twitter_title-->THE CIRCLE<!--/META:twitter_title-->" />
     <meta property="twitter:description" content="<!--META:twitter_description-->An exclusive event. Request your access.<!--/META:twitter_description-->" />
-    <meta property="twitter:image" content="https://www.thecirclevlc.com/og-image.png" />
+    <meta property="twitter:image" content="<!--META:twitter_image-->https://www.thecirclevlc.com/og-image.png<!--/META:twitter_image-->" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23C42121'/></svg>" />
@@ -36,7 +36,7 @@
     <meta name="theme-color" content="#050000" />
     
     <!-- Canonical -->
-    <link rel="canonical" href="https://www.thecirclevlc.com/" />
+    <link rel="canonical" href="<!--META:canonical-->https://www.thecirclevlc.com/<!--/META:canonical-->" />
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -51,27 +51,16 @@
     }
     </script>
 
-    <!-- Performance: Preconnect to external domains -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" />
+    <!-- Fonts are self-hosted; see the @font-face block in index.css. -->
+    <link rel="preload" href="/fonts/league-spartan.woff2" as="font" type="font/woff2" crossorigin />
 
     <style>
-      * {
-        font-family: 'Poppins', sans-serif !important;
-      }
-      
       body {
         background-color: #050000;
         color: #C42121;
-        font-family: 'Poppins', sans-serif;
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-      }
-      
-      .font-mono {
-        font-family: 'Poppins', sans-serif !important;
       }
       
       /* Smooth scrolling */
@@ -93,6 +82,8 @@
     </style>
 
 <link rel="stylesheet" href="/index.css">
+    <!-- Per-page JSON-LD and robots, injected by api/index.ts -->
+    <!--META:head_extra--><!--/META:head_extra-->
 </head>
   <body>
     <div id="root"></div>

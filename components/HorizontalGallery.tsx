@@ -88,7 +88,7 @@ export default function HorizontalGallery({ images, onImageClick }: Props) {
         {images.map((img, i) => (
           <div
             key={i}
-            className="relative aspect-[16/10] overflow-hidden bg-black border border-[#C42121]/20 cursor-pointer group"
+            className="relative aspect-[16/10] overflow-hidden bg-black border border-primary/20 cursor-pointer group"
             onClick={() => onImageClick(i)}
           >
             <img src={img} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" style={{ filter: 'brightness(0.65)' }} />
@@ -99,11 +99,11 @@ export default function HorizontalGallery({ images, onImageClick }: Props) {
   }
 
   return (
-    <div ref={sectionRef} className="relative h-screen overflow-hidden bg-[#050000]">
+    <div ref={sectionRef} className="relative h-screen overflow-hidden bg-bg">
       {/* Counter & label */}
       <div className="absolute top-6 left-6 md:left-20 z-10 flex items-center gap-4">
-        <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase">Gallery</p>
-        <span ref={counterRef} className="text-[10px] font-mono text-[#C42121]/60 tracking-widest">
+        <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">Gallery</p>
+        <span ref={counterRef} className="text-[10px] font-mono text-primary/60 tracking-widest">
           01 / {String(images.length).padStart(2, '0')}
         </span>
       </div>
@@ -117,7 +117,7 @@ export default function HorizontalGallery({ images, onImageClick }: Props) {
             return (
               <div
                 key={realIndex}
-                className="flex-shrink-0 relative overflow-hidden border border-[#C42121]/15 cursor-pointer group"
+                className="flex-shrink-0 relative overflow-hidden border border-primary/15 cursor-pointer group"
                 style={{ width: 'min(55vw, 620px)', height: '42vh' }}
                 onClick={() => onImageClick(realIndex)}
               >
@@ -150,7 +150,7 @@ export default function HorizontalGallery({ images, onImageClick }: Props) {
             return (
               <div
                 key={realIndex}
-                className="flex-shrink-0 relative overflow-hidden border border-[#C42121]/15 cursor-pointer group"
+                className="flex-shrink-0 relative overflow-hidden border border-primary/15 cursor-pointer group"
                 style={{ width: 'min(55vw, 620px)', height: '42vh' }}
                 onClick={() => onImageClick(realIndex)}
               >

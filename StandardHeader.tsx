@@ -1,55 +1,133 @@
 import React, { useEffect } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { HamburgerMenu } from './HamburgerMenu';
+import { useSiteBlock } from './hooks/useSiteContent';
+import {
+  DEFAULT_HAMBURGER, NAV_HAMBURGER_KEY,
+  type HamburgerNavConfig, type NavItem,
+} from './lib/database.types';
+
+/**
+ * The site header. One implementation, used everywhere.
+ *
+ * The client asked to "quitar tres puntos y poner los botones en el heading".
+ * On desktop the menu entries are now written straight into the bar; the
+ * three-dot overlay survives on phones, where it is the only navigation that
+ * fits and where it remains the most recognisable thing about this header.
+ *
+ * Entries come from the same `nav_hamburger` row the admin already edits, so
+ * the bar and the overlay can never disagree.
+ */
+
+/** Beyond this the bar gets crowded and starts wrapping, so the rest fold into the overlay. */
+const MAX_INLINE_ITEMS = 6;
 
 export const StandardHeader: React.FC = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const rotation = useMotionValue(0);
+  const { data: nav } = useSiteBlock<HamburgerNavConfig>(NAV_HAMBURGER_KEY, DEFAULT_HAMBURGER);
 
-  // Rotation animation
   useEffect(() => {
     let lastTime = performance.now();
-
+    let animationId = 0;
     const update = () => {
       const time = performance.now();
       const delta = (time - lastTime) / 1000;
       lastTime = time;
-      const baseSpeed = 0.98;
-      rotation.set(rotation.get() + baseSpeed * delta);
-      requestAnimationFrame(update);
+      rotation.set(rotation.get() + 0.98 * delta);
+      animationId = requestAnimationFrame(update);
     };
-
-    const animationId = requestAnimationFrame(update);
+    animationId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(animationId);
   }, [rotation]);
 
-  return (
-    <header className="fixed top-0 w-full bg-[#050000] border-b border-[#C42121]/30 z-[100] h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
-      {/* Logo Circle - Small */}
-      <motion.div
-        style={{ rotate: rotation }}
-        className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer"
-        onClick={() => {
-          window.scrollTo(0, 0);
-          navigate('/');
-        }}
-      >
-        <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          <defs>
-            <path id="circlePathSmall" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
-          </defs>
-          <text fill="#C42121" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
-            <textPath href="#circlePathSmall" startOffset="0%">
-              <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
-              <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-              <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
-            </textPath>
-          </text>
-        </svg>
-      </motion.div>
+  const items = (nav.items ?? []).slice(0, MAX_INLINE_ITEMS);
 
-      <HamburgerMenu />
+  const go = (item: NavItem) => {
+    if (item.mode === 'external' && item.external_url) {
+      window.open(item.external_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    window.scrollTo(0, 0);
+    navigate(item.route ?? '/');
+  };
+
+  const isCurrent = (item: NavItem) => {
+    if (item.mode !== 'route' || !item.route) return false;
+    return item.route === '/' ? pathname === '/' : pathname.startsWith(item.route);
+  };
+
+  return (
+    <header className="fixed top-0 w-full bg-bg border-b border-primary/30 z-[100] h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
+      {/* Logo */}
+      <button
+        onClick={() => { window.scrollTo(0, 0); navigate('/'); }}
+        aria-label="The Circle — home"
+        className="flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
+      >
+        <motion.div
+          style={{ rotate: rotation }}
+          className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center"
+        >
+          <svg viewBox="0 0 300 300" className="w-full h-full" style={{ fontFamily: 'var(--font-display)' }} aria-hidden="true">
+            <defs>
+              <path id="circlePathSmall" d="M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0" fill="none" />
+            </defs>
+            <text fill="var(--color-primary)" className="uppercase" style={{ fontSize: '52px', letterSpacing: '-0.16em' }}>
+              <textPath href="#circlePathSmall" startOffset="0%">
+                <tspan style={{ fontWeight: 900 }}>THECIRCLE</tspan>
+                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+                <tspan style={{ fontWeight: 400 }}> THECIRCLE</tspan>
+              </textPath>
+            </text>
+          </svg>
+        </motion.div>
+      </button>
+
+      {/* Desktop: the entries, written out */}
+      <nav aria-label="Main" className="hidden lg:flex items-center gap-1">
+        {items.map(item => {
+          const current = isCurrent(item);
+          return (
+            <button
+              key={item.id}
+              onClick={() => go(item)}
+              aria-current={current ? 'page' : undefined}
+              className={`group relative px-4 py-2 text-xs font-mono tracking-[0.2em] uppercase transition-colors cursor-pointer
+                          focus:outline-none focus-visible:ring-1 focus-visible:ring-primary
+                          ${current ? 'text-primary' : 'text-primary/55 hover:text-primary'}`}
+            >
+              {item.label}
+              {/* Underline marks the page you are on, and grows on hover */}
+              <span
+                className={`absolute left-4 right-4 bottom-1 h-px bg-primary origin-left transition-transform duration-300
+                            ${current ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100 group-focus-visible:scale-x-100'}`}
+              />
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="flex items-center gap-2">
+        {/* Optional call-to-action, text and destination set in the admin */}
+        {nav.cta?.label && (
+          <button
+            onClick={() => { window.scrollTo(0, 0); navigate(nav.cta!.route || '/form'); }}
+            className="hidden sm:block bg-primary text-black font-black text-[11px] md:text-xs py-2.5 px-5 md:px-6
+                       uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer
+                       focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          >
+            {nav.cta.label}
+          </button>
+        )}
+
+        {/* Mobile + tablet: the three dots stay */}
+        <div className="lg:hidden">
+          <HamburgerMenu />
+        </div>
+      </div>
     </header>
   );
 };

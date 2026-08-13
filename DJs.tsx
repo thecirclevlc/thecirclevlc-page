@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { supabase } from './lib/supabase';
-import type { DJ } from './lib/database.types';
+import { formPath, DEFAULT_FORM_SLUG, type DJ, type CtaBlock } from './lib/database.types';
 import { StandardHeader } from './StandardHeader';
 import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
 import { useSiteContent, useSiteBlock } from './hooks/useSiteContent';
-import ProfileModal from './components/ProfileModal';
 import AdminToolbar from './components/AdminToolbar';
 import PageShell from './components/PageShell';
 import Footer from './components/Footer';
@@ -64,7 +63,7 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
 
   return (
     <div ref={cardRef} className="group cursor-pointer" onClick={onClick}>
-      <div className="relative aspect-[3/4] overflow-hidden bg-black border border-[#C42121]/20">
+      <div className="relative aspect-[3/4] overflow-hidden bg-black border border-primary/20">
         <div ref={imageRef} className="w-full h-full">
           {dj.photo_url ? (
             <img
@@ -74,8 +73,8 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
               style={{ filter: 'brightness(0.65)', objectPosition: dj.photo_position ?? 'center' }}
             />
           ) : (
-            <div className="w-full h-full bg-[#0d0000] flex items-center justify-center">
-              <span className="text-[#C42121]/20 font-black text-6xl tracking-widest">
+            <div className="w-full h-full bg-bg flex items-center justify-center">
+              <span className="text-primary/20 font-black text-6xl tracking-widest">
                 {dj.name.slice(0, 2).toUpperCase()}
               </span>
             </div>
@@ -84,7 +83,7 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
         {dj.featured && (
-          <div className="absolute top-4 right-4 text-[10px] font-mono tracking-widest border border-[#C42121]/50 px-2 py-1 text-[#C42121]/80 uppercase">
+          <div className="absolute top-4 right-4 text-[10px] font-mono tracking-widest border border-primary/50 px-2 py-1 text-primary/80 uppercase">
             FEATURED
           </div>
         )}
@@ -98,7 +97,7 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="flex items-center justify-center w-7 h-7 border border-[#C42121]/40 text-[#C42121]/80 hover:bg-[#C42121]/10 transition-colors"
+                className="flex items-center justify-center w-7 h-7 border border-primary/40 text-primary/80 hover:bg-primary/10 transition-colors"
               >
                 <SocialIcon platform={s.key} size={12} />
               </a>
@@ -108,19 +107,19 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
       </div>
 
       <div className="mt-5 space-y-2">
-        <h3 className="text-xl md:text-2xl font-black text-[#C42121] tracking-tight leading-none uppercase">
+        <h3 className="text-xl md:text-2xl font-black text-primary tracking-tight leading-none uppercase">
           {dj.name}
         </h3>
         {dj.genres?.length > 0 && (
-          <p className="text-sm font-mono text-[#C42121]/50 tracking-wider">
+          <p className="text-sm font-mono text-primary/50 tracking-wider">
             {dj.genres.join(' · ')}
           </p>
         )}
         {dj.based_in && (
-          <p className="text-xs font-mono text-[#C42121]/40 tracking-wider">{dj.based_in}</p>
+          <p className="text-xs font-mono text-primary/40 tracking-wider">{dj.based_in}</p>
         )}
         {dj.bio && (
-          <p className="text-sm text-[#C42121]/60 leading-relaxed line-clamp-2 whitespace-pre-line">{dj.bio}</p>
+          <p className="text-sm text-primary/60 leading-relaxed line-clamp-2 whitespace-pre-line">{dj.bio}</p>
         )}
       </div>
     </div>
@@ -129,7 +128,7 @@ const DJCard: React.FC<{ dj: DJ; index: number; onClick: () => void }> = ({ dj, 
 
 const SkeletonDJ: React.FC = () => (
   <div className="animate-pulse">
-    <div className="aspect-[3/4] bg-[#0d0000] border border-[#C42121]/10" />
+    <div className="aspect-[3/4] bg-bg border border-primary/10" />
     <div className="mt-5 space-y-2">
       <div className="h-6 w-2/3 bg-[#111] rounded" />
       <div className="h-3 w-1/2 bg-[#0a0a0a] rounded" />
@@ -146,12 +145,13 @@ export default function DJs() {
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_djs');
   const { title: heroTitle, subtitle: heroSubtitle, setContent: setDjsContent } = useSiteContent('content_djs_hero');
-  const { data: ctaData, setData: setCtaData } = useSiteBlock('content_cta_djs', {
+  const { data: ctaData, setData: setCtaData } = useSiteBlock<CtaBlock>('content_cta_djs', {
     title: 'ARE YOU A SELECTOR?',
     subtitle: "We're always looking for artists who push boundaries. Apply to join The Circle.",
+    form_slug: '',
+    cta_label: '',
   });
   const heroTitleRef      = useRef<HTMLDivElement>(null);
-  const [activeDJ, setActiveDJ] = useState<DJ | null>(null);
   const [filter, setFilter] = useState('');
   const [filterGenre, setFilterGenre] = useState<string>('all');
 
@@ -183,9 +183,10 @@ export default function DJs() {
       .from('djs')
       .select('*')
       .order('featured', { ascending: false })
+      .order('sort_order')
       .order('name')
       .then(({ data, error: err }) => {
-        if (err) setError(err.message);
+        if (err) { console.error('[load]', err); setError('load-failed'); }
         else if (data) setDJs(data);
         setLoading(false);
       });
@@ -207,19 +208,31 @@ export default function DJs() {
       <div className="relative z-10 pt-16 md:pt-20">
 
         {/* ── Hero ─────────────────────────────────────── */}
-        <section className="relative min-h-[60vh] flex flex-col items-center justify-center px-6 md:px-20 py-20 md:py-32 border-b border-[#C42121]/20 overflow-hidden">
+        <section className="relative min-h-[60vh] flex flex-col items-center justify-center px-6 md:px-20 py-20 md:py-32 border-b border-primary/20 overflow-hidden">
           {bgType !== 'none' && bgUrl && (
             <HeroMedia
               videoUrl={bgType === 'video' ? bgUrl : null}
               imageUrl={bgType === 'image' ? bgUrl : null}
-              overlayClass="bg-gradient-to-t from-[#050000]/90 via-[#050000]/50 to-[#050000]/70"
+              overlayClass="bg-gradient-to-t from-bg/90 via-bg/50 to-bg/70"
             />
           )}
           <div className="relative z-10 w-full max-w-7xl">
-            <div ref={heroTitleRef} className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase mb-8">
+            {/* EditableText forwards the ref and renders children, so the
+                per-word GSAP animation keeps working while the big title
+                becomes clickable in edit mode — until now only the subtitle
+                just below it could be edited on the page. */}
+            <EditableText
+              as="div"
+              ref={heroTitleRef}
+              contentKey="content_djs_hero"
+              field="title"
+              value={heroTitle}
+              onSave={v => setDjsContent('title', v)}
+              className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase mb-8"
+            >
               {heroRest && <div>{heroRest}</div>}
-              <div className="text-[#C42121]">{heroLast}</div>
-            </div>
+              <div className="text-primary">{heroLast}</div>
+            </EditableText>
             <GSAPReveal delay={0.6}>
               <EditableText
                 as="p"
@@ -227,7 +240,7 @@ export default function DJs() {
                 field="subtitle"
                 value={heroSubtitle}
                 onSave={v => setDjsContent('subtitle', v)}
-                className="text-lg md:text-2xl font-light text-[#C42121]/70 max-w-3xl leading-relaxed tracking-wide"
+                className="text-lg md:text-2xl font-light text-primary/70 max-w-3xl leading-relaxed tracking-wide"
                 multiline
               />
             </GSAPReveal>
@@ -245,15 +258,15 @@ export default function DJs() {
                   value={filter}
                   onChange={e => setFilter(e.target.value)}
                   placeholder="Search DJs..."
-                  className="bg-transparent border border-[#C42121]/20 px-4 py-2.5 text-sm text-white placeholder-[#C42121]/30 font-mono tracking-wider focus:outline-none focus:border-[#C42121]/50 transition-colors flex-1 max-w-xs"
+                  className="bg-transparent border border-primary/20 px-4 py-2.5 text-sm text-white placeholder-primary/30 font-mono tracking-wider focus:outline-none focus:border-primary/50 transition-colors flex-1 max-w-xs"
                 />
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setFilterGenre('all')}
                     className={`text-[10px] font-mono px-3 py-1.5 border uppercase tracking-wider transition-colors cursor-pointer ${
                       filterGenre === 'all'
-                        ? 'border-[#C42121] text-[#C42121] bg-[#C42121]/10'
-                        : 'border-[#C42121]/20 text-[#C42121]/50 hover:border-[#C42121]/40'
+                        ? 'border-primary text-primary bg-primary/10'
+                        : 'border-primary/20 text-primary/50 hover:border-primary/40'
                     }`}
                   >
                     All
@@ -264,8 +277,8 @@ export default function DJs() {
                       onClick={() => setFilterGenre(genre)}
                       className={`text-[10px] font-mono px-3 py-1.5 border uppercase tracking-wider transition-colors cursor-pointer ${
                         filterGenre === genre
-                          ? 'border-[#C42121] text-[#C42121] bg-[#C42121]/10'
-                          : 'border-[#C42121]/20 text-[#C42121]/50 hover:border-[#C42121]/40'
+                          ? 'border-primary text-primary bg-primary/10'
+                          : 'border-primary/20 text-primary/50 hover:border-primary/40'
                       }`}
                     >
                       {genre}
@@ -281,41 +294,34 @@ export default function DJs() {
               </div>
             ) : error ? (
               <div className="text-center py-20">
-                <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">ERROR LOADING DJS</p>
-                <p className="text-[#C42121]/30 text-sm font-mono mt-3">{error}</p>
+                <p className="text-primary/50 text-xl font-mono tracking-widest">ERROR LOADING DJS</p>
+                <p className="text-primary/30 text-sm font-mono mt-3">Something went wrong loading this. Please try again in a moment.</p>
               </div>
             ) : filteredDJs.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-[#C42121]/50 text-xl font-mono tracking-widest">{djs.length === 0 ? 'NO DJS YET' : 'NO RESULTS'}</p>
-                <p className="text-[#C42121]/30 text-sm font-mono mt-3">{djs.length === 0 ? 'Check back soon.' : 'Try a different filter.'}</p>
+                <p className="text-primary/50 text-xl font-mono tracking-widest">{djs.length === 0 ? 'NO DJS YET' : 'NO RESULTS'}</p>
+                <p className="text-primary/30 text-sm font-mono mt-3">{djs.length === 0 ? 'Check back soon.' : 'Try a different filter.'}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
                 {filteredDJs.map((dj, index) => (
-                  <DJCard key={dj.id} dj={dj} index={index} onClick={() => setActiveDJ(dj)} />
+                  <DJCard key={dj.id} dj={dj} index={index} onClick={() => handleNav(`/djs/${dj.slug}`)} />
                 ))}
               </div>
             )}
           </div>
         </section>
 
-        {/* Profile Modal */}
-        <ProfileModal
-          profile={activeDJ}
-          type="dj"
-          onClose={() => setActiveDJ(null)}
-        />
-
         {/* ── Cross-link to Artists ────────────────────── */}
-        <section className="relative px-6 md:px-20 py-20 border-t border-[#C42121]/20">
+        <section className="relative px-6 md:px-20 py-20 border-t border-primary/20">
           <GSAPReveal delay={0.1}>
             <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
-                <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-2">Also at The Circle</p>
+                <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase mb-2">Also at The Circle</p>
                 <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">THE ARTISTS</h3>
               </div>
               <button
-                className="border border-[#C42121]/40 px-8 py-3 text-sm font-mono tracking-widest text-[#C42121] hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
+                className="border border-primary/40 px-8 py-3 text-sm font-mono tracking-widest text-primary hover:bg-primary hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
                 onClick={() => handleNav('/artists')}
               >
                 EXPLORE ARTISTS &rarr;
@@ -325,15 +331,15 @@ export default function DJs() {
         </section>
 
         {/* ── Cross-link to Events ─────────────────────── */}
-        <section className="relative px-6 md:px-20 py-20 border-t border-[#C42121]/20">
+        <section className="relative px-6 md:px-20 py-20 border-t border-primary/20">
           <GSAPReveal delay={0.1}>
             <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
-                <p className="text-[10px] font-mono text-[#C42121]/40 tracking-[0.2em] uppercase mb-2">Where they play</p>
+                <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase mb-2">Where they play</p>
                 <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">THE EVENTS</h3>
               </div>
               <button
-                className="border border-[#C42121]/40 px-8 py-3 text-sm font-mono tracking-widest text-[#C42121] hover:bg-[#C42121] hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
+                className="border border-primary/40 px-8 py-3 text-sm font-mono tracking-widest text-primary hover:bg-primary hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"
                 onClick={() => handleNav('/past-events')}
               >
                 VIEW EVENTS &rarr;
@@ -343,7 +349,7 @@ export default function DJs() {
         </section>
 
         {/* ── CTA ─────────────────────────────────────── */}
-        <section className="relative px-6 md:px-20 py-32 md:py-40 border-t border-[#C42121]/20">
+        <section className="relative px-6 md:px-20 py-32 md:py-40 border-t border-primary/20">
           <GSAPReveal delay={0.1}>
             <div className="max-w-4xl mx-auto text-center">
               <EditableText
@@ -352,7 +358,7 @@ export default function DJs() {
                 field="title"
                 value={ctaData.title}
                 onSave={v => setCtaData(prev => ({ ...prev, title: v }))}
-                className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-8 text-[#C42121]"
+                className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-8 text-primary"
               />
               <EditableText
                 as="p"
@@ -360,14 +366,14 @@ export default function DJs() {
                 field="subtitle"
                 value={ctaData.subtitle}
                 onSave={v => setCtaData(prev => ({ ...prev, subtitle: v }))}
-                className="text-lg md:text-xl font-light text-[#C42121]/70 mb-12 leading-relaxed"
+                className="text-lg md:text-xl font-light text-primary/70 mb-12 leading-relaxed"
                 multiline
               />
               <button
-                className="bg-[#C42121] text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:bg-[#ff3333] transition-all duration-300 cursor-pointer"
-                onClick={() => handleNav('/form')}
+                className="bg-primary text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:opacity-80 transition-all duration-300 cursor-pointer"
+                onClick={() => handleNav(formPath(ctaData.form_slug || DEFAULT_FORM_SLUG))}
               >
-                APPLY NOW
+                {ctaData.cta_label || 'APPLY NOW'}
               </button>
             </div>
           </GSAPReveal>

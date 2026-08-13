@@ -10,10 +10,10 @@ echo ""
 cat > .env << 'EOF'
 # Google reCAPTCHA Keys - Production
 # Site Key (Public) - Se usa en el frontend
-VITE_RECAPTCHA_SITE_KEY=6LdeGywsAAAAAC0GnkPK2U5GswwSjQEuXhJ6mnt6
+VITE_RECAPTCHA_SITE_KEY=<VITE_RECAPTCHA_SITE_KEY — ver Vercel>
 
 # Secret Key (Private) - Se usa en el backend para verificación
-RECAPTCHA_SECRET_KEY=6LdeGywsAAAAAEBCLXeDGIpXB3msNsSy3l2VYbAb
+RECAPTCHA_SECRET_KEY=<RECAPTCHA_SECRET_KEY — ver Vercel>
 EOF
 
 echo "✅ Archivo .env creado exitosamente"

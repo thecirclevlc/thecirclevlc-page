@@ -7,6 +7,7 @@ import type { DJInsert } from '../lib/database.types';
 import { ArrowLeft, Upload, X, Loader2, Check, Instagram, Globe, Plus, Clock } from 'lucide-react';
 import { useAutosave } from '../lib/useAutosave';
 import AdminHistory from './AdminHistory';
+import { VideosEditor, LinksEditor, FactsEditor, SocialsEditor } from './ProfileExtras';
 
 const INPUT    = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#7c3aed]/40 transition-colors';
 const TEXTAREA = INPUT + ' resize-none';
@@ -15,6 +16,7 @@ const BLANK: DJInsert = {
   name: '', slug: '', bio: null, photo_url: null, based_in: null,
   press_kit_url: null, gallery_images: [], photo_position: 'center',
   genres: [], social_links: {}, featured: false,
+  videos: [], links: [], facts: [], sort_order: 0,
 };
 
 export default function AdminDJForm() {
@@ -304,23 +306,13 @@ export default function AdminDJForm() {
           </div>
         </section>
 
-        {/* ── SOCIAL LINKS ─────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Social Links</p>
-          {[
-            { key: 'instagram',  label: 'Instagram',   placeholder: 'https://instagram.com/…' },
-            { key: 'soundcloud', label: 'SoundCloud',  placeholder: 'https://soundcloud.com/…' },
-            { key: 'spotify',    label: 'Spotify',     placeholder: 'https://open.spotify.com/…' },
-            { key: 'website',    label: 'Website',     placeholder: 'https://…' },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">{label}</label>
-              <input type="url" value={socials[key] ?? ''}
-                onChange={e => setSocial(key, e.target.value)}
-                className={INPUT} placeholder={placeholder} />
-            </div>
-          ))}
-        </section>
+        <SocialsEditor socials={form.social_links ?? {}} onChange={v => set('social_links', v)} />
+
+        <VideosEditor videos={form.videos ?? []} onChange={v => set('videos', v)} />
+
+        <LinksEditor links={form.links ?? []} onChange={v => set('links', v)} />
+
+        <FactsEditor facts={form.facts ?? []} onChange={v => set('facts', v)} />
 
         {/* ── GALLERY ──────────────────────────────────────── */}
         <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">

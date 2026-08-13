@@ -37,7 +37,7 @@ const HeroMedia: React.FC<HeroMediaProps> = ({
   imageUrl,
   posterUrl,
   priority  = false,
-  overlayClass = 'bg-gradient-to-t from-[#050000] via-[#050000]/60 to-transparent',
+  overlayClass = 'bg-gradient-to-t from-bg via-bg/60 to-transparent',
 }) => {
   const hasVideo = !!videoUrl;
   const hasImage = !!imageUrl;

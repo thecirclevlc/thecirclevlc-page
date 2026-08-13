@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { DJ } from '../lib/database.types';
-import { Plus, Pencil, Trash2, Search, Music2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Music2, ArrowUp, ArrowDown } from 'lucide-react';
 
 export default function AdminDJs() {
   const [djs, setDJs]       = useState<DJ[]>([]);
@@ -14,9 +14,26 @@ export default function AdminDJs() {
 
   async function fetchDJs() {
     setLoading(true);
-    const { data } = await supabase.from('djs').select('*').order('name');
+    const { data } = await supabase.from('djs').select('*').order('sort_order').order('name');
     if (data) setDJs(data);
     setLoading(false);
+  }
+
+  /**
+   * Manual order for the public grid.
+   *
+   * Arrows, not drag-and-drop: HTML5 drag does not work on touch and she may
+   * well reorder from a phone. Writes only the two rows that swapped.
+   */
+  async function move(index: number, dir: -1 | 1) {
+    const j = index + dir;
+    if (j < 0 || j >= djs.length) return;
+    const arr = djs.slice();
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    const renumbered = arr.map((x, k) => ({ ...x, sort_order: k }));
+    setDJs(renumbered);
+    await Promise.all([index, j].map(k =>
+      supabase.from('djs').update({ sort_order: renumbered[k].sort_order }).eq('id', renumbered[k].id)));
   }
 
   async function deleteDJ(id: string) {
@@ -81,8 +98,18 @@ export default function AdminDJs() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(dj => (
+          {filtered.map((dj, i) => (
             <div key={dj.id} className="bg-[#111] border border-[#1a1a1a] hover:border-[#2a2a2a] rounded-xl p-4 flex items-center gap-3 group transition-colors">
+              {!search && (
+                <div className="flex flex-col flex-shrink-0 -ml-1">
+                  <button onClick={() => move(i, -1)} disabled={i === 0}
+                    className="w-6 h-5 flex items-center justify-center rounded text-[#555] hover:text-white disabled:opacity-20 transition-colors"
+                    aria-label="Move up"><ArrowUp size={12} /></button>
+                  <button onClick={() => move(i, 1)} disabled={i === filtered.length - 1}
+                    className="w-6 h-5 flex items-center justify-center rounded text-[#555] hover:text-white disabled:opacity-20 transition-colors"
+                    aria-label="Move down"><ArrowDown size={12} /></button>
+                </div>
+              )}
               {/* Photo */}
               <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1a1a1a] flex-shrink-0 border border-[#222]">
                 {dj.photo_url

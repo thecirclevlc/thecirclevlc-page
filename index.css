@@ -1,10 +1,97 @@
 @import "tailwindcss";
 
+/* ────────────────────────────────────────────────────────────────
+ * FONTS — self-hosted, latin subset.
+ *
+ * Replaces a render-blocking <link> to fonts.googleapis.com: that was two
+ * DNS lookups and a round trip before any text could paint. These ship from
+ * our own domain, so the site is faster *after* adding a font picker than it
+ * was before.
+ *
+ * League Spartan and Syne are variable fonts — one file covers 100-900, which
+ * matters because this site uses font-black (900) in 61 places. Poppins has no
+ * variable build, so it needs one file per weight.
+ * ──────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'League Spartan';
+  src: url('/fonts/league-spartan.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Syne';
+  src: url('/fonts/syne.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/poppins-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/poppins-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/poppins-900.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
+/* One rule instead of the old `* { font-family: … !important }`, which made
+ * the font impossible to change and overrode form controls too. */
+body {
+  font-family: var(--font-display);
+}
+
 /*
  * TheCircle - Custom Styles
- * Este archivo está disponible para estilos personalizados adicionales
- * La mayoría de estilos están en Tailwind CSS y en los componentes
  */
+
+/* ────────────────────────────────────────────────────────────────
+ * BRAND TOKENS
+ *
+ * These generate `text-primary`, `bg-primary`, `border-primary/30`, …
+ * compiled as `var(--color-primary)` — NOT as a baked-in hex. That is
+ * what lets useSiteTheme() override them at runtime from the admin.
+ *
+ * ⚠️  Plain `@theme`, never `@theme inline`. With `inline` Tailwind bakes
+ *     the literal value into every utility and the admin colour picker
+ *     silently stops working again.
+ *
+ * Opacity modifiers (`text-primary/60`) compile to color-mix() over the
+ * variable, so they follow the admin colour too — no extra knobs needed.
+ * ──────────────────────────────────────────────────────────────── */
+@theme {
+  /* Plain hex values, and they must stay plain hex.
+   *
+   * Tailwind emits two rules per opacity modifier: a folded literal
+   * (`#c4212133`) as the legacy fallback, then a `color-mix(in oklab,
+   * var(--color-primary) 20%, transparent)` that overrides it in any browser
+   * with color-mix. The second is what makes the admin colour picker reach
+   * the ~200 classes on this site that carry an opacity modifier.
+   *
+   * ⚠️  Do NOT "fix" this by writing `--color-primary: var(--brand-primary)`.
+   * With a var() Tailwind cannot compute the alpha and drops it entirely —
+   * every `/20` renders fully opaque. Verified against the built CSS: plain
+   * hex yields 40 working color-mix rules, var() yields zero.
+   *
+   * Never `@theme inline` either — that bakes the literal into every utility
+   * and kills the runtime override outright. */
+  --color-primary: #C42121;   /* brand accent — admin editable */
+  --color-bg:      #050000;   /* page background — admin editable */
+  --color-fg:      #f5f5f0;   /* body copy — fixed, NOT admin editable.
+                                 Separate token so legal pages and form input
+                                 stay legible whatever accent she picks. */
+
+  /* Set by useSiteTheme() alongside the colours. */
+  --font-display: 'Poppins', sans-serif;
+}
 
 /* Extra Smooth Scroll Global - Slower and smoother */
 html {

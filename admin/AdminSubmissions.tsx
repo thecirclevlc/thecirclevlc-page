@@ -4,7 +4,8 @@ import {
   Download, X, Mail,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { FormSubmissionRow, SubmissionStatus } from '../lib/database.types';
+import { slugFromFormKey, type FormSubmissionRow, type SubmissionStatus } from '../lib/database.types';
+import { listForms } from '../lib/formSchema';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
@@ -38,12 +39,12 @@ function exportCSV(rows: FormSubmissionRow[]) {
   // Collect all unique field names
   const fieldNames = new Set<string>();
   rows.forEach(r => Object.keys(r.data).forEach(k => fieldNames.add(k)));
-  const headers = ['id', 'created_at', 'status', 'notes', ...Array.from(fieldNames)];
+  const headers = ['id', 'created_at', 'form_key', 'status', 'notes', ...Array.from(fieldNames)];
   const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const csv = [
     headers.map(escape).join(','),
     ...rows.map(r => headers.map(h => {
-      if (h === 'id' || h === 'created_at' || h === 'status') return escape(String((r as any)[h] ?? ''));
+      if (h === 'id' || h === 'created_at' || h === 'status' || h === 'form_key') return escape(String((r as any)[h] ?? ''));
       if (h === 'notes') return escape(r.notes ?? '');
       return escape(r.data[h] ?? '');
     }).join(',')),
@@ -62,9 +63,11 @@ export default function AdminSubmissions() {
   const [rows, setRows] = useState<FormSubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | SubmissionStatus>('all');
+  const [formFilter, setFormFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<FormSubmissionRow | null>(null);
   const [toasts, setToasts] = useState<(ToastMsg & { id: number })[]>([]);
+  const [formNames, setFormNames] = useState<Record<string, string>>({});
 
   const addToast = (t: ToastMsg) => {
     const id = Date.now();
@@ -84,15 +87,30 @@ export default function AdminSubmissions() {
   };
   useEffect(() => { load(); }, []);
 
+  // Names for the form filter — the submission row only carries the key.
+  useEffect(() => {
+    listForms().then(list =>
+      setFormNames(Object.fromEntries(list.map(f => [f.key, f.name]))));
+  }, []);
+
   const counts = useMemo(() => {
     const c: Record<SubmissionStatus, number> = { new: 0, reviewed: 0, accepted: 0, rejected: 0 };
     rows.forEach(r => { c[r.status]++; });
     return c;
   }, [rows]);
 
+  // One entry per form that has actually received answers, so the picker never
+  // offers an empty filter.
+  const formKeys = useMemo(() => {
+    const seen = new Map<string, number>();
+    rows.forEach(r => seen.set(r.form_key, (seen.get(r.form_key) ?? 0) + 1));
+    return Array.from(seen.entries()).sort((a, b) => b[1] - a[1]);
+  }, [rows]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter(r => {
+      if (formFilter !== 'all' && r.form_key !== formFilter) return false;
       if (filter !== 'all' && r.status !== filter) return false;
       if (q) {
         const name = pickDisplayName(r.data).toLowerCase();
@@ -101,7 +119,7 @@ export default function AdminSubmissions() {
       }
       return true;
     });
-  }, [rows, filter, search]);
+  }, [rows, filter, formFilter, search]);
 
   const updateRow = async (id: string, patch: Partial<FormSubmissionRow>) => {
     const { error } = await supabase.from('form_submissions').update(patch).eq('id', id);
@@ -126,7 +144,7 @@ export default function AdminSubmissions() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Form Submissions</h1>
           <p className="text-[#555] text-sm mt-1">
-            Applications received from the public "Join The Circle" form.
+            Every answer received, from every form.
           </p>
         </div>
         <button
@@ -173,6 +191,18 @@ export default function AdminSubmissions() {
           <option value="all">All statuses</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        {formKeys.length > 1 && (
+          <select
+            value={formFilter}
+            onChange={e => setFormFilter(e.target.value)}
+            className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40"
+          >
+            <option value="all">All forms</option>
+            {formKeys.map(([key, n]) => (
+              <option key={key} value={key}>{formNames[key] ?? slugFromFormKey(key)} ({n})</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Rows */}
@@ -183,7 +213,17 @@ export default function AdminSubmissions() {
       ) : filtered.length === 0 ? (
         <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-12 text-center">
           <Inbox size={28} className="mx-auto text-[#333] mb-3" />
-          <p className="text-[#555] text-sm">No submissions match the current filter.</p>
+          {rows.length === 0 ? (
+            <>
+              <p className="text-[#999] text-sm">No applications yet.</p>
+              <p className="text-[#555] text-xs mt-2 max-w-sm mx-auto">
+                They will appear here the moment someone sends the form. Nothing is broken —
+                this page is simply waiting.
+              </p>
+            </>
+          ) : (
+            <p className="text-[#555] text-sm">No submissions match the current filter.</p>
+          )}
         </div>
       ) : (
         <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">

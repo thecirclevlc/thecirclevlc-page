@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#050000] text-[#C42121] selection:bg-[#C42121] selection:text-black">
+    <div className="min-h-screen bg-bg text-primary selection:bg-primary selection:text-black">
       {/* Noise Overlay */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.03] z-[1] mix-blend-overlay"
