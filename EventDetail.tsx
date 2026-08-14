@@ -15,6 +15,39 @@ import Footer from './components/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/**
+ * Every fixed word on this page, in one place.
+ *
+ * They were spread across 18 lines of JSX. Nothing was broken by that, but
+ * changing "Music" to "Line-up" meant hunting through 600 lines, and the two
+ * that already disagreed with the rest of the site (the event card said
+ * "THE EVENTS" where the page it opened said "PAST EVENTS") had drifted
+ * precisely because nobody could see them side by side.
+ *
+ * Deliberately NOT editable from the panel: these are the page's furniture,
+ * not its content, and 18 more inputs is the kind of thing that made her lose
+ * her way in the panel to begin with. One list, one edit, if she ever asks.
+ */
+const LABEL = {
+  gallery:      'Gallery',
+  expand:       'CLICK TO EXPAND',
+  notFound:     'EVENT NOT FOUND',
+  backToEvents: 'BACK TO EVENTS',
+  date:         'DATE',
+  location:     'LOCATION',
+  time:         'TIME',
+  attendees:    'ATTENDEES',
+  tickets:      'Tickets',
+  about:        'About',
+  music:        'Music',
+  artists:      'Artists',
+  partners:     'Collaborations & Partners',
+  nextEvent:    'NEXT EVENT',
+  exploreMore:  'EXPLORE MORE',
+  pastEvents:   'PAST EVENTS',
+  viewAll:      'VIEW ALL EVENTS',
+} as const;
+
 // ── Pinned Scroll Gallery ─────────────────────────────────────────
 // The section pins to the viewport while images scroll horizontally.
 // Once all images have been seen, the pin releases.
@@ -77,7 +110,7 @@ const PinnedGallery: React.FC<{ images: string[]; onImageClick: (index: number) 
     <div ref={sectionRef} className="relative h-screen overflow-hidden">
       {/* Counter */}
       <div className="absolute top-6 left-6 md:left-20 z-10 flex items-center gap-4">
-        <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">Gallery</p>
+        <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">{LABEL.gallery}</p>
         <span ref={counterRef} className="text-[10px] font-mono text-primary/60 tracking-widest">
           01 / {String(images.length).padStart(2, '0')}
         </span>
@@ -127,7 +160,7 @@ const ImageGallery: React.FC<{ images: string[]; onImageClick: (index: number) =
         <img src={image} alt={`Event image ${index + 1}`} className="w-full h-full object-cover" style={{ filter: 'brightness(0.65)' }} loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="text-primary text-sm font-mono tracking-widest">CLICK TO EXPAND</div>
+          <div className="text-primary text-sm font-mono tracking-widest">{LABEL.expand}</div>
         </div>
       </div>
     ))}
@@ -293,12 +326,12 @@ export default function EventDetail() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-black text-primary mb-4">EVENT NOT FOUND</h1>
+          <h1 className="text-4xl font-black text-primary mb-4">{LABEL.notFound}</h1>
           <button
             className="border border-primary px-8 py-3 text-sm font-mono tracking-widest hover:bg-primary hover:text-black transition-all duration-300 uppercase cursor-pointer"
             onClick={() => navigate('/past-events')}
           >
-            BACK TO EVENTS
+            {LABEL.backToEvents}
           </button>
         </div>
       </div>
@@ -356,25 +389,25 @@ export default function EventDetail() {
             <div className="hero-meta flex flex-wrap gap-8 text-sm md:text-base font-mono text-primary/70">
               {event.date && (
                 <div>
-                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">DATE</span>
+                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">{LABEL.date}</span>
                   {formatDate(event.date)}
                 </div>
               )}
               {event.venue && (
                 <div>
-                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">LOCATION</span>
+                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">{LABEL.location}</span>
                   {event.venue}
                 </div>
               )}
               {event.time && (
                 <div>
-                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">TIME</span>
+                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">{LABEL.time}</span>
                   {event.time}
                 </div>
               )}
               {event.attendees && (
                 <div>
-                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">ATTENDEES</span>
+                  <span className="block text-[10px] text-primary/50 mb-1 tracking-wider">{LABEL.attendees}</span>
                   {event.attendees}
                 </div>
               )}
@@ -389,7 +422,7 @@ export default function EventDetail() {
                 rel="noopener noreferrer"
                 className="hero-meta inline-block mt-8 bg-primary text-black font-black text-base md:text-lg py-4 px-10 uppercase tracking-widest hover:opacity-80 transition-opacity"
               >
-                Tickets
+                {LABEL.tickets}
               </a>
             )}
           </div>
@@ -408,7 +441,7 @@ export default function EventDetail() {
 
               {/* Column 1 — About */}
               <div className="md:pr-10 space-y-6">
-                <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">About</p>
+                <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">{LABEL.about}</p>
                 {event.short_description && (
                   <p className="text-base md:text-lg font-light text-primary/80 leading-relaxed">
                     {event.short_description}
@@ -423,7 +456,7 @@ export default function EventDetail() {
                 )}
                 {musicStyles.length > 0 && (
                   <div className="space-y-3 pt-2">
-                    <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">Music</p>
+                    <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">{LABEL.music}</p>
                     <div className="flex flex-wrap gap-2">
                       {musicStyles.map((style, i) => (
                         <span key={i} className="text-[10px] font-mono px-3 py-1.5 border border-primary/25 text-primary/70 uppercase tracking-wider hover:bg-primary/10 transition-colors">
@@ -468,7 +501,7 @@ export default function EventDetail() {
               {/* Column 3 — Artists */}
               {eventArtists.length > 0 && (
                 <div className="md:pl-10 md:border-l md:border-primary/10 space-y-4">
-                  <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">Artists</p>
+                  <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase">{LABEL.artists}</p>
                   <div>
                     {eventArtists.map(artist => (
                       <NameRow
@@ -498,7 +531,7 @@ export default function EventDetail() {
         {event.partnerships && (event.partnerships as any[]).length > 0 && (
           <section className="relative px-6 md:px-20 py-12 md:py-16 border-t border-primary/20">
             <div className="max-w-7xl mx-auto">
-              <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase mb-6">Collaborations & Partners</p>
+              <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase mb-6">{LABEL.partners}</p>
               <div className="flex flex-wrap gap-6 items-center">
                 {(event.partnerships as any[]).map((p: any, i: number) => (
                   <a
@@ -568,7 +601,7 @@ export default function EventDetail() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-transparent" />
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                <div className="text-sm font-mono text-primary/60 mb-4 tracking-widest">NEXT EVENT</div>
+                <div className="text-sm font-mono text-primary/60 mb-4 tracking-widest">{LABEL.nextEvent}</div>
                 <h2 className="text-6xl md:text-8xl font-black tracking-tighter leading-none uppercase mb-6">
                   {nextEvent.title}
                 </h2>
@@ -591,15 +624,15 @@ export default function EventDetail() {
         {/* ── Back to Events ────────────────────────────── */}
         <section className="relative px-6 md:px-20 py-32 md:py-40 border-t border-primary/20 text-center">
           <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-8 uppercase">
-            EXPLORE MORE
+            {LABEL.exploreMore}
             <br />
-            <span className="text-primary">PAST EVENTS</span>
+            <span className="text-primary">{LABEL.pastEvents}</span>
           </h2>
           <button
             className="border border-primary px-12 py-4 text-sm font-mono tracking-widest hover:bg-primary hover:text-black transition-all duration-300 uppercase cursor-pointer"
             onClick={() => handleNav('/past-events')}
           >
-            VIEW ALL EVENTS
+            {LABEL.viewAll}
           </button>
         </section>
 

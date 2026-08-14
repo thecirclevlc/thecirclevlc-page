@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { EntityOption } from '../lib/database.types';
-import { Search, X, ExternalLink, Loader2, UserCircle2 } from 'lucide-react';
+import { Search, X, ExternalLink, Loader2, UserCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ── Props ─────────────────────────────────────────────────────────
 
@@ -83,6 +83,19 @@ export default function EntitySelector({
     onChange(selected.filter(s => s.id !== id));
   }
 
+  // The order of this array IS the running order: it is written to
+  // `sort_order` as the row index on save, and both the panel and the public
+  // page read it back ordered. Everything was already in place except a way to
+  // change it — until now the only way to move someone up the bill was to
+  // remove everyone after them and add them again.
+  function handleMove(idx: number, dir: -1 | 1) {
+    const next = selected.slice();
+    const j = idx + dir;
+    if (j < 0 || j >= next.length) return;
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange(next);
+  }
+
   const entityLabel = table === 'djs' ? 'DJ' : 'Artist';
 
   return (
@@ -91,10 +104,10 @@ export default function EntitySelector({
       {/* Selected chips */}
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selected.map(item => (
+          {selected.map((item, idx) => (
             <div
               key={item.id}
-              className="flex items-center gap-2 rounded-full border pl-1 pr-3 py-1 text-sm"
+              className="flex items-center gap-2 rounded-full border pl-1 pr-2 py-1 text-sm"
               style={{ borderColor: `${accentColor}30`, backgroundColor: `${accentColor}10` }}
             >
               {/* Mini avatar */}
@@ -114,13 +127,37 @@ export default function EntitySelector({
               <span style={{ color: accentColor === '#C42121' ? '#f87171' : '#6ee7b7' }}>
                 {item.name}
               </span>
-              <button
-                type="button"
-                onClick={() => handleRemove(item.id)}
-                className="text-[#555] hover:text-white transition-colors ml-0.5"
-              >
-                <X size={11} />
-              </button>
+              <span className="flex items-center ml-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleMove(idx, -1)}
+                  disabled={idx === 0}
+                  aria-label={`Move ${item.name} earlier`}
+                  title="Move earlier"
+                  className="text-[#555] hover:text-white disabled:opacity-25 disabled:hover:text-[#555] transition-colors"
+                >
+                  <ChevronLeft size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMove(idx, 1)}
+                  disabled={idx === selected.length - 1}
+                  aria-label={`Move ${item.name} later`}
+                  title="Move later"
+                  className="text-[#555] hover:text-white disabled:opacity-25 disabled:hover:text-[#555] transition-colors"
+                >
+                  <ChevronRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(item.id)}
+                  aria-label={`Remove ${item.name}`}
+                  title="Remove"
+                  className="text-[#555] hover:text-red-400 transition-colors ml-1"
+                >
+                  <X size={11} />
+                </button>
+              </span>
             </div>
           ))}
         </div>
@@ -211,6 +248,7 @@ export default function EntitySelector({
       {selected.length > 0 && (
         <p className="text-[#333] text-xs font-mono">
           {selected.length} {entityLabel}{selected.length !== 1 ? 's' : ''} selected
+          {selected.length > 1 && ' · arrows set the running order shown on the event page'}
         </p>
       )}
     </div>

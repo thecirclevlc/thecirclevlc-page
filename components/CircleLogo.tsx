@@ -40,14 +40,20 @@ const TOLERANCE = 0.5;
 
 const PATH_D = 'M 150, 150 m -98, 0 a 98,98 0 1,1 196,0 a 98,98 0 1,1 -196,0';
 
+/** The word on the ring. One place, not one copy per repetition. */
+const WORD = 'THECIRCLE';
+
 interface Props {
   className?: string;
   /** Repetitions around the ring. Three reads as a pattern; one reads as a word. */
   repeat?: number;
   title?: string;
+  /** Override the wording. Spaces are dropped — the ring has no room for them. */
+  word?: string;
 }
 
-export default function CircleLogo({ className, repeat = 3, title }: Props) {
+export default function CircleLogo({ className, repeat = 3, title, word = WORD }: Props) {
+  const text = word.replace(/\s+/g, '').toUpperCase() || WORD;
   // Unique per instance: the home page renders this twice (hero and header),
   // and two `<path id="circlePath">` in one document is a silent rendering bug.
   const pathId = `circle-logo-${useId().replace(/:/g, '')}`;
@@ -78,7 +84,7 @@ export default function CircleLogo({ className, repeat = 3, title }: Props) {
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [repeat]);
+  }, [repeat, text]);
 
   return (
     <svg
@@ -96,7 +102,7 @@ export default function CircleLogo({ className, repeat = 3, title }: Props) {
         <textPath href={`#${pathId}`} startOffset="0%">
           {Array.from({ length: repeat }, (_, i) => (
             <tspan key={i} style={{ fontWeight: i === 0 ? 900 : 400 }}>
-              {i === 0 ? 'THECIRCLE' : ' THECIRCLE'}
+              {i === 0 ? text : ` ${text}`}
             </tspan>
           ))}
         </textPath>
