@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import {
   LayoutDashboard, Calendar, Music2, Users, Search, History, Tags, Image,
   LogOut, Menu, X, ExternalLink, Paintbrush, Link2, FileText, FormInput, Inbox, Files,
-  PanelBottom, Share2, HelpCircle,
+  PanelBottom, Share2, HelpCircle, Home,
 } from 'lucide-react';
 
 /**
@@ -24,6 +24,7 @@ const NAV_GROUPS: { title: string; items: { label: string; to: string; icon: Rea
       { label: 'Events',       to: '/admin/events',   icon: Calendar },
       { label: 'DJs',          to: '/admin/djs',      icon: Music2 },
       { label: 'Artists',      to: '/admin/artists',  icon: Users },
+      { label: 'Home page',    to: '/admin/home',     icon: Home },
       { label: 'Pages',        to: '/admin/pages',    icon: Files },
     ],
   },

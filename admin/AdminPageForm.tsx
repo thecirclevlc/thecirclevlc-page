@@ -24,7 +24,7 @@ const TEXTAREA = INPUT + ' min-h-[120px] resize-y';
 const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
 const LABEL = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
 
-const BLOCK_TYPES: { type: PageBlockType; label: string; hint: string; icon: React.ElementType }[] = [
+export const BLOCK_TYPES: { type: PageBlockType; label: string; hint: string; icon: React.ElementType }[] = [
   { type: 'text',    label: 'Text',    hint: 'Paragraphs, bullets, bold',   icon: Type },
   { type: 'image',   label: 'Photo',   hint: 'One image with a caption',    icon: ImageIcon },
   { type: 'gallery', label: 'Gallery', hint: 'A grid of photos',            icon: Images },
@@ -33,12 +33,12 @@ const BLOCK_TYPES: { type: PageBlockType; label: string; hint: string; icon: Rea
   { type: 'form',    label: 'Form',    hint: 'Send people to one of your forms', icon: FormInput },
 ];
 
-function uuid() {
+export function uuid() {
   return (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
     ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-function newBlock(type: PageBlockType): PageBlock {
+export function newBlock(type: PageBlockType): PageBlock {
   const id = uuid();
   switch (type) {
     case 'text':    return { id, type, heading: '', body: '' };
@@ -52,7 +52,7 @@ function newBlock(type: PageBlockType): PageBlock {
 
 // ── One block's editor ────────────────────────────────────────────
 
-function BlockEditor({
+export function BlockEditor({
   block, forms, onChange, onMoveUp, onMoveDown, onDelete, canUp, canDown,
 }: {
   block: PageBlock;

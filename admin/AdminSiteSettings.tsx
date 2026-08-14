@@ -25,9 +25,11 @@ interface PageConfig {
 }
 
 const PAGES: PageConfig[] = [
+  { key: 'page_home',    label: 'Home Page',    desc: 'Behind the spinning circle on /' },
   { key: 'page_events',  label: 'Events Page',  desc: 'Hero background on /past-events' },
   { key: 'page_djs',     label: 'DJs Page',     desc: 'Hero background on /djs' },
   { key: 'page_artists', label: 'Artists Page', desc: 'Hero background on /artists' },
+  { key: 'page_form',    label: 'Form Page',    desc: 'Behind the application form on /form' },
 ];
 
 // ── Toast ─────────────────────────────────────────────────────────

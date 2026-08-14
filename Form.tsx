@@ -16,6 +16,8 @@ import { DEFAULT_FORM_SCHEMA } from './lib/formSchema';
 import NotFound from './NotFound';
 import { brandColor, fgColor, hexToRgb01 } from './lib/cssVar';
 import { StandardHeader } from './StandardHeader';
+import HeroMedia from './components/HeroMedia';
+import { usePageBackground } from './hooks/usePageBackground';
 import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
 
 // ── Smooth scroll utility ─────────────────────────────────────────
@@ -397,6 +399,9 @@ export default function FormPage() {
 
   // Whether a captcha can be shown at all. Without the site key the widget
   // never renders, so requiring it would lock everyone out of the form.
+  // Her own photo or video behind the form, same control the other pages have.
+  const { bgUrl: pageBgUrl, bgType: pageBgType } = usePageBackground('page_form');
+
   const captchaAvailable = Boolean(import.meta.env.VITE_RECAPTCHA_SITE_KEY);
   const captchaEnforced  = schema.captcha_required && captchaAvailable;
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -553,6 +558,14 @@ export default function FormPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-bg text-primary flex items-center justify-center p-4 md:p-6 pt-24 md:pt-32 relative overflow-hidden cursor-crosshair">
+        {pageBgType !== 'none' && pageBgUrl && (
+          <HeroMedia
+            videoUrl={pageBgType === 'video' ? pageBgUrl : null}
+            imageUrl={pageBgType === 'image' ? pageBgUrl : null}
+            priority
+            overlayClass="bg-gradient-to-t from-bg/90 via-bg/60 to-bg/80"
+          />
+        )}
         <WebGLBackground chaosLevel={0} bg={background} />
         <StandardHeader />
 
@@ -599,6 +612,16 @@ export default function FormPage() {
   // ── Form view ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-bg text-primary selection:bg-primary selection:text-black cursor-crosshair overflow-x-hidden">
+      {pageBgType !== 'none' && pageBgUrl && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <HeroMedia
+            videoUrl={pageBgType === 'video' ? pageBgUrl : null}
+            imageUrl={pageBgType === 'image' ? pageBgUrl : null}
+            priority
+            overlayClass="bg-gradient-to-t from-bg/90 via-bg/60 to-bg/80"
+          />
+        </div>
+      )}
       <WebGLBackground chaosLevel={chaosLevel} bg={background} />
 
       <StandardHeader />

@@ -12,9 +12,13 @@ import EditableText from './components/EditableText';
 import { brandColor, hexToRgb01 } from './lib/cssVar';
 import HomeEvents from './components/HomeEvents';
 import NewsletterBlock from './components/NewsletterBlock';
-import type { HomeJoinBlock } from './lib/database.types';
+import type { HomeJoinBlock, HomeLayout } from './lib/database.types';
+import { HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, visibleHomeOrder } from './lib/database.types';
+import PageBlocks from './components/PageBlocks';
 import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
 import CircleLogo from './components/CircleLogo';
+import HeroMedia from './components/HeroMedia';
+import { usePageBackground } from './hooks/usePageBackground';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -577,6 +581,11 @@ export default function TheCircleApp() {
   // the shader needs. Re-reading is cheap (one row, already cached by the CDN)
   // and keeps the shader honest when she changes them.
   const { data: theme } = useSiteBlock<SiteTheme>(SITE_THEME_KEY, THEME_FALLBACK);
+  // Which sections show, and in what order. No row = exactly today's page.
+  const { data: homeLayout } = useSiteBlock<HomeLayout>(HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT);
+  // Her own photo or video behind the opening circle. 'none' keeps the
+  // animated shader that has always been there.
+  const { bgUrl: homeBgUrl, bgType: homeBgType } = usePageBackground('page_home');
   const background = theme.background ?? DEFAULT_BACKGROUND;
   const navigate = useNavigate();
 
@@ -687,8 +696,23 @@ export default function TheCircleApp() {
       {/* Content Container */}
       <main className="relative z-10 opacity-100 pt-16 md:pt-20">
 
+      {/* ── The home page, in the order she chose ──────────────
+          Each section used to be a hard-coded sibling here, so the order was
+          the file's order and nothing could be switched off. The markup below
+          is untouched — only keyed, so a saved layout can rearrange it. */}
+      {(() => {
+        const SECTIONS: Record<string, React.ReactNode> = {
+          hero: (<>
         {/* Hero Section */}
         <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+            {homeBgType !== 'none' && homeBgUrl && (
+              <HeroMedia
+                videoUrl={homeBgType === 'video' ? homeBgUrl : null}
+                imageUrl={homeBgType === 'image' ? homeBgUrl : null}
+                priority
+                overlayClass="bg-gradient-to-t from-bg/90 via-bg/50 to-bg/70"
+              />
+            )}
             {/* Spinning Circle - No hover effect */}
             <motion.div 
                 initial={{ scale: 0.3, opacity: 0 }}
@@ -729,10 +753,12 @@ export default function TheCircleApp() {
                 <span className="font-mono text-[10px] tracking-widest">SCROLL TO BREACH</span>
             </div> */}
         </section>
-
+          </>),
+          manifesto: (<>
         {/* Manifesto Section - With Subtle GSAP Animations */}
         <ManifestoSection />
-
+          </>),
+          marquee: (<>
         {/* Marquee Banner - Pauses on hover */}
         <div className="py-6 md:py-8 bg-primary text-black overflow-hidden border-y border-black group">
              <motion.div 
@@ -758,9 +784,11 @@ export default function TheCircleApp() {
                 ))}
              </motion.div>
         </div>
-
+          </>),
+          events: (<>
         <HomeEvents />
-
+          </>),
+          join: (<>
         {/* Inner Circle Access Form - Enhanced */}
         <section className="relative md:min-h-screen flex items-center justify-center px-6 pt-14 pb-12 md:py-40">
             <ScrollReveal delay={0.1} className="w-full max-w-2xl">
@@ -816,7 +844,18 @@ export default function TheCircleApp() {
                 </div>
             </ScrollReveal>
         </section>
+          </>),
+          newsletter: (<>
         <NewsletterBlock />
+          </>),
+        };
+        return visibleHomeOrder(homeLayout).map(id => {
+          const builtIn = SECTIONS[id];
+          if (builtIn) return <React.Fragment key={id}>{builtIn}</React.Fragment>;
+          const block = (homeLayout.blocks ?? []).find(b => b.id === id);
+          return block ? <PageBlocks key={id} blocks={[block]} /> : null;
+        });
+      })()}
       </main>
 
 

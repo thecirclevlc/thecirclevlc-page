@@ -211,7 +211,7 @@ export interface SiteSettings {
   updated_at: string;
 }
 
-export type PageKey = 'page_events' | 'page_djs' | 'page_artists';
+export type PageKey = 'page_events' | 'page_djs' | 'page_artists' | 'page_home' | 'page_form';
 
 // ── SEO / Link Preview ────────────────────────────────────────────
 
@@ -623,4 +623,62 @@ export interface AuditLogRow {
   new_data:   Record<string, unknown> | null;
   changed_at: string;
   changed_by: string | null;
+}
+
+// ── Home page layout ──────────────────────────────────────────────
+// The home page was a fixed mould: six sections in a fixed order, none of
+// which could be moved, switched off, or joined by anything new. This makes
+// the order data instead of code, and lets her append the same blocks the
+// Pages screen offers.
+
+/** The built-in sections, in the order they shipped. */
+export const HOME_SECTIONS: readonly { id: string; label: string; hint: string }[] = [
+  { id: 'hero',       label: 'Opening circle',  hint: 'The spinning logo that fills the first screen' },
+  { id: 'manifesto',  label: 'Manifesto',       hint: '"Moments that happen only once"' },
+  { id: 'marquee',    label: 'Scrolling banner', hint: 'The red strip of moving text' },
+  { id: 'events',     label: 'Event cards',     hint: 'The events you marked as featured' },
+  { id: 'join',       label: 'Apply block',     hint: 'The big APPLY button and its text' },
+  { id: 'newsletter', label: 'Newsletter',      hint: 'Where visitors leave their email' },
+] as const;
+
+export interface HomeLayout {
+  /** Built-in section ids and custom block ids, in display order. */
+  order:  string[];
+  /** Ids switched off. Kept in `order` so switching back restores the place. */
+  hidden: string[];
+  /** The blocks she added, same shapes as any other page. */
+  blocks: PageBlock[];
+}
+
+export const HOME_LAYOUT_KEY = 'home_layout' as const;
+
+export const DEFAULT_HOME_LAYOUT: HomeLayout = {
+  order:  HOME_SECTIONS.map(s => s.id),
+  hidden: [],
+  blocks: [],
+};
+
+/**
+ * The ids to render, in order.
+ *
+ * The saved order is a snapshot of the sections that existed when she last
+ * pressed Save. A section added to the code afterwards is in no saved order,
+ * and would vanish from the live site the moment she reordered anything —
+ * silently, because nothing errors. Unknown built-ins are appended instead.
+ *
+ * Ids in the saved order that match nothing (a block she deleted) are dropped.
+ */
+export function resolveHomeOrder(layout: HomeLayout): string[] {
+  const builtIn   = HOME_SECTIONS.map(s => s.id);
+  const blockIds  = new Set((layout.blocks ?? []).map(b => b.id));
+  const isReal    = (id: string) => builtIn.includes(id) || blockIds.has(id);
+  const saved     = (layout.order ?? []).filter(isReal);
+  const seen      = new Set(saved);
+  return [...saved, ...builtIn.filter(id => !seen.has(id)), ...[...blockIds].filter(id => !seen.has(id))];
+}
+
+/** The ids actually painted: ordered, minus the ones switched off. */
+export function visibleHomeOrder(layout: HomeLayout): string[] {
+  const hidden = new Set(layout.hidden ?? []);
+  return resolveHomeOrder(layout).filter(id => !hidden.has(id));
 }
