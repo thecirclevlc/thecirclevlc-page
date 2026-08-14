@@ -72,17 +72,17 @@ const EventCard: React.FC<{
   }, [index]);
 
   return (
-    <div ref={cardRef} className="group relative">
+    <div ref={cardRef} className="group relative h-full">
       <button
         onClick={onClick}
-        className="w-full text-left cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+        className="w-full h-full flex flex-col text-left cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         aria-label={`${event.title}${event.date ? ` — ${event.date}` : ''}`}
       >
         <div className="absolute -top-4 -left-2 md:-left-4 z-10 text-primary font-black text-5xl md:text-8xl opacity-20 leading-none pointer-events-none">
           {event.number}
         </div>
 
-        <div className="relative aspect-[3/4] overflow-hidden bg-black border border-primary/20 group-hover:border-primary/50 transition-colors">
+        <div className="relative aspect-[3/4] flex-shrink-0 overflow-hidden bg-black border border-primary/20 group-hover:border-primary/50 transition-colors">
           {event.coverImage ? (
             <img
               src={event.coverImage}
@@ -102,37 +102,51 @@ const EventCard: React.FC<{
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" />
         </div>
 
-        <div className="mt-6 space-y-4">
-          <h3 className="text-2xl md:text-4xl font-black text-primary tracking-tight leading-none">
+        {/* ── Why every block below reserves its height ──────────────
+            The three cards sit side by side, and until now each one flowed
+            freely: a title that wrapped onto a second line pushed that card's
+            date, venue and tags ~70px below its neighbours'. Nothing was
+            broken, but the row read as three different designs.
+
+            Each block is given the height of its longest allowed form, so the
+            next one always starts on the same line across all three. `lh` is
+            the line-height unit, so this stays correct when the admin changes
+            the typeface or the text scale — a hard px value would not. */}
+        <div className="mt-6 flex flex-col flex-1">
+          <h3 className="text-2xl md:text-4xl font-black text-primary tracking-tight leading-none
+                         line-clamp-2 min-h-[2lh]">
             {event.title}
           </h3>
 
           {event.subtitle && (
-            <p className="text-base font-light text-primary tracking-wide">{event.subtitle}</p>
+            <p className="mt-2 text-base font-light text-primary tracking-wide line-clamp-1">
+              {event.subtitle}
+            </p>
           )}
 
-          {event.description && (
-            <p className="text-sm md:text-base text-primary leading-relaxed">{event.description}</p>
-          )}
+          <p className="mt-4 text-sm md:text-base text-primary leading-relaxed
+                        line-clamp-3 min-h-[3lh]">
+            {event.description}
+          </p>
 
-          <div className="pt-2 space-y-1 text-sm font-mono text-primary/80">
+          <div className="mt-6 space-y-1 text-sm font-mono text-primary/80">
             {event.date && <p>{event.date}</p>}
             {event.location && <p>{event.location}</p>}
             {event.attendees && <p>{event.attendees} Attendees</p>}
           </div>
 
-          {event.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-3">
-              {event.tags.slice(0, 3).map((tag, i) => (
-                <span
-                  key={i}
-                  className="text-[10px] font-mono px-3 py-1 border border-primary/30 text-primary/70 uppercase tracking-wider"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Pinned to the bottom, so the tag row is level even when a card
+              carries fewer lines of address above it. */}
+          <div className="mt-auto pt-5 flex flex-wrap gap-2 min-h-[1.75rem]">
+            {event.tags.slice(0, 3).map((tag, i) => (
+              <span
+                key={i}
+                className="text-[10px] font-mono px-3 py-1 border border-primary/30 text-primary/70 uppercase tracking-wider"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
       </button>
     </div>

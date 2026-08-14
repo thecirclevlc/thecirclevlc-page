@@ -36,6 +36,7 @@ const AdminHelp          = lazy(() => import('./admin/AdminHelp'));
 const AdminHistoryPage   = lazy(() => import('./admin/AdminHistoryPage'));
 const AdminPages         = lazy(() => import('./admin/AdminPages'));
 const AdminHome          = lazy(() => import('./admin/AdminHome'));
+const AdminNotifications = lazy(() => import('./admin/AdminNotifications'));
 const AdminPageForm      = lazy(() => import('./admin/AdminPageForm'));
 
 // ── Auth wrapper (lazy) ─────────────────────────────────────────
@@ -106,6 +107,7 @@ export default function AppRouter() {
         <Route path="/admin/legal"           element={<AdminPage><AdminLegal /></AdminPage>} />
         <Route path="/admin/form-builder"    element={<AdminPage><AdminFormBuilder /></AdminPage>} />
         <Route path="/admin/submissions"     element={<AdminPage><AdminSubmissions /></AdminPage>} />
+        <Route path="/admin/notifications"   element={<AdminPage><AdminNotifications /></AdminPage>} />
         <Route path="/admin/help"            element={<AdminPage><AdminHelp /></AdminPage>} />
         <Route path="/admin/history"         element={<AdminPage><AdminHistoryPage /></AdminPage>} />
         <Route path="/admin/home"            element={<AdminPage><AdminHome /></AdminPage>} />

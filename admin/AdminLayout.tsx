@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard, Calendar, Music2, Users, Search, History, Tags, Image,
   LogOut, Menu, X, ExternalLink, Paintbrush, Link2, FileText, FormInput, Inbox, Files,
-  PanelBottom, Share2, HelpCircle, Home,
+  PanelBottom, Share2, HelpCircle, Home, BellRing,
 } from 'lucide-react';
 
 /**
@@ -34,6 +34,7 @@ const NAV_GROUPS: { title: string; items: { label: string; to: string; icon: Rea
     items: [
       { label: 'Submissions',  to: '/admin/submissions',  icon: Inbox },
       { label: 'Forms',        to: '/admin/form-builder', icon: FormInput },
+      { label: 'Email alerts', to: '/admin/notifications', icon: BellRing },
     ],
   },
   {
