@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import Footer from './components/Footer';
 import LegalBody from './components/LegalBody';
 import { useSiteBlock } from './hooks/useSiteContent';
-import { LEGAL_TERMS_KEY, type LegalPage } from './lib/database.types';
+import {
+  LEGAL_TERMS_KEY, FOOTER_CONFIG_KEY, DEFAULT_FOOTER,
+  type LegalPage, type FooterConfig,
+} from './lib/database.types';
 import { TERMS_DEFAULT } from './lib/legal-defaults';
 import { StandardHeader } from './StandardHeader';
 
@@ -18,6 +21,10 @@ export default function Terms() {
   usePageTitle('Terms & Conditions');
   const navigate = useNavigate();
   const { data: page } = useSiteBlock<LegalPage>(LEGAL_TERMS_KEY, TERMS_DEFAULT);
+
+  // Same single source as Privacy — see the note there.
+  const { data: footer } = useSiteBlock<FooterConfig>(FOOTER_CONFIG_KEY, DEFAULT_FOOTER);
+  const contactEmail = footer.contact_email || page.contact_email;
 
   return (
     <div className="min-h-screen bg-bg text-fg selection:bg-primary selection:text-black">
@@ -45,12 +52,12 @@ export default function Terms() {
               <LegalBody body={s.body} />
             </section>
           ))}
-          {page.contact_email && (
+          {contactEmail && (
             <section>
               <p className="text-fg/60">
                 Contact:{' '}
-                <a href={`mailto:${page.contact_email}`} className="text-primary hover:underline">
-                  {page.contact_email}
+                <a href={`mailto:${contactEmail}`} className="text-primary hover:underline">
+                  {contactEmail}
                 </a>
               </p>
             </section>

@@ -3,10 +3,11 @@ import {
   Loader2, Save, Plus, Trash2, ArrowUp, ArrowDown,
   CheckCircle, AlertCircle,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
-  LEGAL_PRIVACY_KEY, LEGAL_TERMS_KEY,
-  type LegalPage, type LegalSection,
+  LEGAL_PRIVACY_KEY, LEGAL_TERMS_KEY, FOOTER_CONFIG_KEY, DEFAULT_FOOTER,
+  type LegalPage, type LegalSection, type FooterConfig,
 } from '../lib/database.types';
 import { PRIVACY_DEFAULT, TERMS_DEFAULT } from '../lib/legal-defaults';
 
@@ -29,6 +30,7 @@ function LegalEditor({
   onToast:    (t: ToastMsg) => void;
 }) {
   const [page, setPage] = useState<LegalPage>(fallback);
+  const [footer, setFooter] = useState<FooterConfig>(DEFAULT_FOOTER);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -38,9 +40,14 @@ function LegalEditor({
       .then(({ data }) => {
         if (data?.value) setPage(data.value as LegalPage);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }, () => setLoading(false));
   }, [storageKey]);
+
+  // Read-only: the address shown next to "Contact Email" is the footer's.
+  useEffect(() => {
+    supabase.from('site_settings').select('value').eq('id', FOOTER_CONFIG_KEY).maybeSingle()
+      .then(({ data }) => { if (data?.value) setFooter(data.value as FooterConfig); }, () => {});
+  }, []);
 
   const update = (patch: Partial<LegalPage>) => { setPage(prev => ({ ...prev, ...patch })); setDirty(true); };
   const setSections = (sections: LegalSection[]) => update({ sections });
@@ -96,14 +103,20 @@ function LegalEditor({
               className={INPUT}
             />
           </div>
+          {/* Was an editable input. It wrote a third copy of the address —
+              footer, terms and privacy each had one — so changing it here left
+              the footer quoting the old one. Now it only shows where to go. */}
           <div>
             <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Contact Email</label>
-            <input
-              type="email"
-              value={page.contact_email}
-              onChange={e => update({ contact_email: e.target.value })}
-              className={INPUT}
-            />
+            <div className="flex items-center gap-2 min-h-[42px] px-3 rounded border border-white/10 bg-white/[0.02]">
+              <span className="text-white/70 text-sm truncate">{footer.contact_email || '—'}</span>
+              <Link
+                to="/admin/navigation?tab=footer"
+                className="ml-auto flex-shrink-0 text-[11px] uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+              >
+                Change in Footer
+              </Link>
+            </div>
           </div>
         </div>
         <div>

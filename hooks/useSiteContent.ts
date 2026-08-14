@@ -73,8 +73,7 @@ export function useSiteContent(key: ContentKey): UseSiteContentResult {
           subtitle: content?.subtitle ?? DEFAULTS[key].subtitle,
           loading:  false,
         }));
-      })
-      .catch(() => {
+      }, () => {
         if (!cancelled) setResult(prev => ({ ...prev, loading: false }));
       });
 
@@ -133,8 +132,7 @@ export function useSiteBlock<T>(key: string, fallback: T): SiteBlockResult<T> {
           loading: false,
           exists: data != null,
         });
-      })
-      .catch(() => {
+      }, () => {
         if (!cancelled) setState(prev => ({ ...prev, loading: false }));
       });
 

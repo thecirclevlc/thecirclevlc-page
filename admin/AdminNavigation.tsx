@@ -139,8 +139,7 @@ function MenuTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
       .then(({ data }) => {
         if (data?.value) setCfg(data.value as HamburgerNavConfig);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }, () => setLoading(false));
   }, []);
 
   const update = (next: HamburgerNavConfig) => { setCfg(next); setDirty(true); };
@@ -236,8 +235,7 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
       .then(({ data }) => {
         if (data?.value) setCfg({ ...DEFAULT_FOOTER, ...(data.value as FooterConfig) });
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }, () => setLoading(false));
   }, []);
 
   const update = (patch: Partial<FooterConfig>) => { setCfg(prev => ({ ...prev, ...patch })); setDirty(true); };

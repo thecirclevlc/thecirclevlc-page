@@ -387,6 +387,10 @@ export default function FormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [showError, setShowError] = useState(false);
+  // The button used to flash "ERROR" for two seconds and go quiet, which left
+  // people unable to tell whether the application had been sent. This message
+  // stays on screen until the next attempt, and says what to do instead.
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [emptyFields, setEmptyFields] = useState<string[]>([]);
   const [captchaValue, setCaptchaValue] = useState<string | null>(null);
   const [showCaptchaError, setShowCaptchaError] = useState(false);
@@ -449,7 +453,7 @@ export default function FormPage() {
       return;
     }
 
-    setSending(true); setChaosLevel(0.2); setEmptyFields([]);
+    setSending(true); setChaosLevel(0.2); setEmptyFields([]); setErrorMessage(null);
     smoothScrollTo(0, 2250);
 
     try {
@@ -463,6 +467,7 @@ export default function FormPage() {
         const result = await v.json();
         if (!result.success) {
           setShowError(true); setShowCaptchaError(true);
+          setErrorMessage('The "I\'m not a robot" check did not go through. Please tick it again and resend.');
           recaptchaRef.current?.reset(); setCaptchaValue(null);
           setTimeout(() => { setShowError(false); setShowCaptchaError(false); setChaosLevel(0); }, 2000);
           setSending(false);
@@ -511,6 +516,11 @@ export default function FormPage() {
     } catch (err) {
       console.error('Form submission failed:', err);
       setShowError(true);
+      setErrorMessage(
+        navigator.onLine === false
+          ? 'You appear to be offline. Your answers are still here — reconnect and press the button again.'
+          : 'Your application was not sent. Nothing has been lost: press the button again, and if it keeps failing write to us instead.',
+      );
       setTimeout(() => setShowError(false), 2000);
       recaptchaRef.current?.reset(); setCaptchaValue(null);
     } finally {
@@ -673,6 +683,21 @@ export default function FormPage() {
                   </motion.p>
                 )}
               </motion.div>
+            )}
+
+            {/* Why it survives the flash: the button's red pulse lasts 1.5s and
+                then the label goes back to "DONE", which reads as success. This
+                stays until the next attempt. */}
+            {errorMessage && (
+              <motion.p
+                role="alert"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-10 mx-auto max-w-xl border border-red-500/40 bg-red-500/10 px-5 py-4
+                           text-center text-sm leading-relaxed text-red-200"
+              >
+                {errorMessage}
+              </motion.p>
             )}
 
             {/* Submit */}

@@ -59,8 +59,7 @@ function PageSection({ config, onToast }: PageSectionProps) {
       .then(({ data }) => {
         if (data?.value) setBg(data.value as PageBackground);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }, () => setLoading(false));
   }, [config.key]);
 
   const save = async (newBg: PageBackground) => {
@@ -448,8 +447,7 @@ function SeoSection({ onToast }: SeoSectionProps) {
       .then(({ data, error }) => {
         if (!error && data?.value) setValues({ ...META_SEO_DEFAULTS, ...(data.value as MetaSeo) });
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }, () => setLoading(false));
   }, []);
 
   const update = (field: keyof MetaSeo, v: string) => {

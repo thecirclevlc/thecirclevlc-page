@@ -9,7 +9,7 @@ interface UseAutosaveOptions<T> {
 
 export function useAutosave<T>({ data, onSave, delay = 3000, enabled = true }: UseAutosaveOptions<T>) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dataRef = useRef(data);
   const initialRef = useRef(true);
   const onSaveRef = useRef(onSave);

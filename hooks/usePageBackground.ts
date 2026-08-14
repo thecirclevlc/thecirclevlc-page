@@ -37,8 +37,7 @@ export function usePageBackground(page: PageKey): UsePageBackgroundResult {
           bgType:  bg?.bg_type ?? 'none',
           loading: false,
         });
-      })
-      .catch(() => {
+      }, () => {
         if (!cancelled) setResult(prev => ({ ...prev, loading: false }));
       });
 
