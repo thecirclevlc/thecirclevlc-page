@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard, Calendar, Music2, Users, Search, History, Tags, Image,
   LogOut, Menu, X, ExternalLink, Paintbrush, Link2, FileText, FormInput, Inbox, Files,
@@ -78,6 +79,29 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
   const { signOut } = useAuth();
   const navigate    = useNavigate();
 
+  // Unread applications, on the menu entry that leads to them.
+  //
+  // Nothing tells her an application has arrived: the count existed on the
+  // dashboard, but only if she went looking, and the form has been collecting
+  // answers she never saw. This is the version that works with no email
+  // provider, no key and nothing to configure — it is true the moment she
+  // logs in. An actual email still needs a sending service.
+  const [unread, setUnread] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const read = () => {
+      supabase
+        .from('form_submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'new')
+        .then(({ count }) => { if (!cancelled) setUnread(count ?? 0); }, () => {});
+    };
+    read();
+    // Re-read on navigation so the badge clears once she works through them.
+    return () => { cancelled = true; };
+  }, [location.pathname]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/admin/login');
@@ -126,6 +150,15 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
                 >
                   <item.icon size={15} strokeWidth={1.8} />
                   <span className="tracking-wide">{item.label}</span>
+                  {item.to === '/admin/submissions' && unread > 0 && (
+                    <span
+                      title={`${unread} application${unread === 1 ? '' : 's'} you have not opened yet`}
+                      className="ml-auto min-w-[20px] px-1.5 py-0.5 rounded-full bg-[#C42121] text-white
+                                 text-[10px] font-bold leading-none text-center"
+                    >
+                      {unread > 99 ? '99+' : unread}
+                    </span>
+                  )}
                 </NavLink>
               );
             })}

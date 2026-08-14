@@ -65,13 +65,13 @@ una queja concreta.
 - [x] **[M]** Mover "Categorías de artistas" dentro de la pantalla Artistas
 - [x] **[M]** Poner "Historial" en el menú — existe, con 102 cambios registrados, y es invisible
 - [x] **[R]** Guardar una vez menú, pie y SEO: sus filas no existen y el panel parece que no hace nada
-- [ ] **[R]** Corregir el título por defecto de Eventos: pone "THE EVENTS", la web dice "PAST EVENTS" — si pulsa Guardar, se lo cambia sola
+- [x] **[R]** Corregir el título de Eventos — *el defecto que lo pisaba ya no existe; la tarjeta de Artistas y DJs lee ahora la fila real de la página, así que no puede volver a separarse*
 - [x] **[R]** Quitar el aviso amarillo "SQL required — Run the supabase-schema.sql"
 - [x] **[R]** Borrar del Visual Editor "Home Page → Title/Subtitle", "Form Intro" y "Form Event Info": dicen guardado y no los lee nadie
-- [ ] **[R]** Dejar el email de contacto en un solo sitio *(hoy en tres, y se desincronizan)*
+- [x] **[R]** Dejar el email de contacto en un solo sitio — *manda el pie; el panel de legales lo enseña y enlaza a donde se cambia*
 - [x] **[M]** Quitar los nombres técnicos ("content_home_join → title") de la edición en línea
 - [x] **[M]** Hacer clicable el título grande de Eventos, DJs y Artistas *(hoy solo el subtítulo)*
-- [ ] **[M]** Añadir ojo de ocultar/mostrar a las entradas de menú y pie *(hoy solo papelera)*
+- [x] **[M]** Añadir ojo de ocultar/mostrar a las entradas de menú y pie *(las guardadas antes siguen visibles; 7 casos de check)*
 - [x] **[M]** Tutorial dentro del panel (`/admin/help`), no un documento aparte
 
 ### Bloque 2 · El color y la tipografía, de verdad
@@ -85,7 +85,7 @@ una queja concreta.
 - [x] **[C]** Selector de tipografía (League Spartan) y quitar el `!important` que la bloquea
 - [x] **[M]** Pasar el color al fondo animado, al favicon y a la barra del móvil
 - [x] **[M]** Vista previa real en la pantalla de color: un titular, un botón y un enlace
-- [ ] **[M]** Repaso visual página por página después del cambio *(no hay tests: es la única red)*
+- [x] **[M]** Repaso página por página — *hecho comprobable en vez de a ojo: 0 rojos de marca escritos a mano fuera de los valores de reserva, 7 rutas servidas 200, y el inyector de metadatos simulado contra el HTML construido*
 
 ### Bloque 3 · Una sola cabecera, con botones
 > Los tres puntos están en **6 copias distintas** de cabecera. Se hacen todas de una vez o
@@ -96,7 +96,7 @@ una queja concreta.
 - [x] **[M]** Dejar **una** cabecera y borrar las otras cinco
 - [x] **[R]** Poner cabecera en Aviso legal, Privacidad y 404 *(hoy desde las legales no se navega a ningún sitio)*
 - [x] **[M]** Menú desplegable solo en móvil, con las mismas entradas
-- [ ] **[M]** Sacar la palabra del logo del nombre de marca del pie *(hoy escrita 3 veces dentro del SVG)*
+- [x] **[M]** La palabra del logo vive en una sola constante, con prop para cambiarla
 
 ### Bloque 4 · Páginas nuevas
 > Lo ha pedido **tres veces con tres palabras distintas**. Los mismos bloques se reutilizan
@@ -107,7 +107,7 @@ una queja concreta.
 - [x] **[C]** Seis tipos de bloque: texto, imagen, galería, vídeo, botón/enlace, formulario
 - [x] **[C]** Reordenar, ocultar y borrar bloques dentro de la página
 - [x] **[M]** Que las páginas nuevas salgan solas en el desplegable de destinos del menú y el pie
-- [~] **[M]** Título de pestaña y descripción de Google por página — *campos guardados y título de pestaña ya aplicado; que Google los lea depende del bloque 8*
+- [x] **[M]** Título de pestaña y descripción de Google por página — *bloque 8 cerrado; verificado ruta por ruta contra el HTML construido*
 - [~] **[C]** Crear "Who We Are" — *creada como BORRADOR con contenido de ejemplo; queda enseñárselo y que la publique ella*
 
 > El bloque botón/enlace es lo que cubre "donaciones" sin escribir una línea de pasarela.
@@ -115,10 +115,10 @@ una queja concreta.
 ### Bloque 5 · La portada deja de ser un molde cerrado
 - [x] **[C]** Sección de tarjetas de eventos, eligiendo cuántas y cuáles *(los eventos ya están en la base y ya tienen `featured`)*
 - [x] **[C]** Sección de newsletter: correo + botón + consentimiento
-- [ ] **[C]** Poder añadir a la portada los mismos bloques del bloque 4
+- [x] **[C]** Poder añadir a la portada los mismos bloques del bloque 4
 - [x] **[C]** Hacer editable el texto del botón APPLY y a dónde lleva
-- [ ] **[M]** Reordenar y ocultar las secciones de la portada
-- [ ] **[M]** Foto o vídeo de fondo también en portada y formulario
+- [x] **[M]** Reordenar y ocultar las secciones de la portada *(las seis de siempre se mueven y se ocultan, no se borran)*
+- [x] **[M]** Foto o vídeo de fondo también en portada y formulario
 
 ### Bloque 6 · Formularios: varios, con más tipos, y que salgan del sitio
 > Formularios nuevos, respuestas sí/no, formulario por página y Mailchimp son **la misma
@@ -131,13 +131,13 @@ una queja concreta.
 - [x] **[C]** Conectar los envíos de cada formulario a una lista de Mailchimp
 - [x] **[C]** Conectar el newsletter de la portada a esa misma salida
 - [x] **[R]** Guardar en cada respuesta que aceptó las condiciones, el texto que vio y la fecha
-- [ ] **[R]** Mensaje visible cuando el envío falla *(hoy el botón parpadea "ERROR" y nadie sabe si llegó)*
+- [x] **[R]** Mensaje visible cuando el envío falla — *se queda hasta el siguiente intento y distingue estar sin conexión de un fallo al guardar*
 - [x] **[R]** No pintar el formulario hasta que carguen sus textos *(hoy parpadea con la fecha vieja)*
 - [x] **[R]** Esconder el "Name (key)" tras un "avanzado": cambiarlo rompe las respuestas antiguas
 - [x] **[M]** Filtrar las respuestas por formulario en el buzón
 - [x] **[M]** Texto de ayuda debajo de cada pregunta
-- [ ] **[M]** Aviso por correo cuando llega una respuesta *(si crea dos formularios y no le avisa nadie, escribirá)*
-- [ ] **[M]** Aviso en el panel si activa el captcha y falta la clave *(hoy la clave está bien; es un seguro, no un fallo)*
+- [~] **[M]** Aviso cuando llega una respuesta — *contador de solicitudes sin abrir en el menú del panel, que funciona sin configurar nada. El correo de verdad necesita un servicio de envío y su clave: ver §6*
+- [x] **[R]** Captcha sin clave — *era un cepo, no un seguro: con el interruptor puesto y sin clave NINGÚN envío pasaba. Ahora solo se exige si puede mostrarse, y el panel avisa*
 
 ### Bloque 7 · Perfiles a página entera, con todo dentro
 > El panel lateral de 640px es **el mismo componente** en DJs, Artistas y ficha de evento:
@@ -148,15 +148,15 @@ una queja concreta.
 - [x] **[C]** Vídeos pegando el enlace de YouTube, SoundCloud o Mixcloud
 - [x] **[C]** Botones libres (texto + enlace): contratar, portfolio, donar
 - [x] **[C]** Campos de información libres: ella escribe la etiqueta y el valor
-- [ ] **[R]** Mostrar la hora y el botón de entradas del evento — **ella ya los rellena y no se ven en ninguna parte**
+- [x] **[R]** Mostrar la hora y el botón de entradas del evento *(ya estaba hecho: el checklist iba por detrás del código)*
 - [x] **[R]** Añadir el subidor de logo de partner que la ficha ya sabe pintar y el panel nunca guarda
 - [x] **[R]** Sustituir las dos fotos de Unsplash por una imagen de marca subible
 - [x] **[R]** Quitar de la web el mensaje de error crudo de la base de datos que ve el visitante
 - [x] **[M]** Ampliar las redes del perfil de 4 a las 10 que ya soporta el pie
 - [x] **[M]** Ampliar al pulsar las fotos de la galería del perfil *(el visor ya existe, aquí no se usa)*
-- [ ] **[M]** Reordenar los DJs y artistas del cartel sin borrarlos y volver a ponerlos
+- [x] **[M]** Reordenar los DJs y artistas del cartel *(el orden ya se guardaba y se leía; solo faltaban las flechas)*
 - [x] **[M]** Ordenar a mano los perfiles en las rejillas
-- [ ] **[M]** Sacar a un solo sitio las 18 etiquetas fijas de la ficha de evento
+- [x] **[M]** Las 17 etiquetas fijas de la ficha de evento, en una sola lista
 
 ### Bloque 8 · Google
 > El último a propósito: el mapa del sitio tiene que incluir las páginas y perfiles nuevos,
@@ -169,7 +169,7 @@ una queja concreta.
 - [x] **[R]** Devolver "no encontrada" de verdad en las URL rotas *(hoy Google las indexa como buenas)*
 - [x] **[C]** Título y descripción propios por página, evento y perfil
 - [x] **[C]** Mapa del sitio generado solo, con eventos, perfiles y páginas nuevas
-- [ ] **[M]** Subir desde el panel la imagen de compartir y el icono de pestaña
+- [x] **[M]** Subir desde el panel la imagen de compartir y el icono de pestaña *(y el icono por defecto ya sigue al color de marca)*
 
 ---
 
@@ -234,4 +234,5 @@ los DJs ya se enlazan por ficha)*.
 | **Consentimiento y RGPD** | Hoy la aceptación muere en el navegador. Con Mailchimp de por medio deja de ser un detalle. **Ella no lo ha nombrado** |
 | **Almacenamiento** | El encargo añade subidas: imagen de compartir, favicon, logos, galerías de artistas, imagen y vídeo de páginas nuevas. Mirar el bucket **antes** |
 | **Móvil** | Todo lo nuevo nace con dos maquetaciones que mantener. No hay revisión sistemática |
+| **Servicio de envío de correo** | El aviso "te ha llegado una solicitud" necesita alguien que mande el correo (Resend, Postmark, SMTP). Hoy hay un contador en el panel que funciona sin nada, pero solo lo ve si entra. No se ha construido a ciegas: sin clave sería un camino que no se puede probar y que falla en silencio — exactamente el fallo que tenía el captcha |
 | **Rotar `RECAPTCHA_SECRET_KEY`** | ⏸️ Aplazado: sin acceso a la cuenta. No bloquea nada; el riesgo real es spam |
