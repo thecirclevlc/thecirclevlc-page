@@ -49,7 +49,7 @@ export default function HomeEvents() {
   // Nothing published yet → no empty shell on the public site.
   if (loading || events.length === 0) return null;
 
-  const go = (path: string) => { window.scrollTo(0, 0); navigate(path); };
+  const go = (path: string) => { navigate(path); };
 
   return (
     <section className="relative px-5 md:px-20 py-[var(--home-pad,5rem)] border-t border-primary/10">

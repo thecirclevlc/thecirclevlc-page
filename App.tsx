@@ -713,28 +713,28 @@ export default function TheCircleApp() {
                 overlayClass="bg-gradient-to-t from-bg/90 via-bg/50 to-bg/70"
               />
             )}
-            {/* Spinning Circle - No hover effect */}
-            <motion.div 
+            {/* ── El aro, en dos capas a propósito ──────────────────
+                Antes era un solo elemento con `animate={{ scale }}` Y
+                `style={{ scale: circleScale }}`. Dos dueños de la MISMA
+                propiedad: la animación de entrada la controla al cargar y el
+                muelle del scroll la reclama al empezar a bajar. En ese relevo
+                el valor da un salto, que es el tirón que se ve al encoger.
+
+                Una capa para entrar, otra para el scroll. Cada transformación
+                tiene un solo dueño y el navegador las compone él. */}
+            <motion.div
                 initial={{ scale: 0.3, opacity: 0 }}
-                animate={{ 
-                  scale: hasLoaded ? 1 : 0.3,
-                  opacity: hasLoaded ? 1 : 0
-                }}
-                transition={{ 
-                  duration: 1.2, 
-                  ease: [0.34, 1.56, 0.64, 1],
-                  delay: 0.2
-                }}
-                style={{
-                  rotate: rotation,
-                  scale: circleScale,
-                  x: '-50%',
-                  y: 'calc(-50% - 5vh)',
-                  willChange: 'transform'
-                }}
-                className="absolute top-1/2 left-1/2 w-[85vw] h-[85vw] md:w-[90vh] md:h-[90vh] flex items-center justify-center"
+                animate={{ scale: hasLoaded ? 1 : 0.3, opacity: hasLoaded ? 1 : 0 }}
+                transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1], delay: 0.2 }}
+                style={{ x: '-50%', y: 'calc(-50% - 5vh)' }}
+                className="absolute top-1/2 left-1/2 w-[85vw] h-[85vw] md:w-[90vh] md:h-[90vh]"
             >
-                <CircleLogo className="w-full h-full" title="The Circle" />
+                <motion.div
+                    style={{ rotate: rotation, scale: circleScale, willChange: 'transform' }}
+                    className="w-full h-full flex items-center justify-center"
+                >
+                    <CircleLogo className="w-full h-full" title="The Circle" />
+                </motion.div>
             </motion.div>
 
             {/* Central Text */}
@@ -832,8 +832,7 @@ export default function TheCircleApp() {
                         <MagneticButton 
                             className="group relative bg-primary text-black font-black text-xl md:text-2xl py-6 px-16 uppercase tracking-widest hover:opacity-80 active:animate-glitch transition-all duration-300 overflow-hidden pointer-events-auto cursor-pointer"
                             onClick={() => {
-                              window.scrollTo(0, 0);
-                              setTimeout(() => navigate(joinBlock.cta_route || '/form'), 50);
+                              navigate(joinBlock.cta_route || '/form');
                             }}
                         >
                             <span className="relative z-10">

@@ -52,8 +52,7 @@ export default function Footer() {
     const r = resolveHref(item);
     if (r.external) { window.open(r.external, '_blank', 'noopener,noreferrer'); return; }
     if (!r.path) return;
-    window.scrollTo(0, 0);
-    setTimeout(() => navigate(r.path!), 50);
+    navigate(r.path!);
   };
 
   // Hide links pointing to the current page (existing behavior), and the

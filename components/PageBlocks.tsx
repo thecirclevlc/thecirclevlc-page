@@ -187,7 +187,6 @@ function ButtonsBlock({ block }: { block: Extract<PageBlock, { type: 'buttons' }
     // Anything else is an internal path. Donation links are just external URLs
     // (PayPal, Ko-fi, a Stripe payment link) — which is why "donations" needs
     // no payment code at all.
-    window.scrollTo(0, 0);
     navigate(url.startsWith('/') ? url : `/${url}`);
   };
 
@@ -218,7 +217,7 @@ function FormBlock({ block }: { block: Extract<PageBlock, { type: 'form' }> }) {
     <>
       <BlockHeading text={block.heading} style={block.style} />
       <button
-        onClick={() => { window.scrollTo(0, 0); navigate(formPath(block.form_slug)); }}
+        onClick={() => { navigate(formPath(block.form_slug)); }}
         className="bg-primary text-black font-black text-lg md:text-xl py-5 px-12 uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer"
       >
         Open form

@@ -52,7 +52,6 @@ export const StandardHeader: React.FC = () => {
       window.open(item.external_url, '_blank', 'noopener,noreferrer');
       return;
     }
-    window.scrollTo(0, 0);
     navigate(item.route ?? '/');
   };
 
@@ -65,7 +64,7 @@ export const StandardHeader: React.FC = () => {
     <header className="fixed top-0 w-full bg-bg border-b border-primary/30 z-[100] h-16 md:h-20 flex items-center justify-between px-4 md:px-10">
       {/* Logo */}
       <button
-        onClick={() => { window.scrollTo(0, 0); navigate('/'); }}
+        onClick={() => { navigate('/'); }}
         aria-label="The Circle — home"
         className="flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
       >
@@ -110,7 +109,7 @@ export const StandardHeader: React.FC = () => {
         {/* Optional call-to-action, text and destination set in the admin */}
         {nav.cta?.label && (
           <button
-            onClick={() => { window.scrollTo(0, 0); navigate(nav.cta!.route || '/form'); }}
+            onClick={() => { navigate(nav.cta!.route || '/form'); }}
             className="hidden sm:block bg-primary text-black font-black text-[11px] md:text-xs py-2.5 px-5 md:px-6
                        uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer
                        focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"

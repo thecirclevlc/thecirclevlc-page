@@ -227,8 +227,7 @@ export default function EventDetail() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   const handleNav = (path: string) => {
-    window.scrollTo(0, 0);
-    setTimeout(() => navigate(path), 50);
+    navigate(path);
   };
 
   // ── Fetch event + joins ────────────────────────────────────────
@@ -480,7 +479,7 @@ export default function EventDetail() {
                         subtitle={dj.genres?.slice(0, 2).join(' · ')}
                         photo_url={dj.photo_url}
                         onSetHover={setHoveredUrl}
-                        onClick={() => { setHoveredUrl(null); window.scrollTo(0, 0); navigate(`/djs/${dj.slug}`); }}
+                        onClick={() => { setHoveredUrl(null); navigate(`/djs/${dj.slug}`); }}
                       />
                     ))}
                     {showLegacyLineup && (event.lineup ?? []).map((name, i) => (
@@ -510,7 +509,7 @@ export default function EventDetail() {
                         subtitle={artist.artist_categories?.name ?? (artist.genres?.slice(0, 1).join('') ?? undefined)}
                         photo_url={artist.photo_url}
                         onSetHover={setHoveredUrl}
-                        onClick={() => { setHoveredUrl(null); window.scrollTo(0, 0); navigate(`/artists/${artist.slug}`); }}
+                        onClick={() => { setHoveredUrl(null); navigate(`/artists/${artist.slug}`); }}
                       />
                     ))}
                   </div>

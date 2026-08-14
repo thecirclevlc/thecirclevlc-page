@@ -56,8 +56,7 @@ export default function PastEvents() {
   const heroRest  = heroWords.join(' ');
 
   const handleNav = (path: string) => {
-    window.scrollTo(0, 0);
-    setTimeout(() => navigate(path), 50);
+    navigate(path);
   };
 
   useEffect(() => {
@@ -85,8 +84,7 @@ export default function PastEvents() {
   }, []);
 
   const handleEventClick = (eventId: string) => {
-    window.scrollTo(0, 0);
-    setTimeout(() => navigate(`/past-events/${eventId}`), 50);
+    navigate(`/past-events/${eventId}`);
   };
 
   return (

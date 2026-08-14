@@ -182,8 +182,7 @@ export default function Artists() {
   const heroRest  = heroWords.join(' ');
 
   const handleNav = (path: string) => {
-    window.scrollTo(0, 0);
-    setTimeout(() => navigate(path), 50);
+    navigate(path);
   };
 
   useEffect(() => {

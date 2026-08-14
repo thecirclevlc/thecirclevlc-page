@@ -53,7 +53,7 @@ function AppearedIn({ profileId, type }: { profileId: string; type: 'dj' | 'arti
           {events.map(ev => (
             <button
               key={ev.id}
-              onClick={() => { window.scrollTo(0, 0); navigate(`/past-events/${ev.slug}`); }}
+              onClick={() => { navigate(`/past-events/${ev.slug}`); }}
               className="w-full flex items-center gap-3 py-3 px-3 -mx-3 rounded hover:bg-primary/5 transition-colors cursor-pointer group text-left"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary flex-shrink-0 transition-colors" />
@@ -102,7 +102,6 @@ export default function ProfileDetail({ type }: Props) {
   }, [slug, table, type]);
 
   usePageTitle(profile?.name ?? (type === 'dj' ? 'DJ' : 'Artist'));
-  useEffect(() => { window.scrollTo(0, 0); }, [slug]);
 
   if (loading) {
     return (
@@ -149,7 +148,7 @@ export default function ProfileDetail({ type }: Props) {
           <div className="absolute bottom-0 left-0 right-0 px-5 md:px-20 pb-8 md:pb-16">
             <div className="max-w-6xl mx-auto">
               <button
-                onClick={() => { window.scrollTo(0, 0); navigate(type === 'dj' ? '/djs' : '/artists'); }}
+                onClick={() => { navigate(type === 'dj' ? '/djs' : '/artists'); }}
                 className="text-xs font-mono text-primary/60 hover:text-primary tracking-widest uppercase mb-4 transition-colors cursor-pointer"
               >
                 &larr; {type === 'dj' ? 'All DJs' : 'All artists'}

@@ -145,7 +145,6 @@ export const HamburgerMenu: React.FC = () => {
       setTimeout(() => setIsOpen(false), 200);
       return;
     }
-    window.scrollTo(0, 0);
     navigate(resolveHref(item));
     setTimeout(() => setIsOpen(false), 300);
   };

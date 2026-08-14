@@ -439,7 +439,6 @@ export default function FormPage() {
     return () => cancelAnimationFrame(raf);
   }, [rotation]);
 
-  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const sortedFields = [...schema.fields].sort((a, b) => a.sort_order - b.sort_order);
 

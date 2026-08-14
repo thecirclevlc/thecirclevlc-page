@@ -48,7 +48,6 @@ export default function DynamicPage() {
 
   usePageTitle(page?.seo_title || page?.title || 'The Circle');
 
-  useEffect(() => { window.scrollTo(0, 0); }, [slug]);
 
   if (loading) {
     return (

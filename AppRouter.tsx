@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy, useLayoutEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useSiteTheme } from './hooks/useSiteTheme';
 
@@ -60,6 +60,31 @@ function AdminPage({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Toda navegación empieza arriba de la página nueva.
+ *
+ * El fallo que arregla: pulsar "Privacy Policy" en el pie te dejaba al final
+ * de la página de privacidad. Cada enlace hacía `window.scrollTo(0, 0)` y
+ * navegaba 50 ms después — pero `index.css` pone `scroll-behavior: smooth`
+ * en html Y en `*`, así que ese scroll no es un salto sino una animación de
+ * medio segundo. A los 50 ms iba por la mitad, la página cambiaba debajo, y
+ * te quedabas donde estuvieras. Desde el pie, eso es el fondo.
+ *
+ * `behavior: 'instant'` ignora el CSS a propósito, y `useLayoutEffect` lo
+ * hace antes de pintar, así que no se ve el salto.
+ *
+ * Global, no enlace por enlace: había 21 sitios navegando y 3 sin acordarse
+ * de subir. Aquí se arregla una vez y vale para las páginas que ella cree
+ * mañana, que es lo que pidió — "que no pase en ninguna página".
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname]);
+  return null;
+}
+
 // ── Router ─────────────────────────────────────────────────────
 export default function AppRouter() {
   // Mounted here, not in App.tsx, so the admin's colours apply on EVERY
@@ -68,6 +93,7 @@ export default function AppRouter() {
 
   return (
     <>
+    <ScrollToTop />
     <Analytics />
     <Suspense fallback={<PageLoader />}>
       <Routes>
