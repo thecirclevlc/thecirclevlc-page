@@ -556,6 +556,17 @@ export default function AdminFormBuilder() {
             copy the number in <code className="text-amber-400/80">name="tags"</code>.
             Separate several with commas.
           </p>
+          {/* Verified against her own audience: Mailchimp accepts a signup with
+              an unknown tag ID and simply does not tag it — no error, here or
+              anywhere. Nothing in code can catch that, so the only defence is
+              telling her the one check that does. */}
+          {schema.crm_tags && (
+            <p className="text-[#555] text-xs mt-1.5 border-l border-[#2a2a2a] pl-2.5">
+              It must be the <em className="text-[#777] not-italic">number</em>, not the name. A wrong
+              number gives no error anywhere — the person is added without the tag. After saving, send
+              yourself one test and check it appears under that tag in Mailchimp.
+            </p>
+          )}
         </div>
 
         <div className="max-w-xs">
