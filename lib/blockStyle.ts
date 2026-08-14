@@ -43,10 +43,10 @@ export const ALIGN_OPTIONS: { value: BlockAlign; label: string }[] = [
   { value: 'center', label: 'Centred' },
 ];
 
-export const SPACING_OPTIONS: { value: BlockSpacing; label: string }[] = [
-  { value: 'tight',  label: 'Tight' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'roomy',  label: 'Roomy' },
+export const SPACING_OPTIONS: { value: BlockSpacing; label: string; hint: string }[] = [
+  { value: 'tight',  label: 'Tight',  hint: 'Less air around it, and paragraphs closer together' },
+  { value: 'normal', label: 'Normal', hint: 'The standard rhythm' },
+  { value: 'roomy',  label: 'Roomy',  hint: 'More air around it, and paragraphs further apart' },
 ];
 
 export const SURFACE_OPTIONS: { value: BlockSurface; label: string; hint: string }[] = [

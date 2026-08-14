@@ -136,7 +136,7 @@ una queja concreta.
 - [x] **[R]** Esconder el "Name (key)" tras un "avanzado": cambiarlo rompe las respuestas antiguas
 - [x] **[M]** Filtrar las respuestas por formulario en el buzón
 - [x] **[M]** Texto de ayuda debajo de cada pregunta
-- [~] **[M]** Aviso cuando llega una respuesta — *contador de solicitudes sin abrir en el menú del panel, que funciona sin configurar nada. El correo de verdad necesita un servicio de envío y su clave: ver §6*
+- [x] **[M]** Aviso cuando llega una respuesta — *contador en el menú + correo real por Resend, que configura ella desde «Email alerts». Falta solo que pegue su clave*
 - [x] **[R]** Captcha sin clave — *era un cepo, no un seguro: con el interruptor puesto y sin clave NINGÚN envío pasaba. Ahora solo se exige si puede mostrarse, y el panel avisa*
 
 ### Bloque 7 · Perfiles a página entera, con todo dentro
@@ -157,6 +157,18 @@ una queja concreta.
 - [x] **[M]** Reordenar los DJs y artistas del cartel *(el orden ya se guardaba y se leía; solo faltaban las flechas)*
 - [x] **[M]** Ordenar a mano los perfiles en las rejillas
 - [x] **[M]** Las 17 etiquetas fijas de la ficha de evento, en una sola lista
+
+### Bloque 9 · Lo que mandó el 14 de agosto
+> Cuatro cosas, y tres eran fallos nuestros, no gustos suyos.
+
+- [x] **[R]** Viñetas en las páginas — *lo escribía bien; el renderizador exigía que TODAS las líneas del párrafo fueran viñetas, así que una línea de entrada tiraba la lista entera. Sus saltos de línea sueltos también se comían. 26 casos de check*
+- [x] **[R]** La raya del formulario se leía como separador entre preguntas, y las de sí/no no tenían ninguna — *dos preguntas seguidas parecían la misma*
+- [x] **[C]** Mismo tamaño de letra en todos los tipos de respuesta *(era la causa de «los formularios nuevos tienen otro estilo gráfico»)*
+- [x] **[C]** Espacios vacíos de la portada, gobernables por sección *(Tight/Normal/Roomy; el culpable era `md:min-h-screen` en el bloque de APPLY)*
+- [x] **[C]** Acercar los párrafos — *el mando de espaciado del bloque ahora también mueve el aire entre párrafos y viñetas*
+- [x] **[R]** «Los mandos de la foto no funcionan» — *sí funcionaban; se apagan a propósito con marco «Original», pero no se veían apagados en tema oscuro*
+- [x] **[C]** Tarjetas de evento del mismo tamaño *(un título de dos líneas descolocaba fecha y etiquetas de esa tarjeta)*
+- [x] **[C]** Avisos por correo configurables por ella *(Resend, clave guardada fuera del alcance de los visitantes)*
 
 ### Bloque 8 · Google
 > El último a propósito: el mapa del sitio tiene que incluir las páginas y perfiles nuevos,
@@ -234,5 +246,5 @@ los DJs ya se enlazan por ficha)*.
 | **Consentimiento y RGPD** | Hoy la aceptación muere en el navegador. Con Mailchimp de por medio deja de ser un detalle. **Ella no lo ha nombrado** |
 | **Almacenamiento** | El encargo añade subidas: imagen de compartir, favicon, logos, galerías de artistas, imagen y vídeo de páginas nuevas. Mirar el bucket **antes** |
 | **Móvil** | Todo lo nuevo nace con dos maquetaciones que mantener. No hay revisión sistemática |
-| **Servicio de envío de correo** | El aviso "te ha llegado una solicitud" necesita alguien que mande el correo (Resend, Postmark, SMTP). Hoy hay un contador en el panel que funciona sin nada, pero solo lo ve si entra. No se ha construido a ciegas: sin clave sería un camino que no se puede probar y que falla en silencio — exactamente el fallo que tenía el captcha |
+| **Clave de Resend** | La integración está hecha y probada contra la API real (Resend contestó 401 con una clave falsa, o sea que la cadena entera funciona). Solo falta que ella pegue su clave en «Email alerts» y pulse «Send test». Gratis hasta 3.000 correos/mes |
 | **Rotar `RECAPTCHA_SECRET_KEY`** | ⏸️ Aplazado: sin acceso a la cuenta. No bloquea nada; el riesgo real es spam |

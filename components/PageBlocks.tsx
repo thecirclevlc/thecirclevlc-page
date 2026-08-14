@@ -78,12 +78,12 @@ function TextBlock({ block, edit }: {
               persist={edit('body', block.body ?? '', 'body')}
               multiline
             >
-              <LegalBody body={block.body} />
+              <LegalBody body={block.body} spacing={block.style?.spacing} />
             </EditableText>
           ) : (
             /* Reuses the renderer the legal pages already use: paragraphs,
                `- ` bullets and **bold**. One formatting dialect site-wide. */
-            <LegalBody body={block.body} />
+            <LegalBody body={block.body} spacing={block.style?.spacing} />
           )}
         </div>
       )}

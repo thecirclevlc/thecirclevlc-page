@@ -23,20 +23,24 @@ function Inline({ text }: { text: string }) {
   );
 }
 
-export default function LegalBody({ body }: { body: string }) {
+export default function LegalBody(
+  { body, spacing = 'normal' }: { body: string; spacing?: 'tight' | 'normal' | 'roomy' },
+) {
   const nodes = parseRichText(body);
+  const gap = spacing === 'tight' ? 'mt-2' : spacing === 'roomy' ? 'mt-6' : 'mt-4';
+  const listGap = spacing === 'tight' ? 'my-2 space-y-0.5' : spacing === 'roomy' ? 'my-6 space-y-2' : 'my-4 space-y-1.5';
 
   return (
     <>
       {nodes.map((node, i) =>
         node.kind === 'ul' ? (
-          <ul key={i} className="list-disc pl-5 space-y-1.5 text-fg/70 my-4 marker:text-primary/60">
+          <ul key={i} className={`list-disc pl-5 text-fg/70 marker:text-primary/60 ${listGap}`}>
             {node.items.map((item, j) => (
               <li key={j}><Inline text={item} /></li>
             ))}
           </ul>
         ) : (
-          <p key={i} className={i > 0 ? 'mt-4' : ''}>
+          <p key={i} className={i > 0 ? gap : ''}>
             {/* Un salto de línea suelto es un salto que ella escribió a
                 propósito. Antes se colapsaba en un espacio y tres frases
                 cortas salían como un párrafo corrido. */}
