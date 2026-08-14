@@ -16,7 +16,7 @@ import {
 // ── Shared ────────────────────────────────────────────────────────
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
+const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
 
 const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; icon: React.ElementType }[] = [

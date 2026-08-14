@@ -1,47 +1,54 @@
 import React from 'react';
+import { parseRichText, parseBold } from '../lib/richText';
 
-// Minimal renderer: paragraph splits on \n\n, "- " lines become a <ul>,
-// **text** becomes <strong>. No external markdown lib.
+/**
+ * Pinta el dialecto de texto del sitio: párrafos, viñetas y **negrita**.
+ *
+ * Lo usan las páginas legales, los bloques de texto de las páginas nuevas y
+ * la vista de edición en vivo, para que exista una sola forma de escribir.
+ *
+ * El análisis vive en lib/richText.ts y tiene su propio check: el fallo que
+ * trajo esto aquí era de análisis, no de pintado.
+ */
 
-function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
-  // Split on **bold**
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) => {
-    if (p.startsWith('**') && p.endsWith('**')) {
-      return (
-        <strong key={`${keyPrefix}-b-${i}`} className="text-fg/80">
-          {p.slice(2, -2)}
-        </strong>
-      );
-    }
-    return <React.Fragment key={`${keyPrefix}-t-${i}`}>{p}</React.Fragment>;
-  });
+function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {parseBold(text).map((span, i) =>
+        span.bold
+          ? <strong key={i} className="text-fg/90 font-semibold">{span.text}</strong>
+          : <React.Fragment key={i}>{span.text}</React.Fragment>,
+      )}
+    </>
+  );
 }
 
 export default function LegalBody({ body }: { body: string }) {
-  const blocks = body.split(/\n{2,}/);
+  const nodes = parseRichText(body);
+
   return (
     <>
-      {blocks.map((block, bi) => {
-        const lines = block.split('\n');
-        const allBullets = lines.length > 0 && lines.every(l => l.trim().startsWith('- '));
-        if (allBullets) {
-          return (
-            <ul key={bi} className="list-disc list-inside space-y-1 text-fg/60 mt-2">
-              {lines.map((l, li) => (
-                <li key={`${bi}-${li}`}>
-                  {renderInline(l.replace(/^\s*-\s/, ''), `${bi}-${li}`)}
-                </li>
-              ))}
-            </ul>
-          );
-        }
-        return (
-          <p key={bi} className={bi > 0 ? 'mt-3' : ''}>
-            {renderInline(block, `${bi}`)}
+      {nodes.map((node, i) =>
+        node.kind === 'ul' ? (
+          <ul key={i} className="list-disc pl-5 space-y-1.5 text-fg/70 my-4 marker:text-primary/60">
+            {node.items.map((item, j) => (
+              <li key={j}><Inline text={item} /></li>
+            ))}
+          </ul>
+        ) : (
+          <p key={i} className={i > 0 ? 'mt-4' : ''}>
+            {/* Un salto de línea suelto es un salto que ella escribió a
+                propósito. Antes se colapsaba en un espacio y tres frases
+                cortas salían como un párrafo corrido. */}
+            {node.lines.map((line, j) => (
+              <React.Fragment key={j}>
+                {j > 0 && <br />}
+                <Inline text={line} />
+              </React.Fragment>
+            ))}
           </p>
-        );
-      })}
+        ),
+      )}
     </>
   );
 }

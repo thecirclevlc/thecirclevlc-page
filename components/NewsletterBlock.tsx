@@ -87,7 +87,7 @@ export default function NewsletterBlock() {
   };
 
   return (
-    <section className="relative px-5 md:px-20 py-20 md:py-28 border-t border-primary/10">
+    <section className="relative px-5 md:px-20 py-[var(--home-pad,5rem)] border-t border-primary/10">
       <div className="max-w-3xl mx-auto text-center">
         <EditableText
           as="h2"

@@ -13,7 +13,7 @@ import { brandColor, hexToRgb01 } from './lib/cssVar';
 import HomeEvents from './components/HomeEvents';
 import NewsletterBlock from './components/NewsletterBlock';
 import type { HomeJoinBlock, HomeLayout } from './lib/database.types';
-import { HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, visibleHomeOrder } from './lib/database.types';
+import { HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, visibleHomeOrder, densityOf } from './lib/database.types';
 import PageBlocks from './components/PageBlocks';
 import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
 import CircleLogo from './components/CircleLogo';
@@ -488,7 +488,7 @@ const ManifestoSection: React.FC = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="relative py-32 md:py-40 px-6 md:px-20 border-t border-primary/20 backdrop-blur-[2px]">
+        <section ref={sectionRef} className="relative py-[var(--home-pad,5rem)] px-6 md:px-20 border-t border-primary/20 backdrop-blur-[2px]">
             <div className="max-w-6xl mx-auto">
                 {/* Mobile: Description first, Desktop: Grid layout */}
                 <div className="flex flex-col md:grid md:grid-cols-2 gap-12 md:gap-16">
@@ -790,7 +790,7 @@ export default function TheCircleApp() {
           </>),
           join: (<>
         {/* Inner Circle Access Form - Enhanced */}
-        <section className="relative md:min-h-screen flex items-center justify-center px-6 pt-14 pb-12 md:py-40">
+        <section className="relative flex items-center justify-center px-6 py-[var(--home-pad,5rem)]">
             <ScrollReveal delay={0.1} className="w-full max-w-2xl">
                 <div className="bg-black/90 border border-primary/30 p-8 md:p-20 backdrop-blur-xl shadow-[0_0_50px_rgba(196,33,33,0.1)]">
                     <div className="text-center mb-12">
@@ -850,10 +850,17 @@ export default function TheCircleApp() {
           </>),
         };
         return visibleHomeOrder(homeLayout).map(id => {
+          // The wrapper carries the spacing she chose; the sections read it as
+          // a CSS variable, so their own markup stays untouched.
+          const wrap = (node: React.ReactNode) => (
+            <div key={id} className="home-section" data-density={densityOf(homeLayout, id)}>
+              {node}
+            </div>
+          );
           const builtIn = SECTIONS[id];
-          if (builtIn) return <React.Fragment key={id}>{builtIn}</React.Fragment>;
+          if (builtIn) return wrap(builtIn);
           const block = (homeLayout.blocks ?? []).find(b => b.id === id);
-          return block ? <PageBlocks key={id} blocks={[block]} /> : null;
+          return block ? wrap(<PageBlocks blocks={[block]} />) : null;
         });
       })()}
       </main>

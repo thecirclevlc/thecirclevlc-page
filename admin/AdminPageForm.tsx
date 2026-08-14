@@ -19,7 +19,7 @@ import { listForms, type FormListItem } from '../lib/formSchema';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
+const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const TEXTAREA = INPUT + ' min-h-[120px] resize-y';
 const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
 const LABEL = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
@@ -180,11 +180,18 @@ export function BlockEditor({
               </select>
             </div>
           </div>
-          {(block.display?.ratio ?? 'auto') === 'auto' && (
-            <p className="text-[#444] text-xs">
-              Pick a frame shape to control cropping. "Original shape" shows the photo exactly as uploaded.
+          {(block.display?.ratio ?? 'auto') === 'auto' ? (
+            <p className="text-[#666] text-xs">
+              The last two are greyed out because "Original shape" shows the photo
+              exactly as uploaded — there is no frame to crop it into. Pick a
+              frame shape to switch them on.
             </p>
-          )}
+          ) : block.display?.fit === 'contain' ? (
+            <p className="text-[#666] text-xs">
+              "Keep in view" is greyed out because the whole photo is already
+              showing — nothing is being cropped out.
+            </p>
+          ) : null}
 
           {/* Preview at the chosen settings, so she is not guessing. */}
           {block.url && (block.display?.ratio ?? 'auto') !== 'auto' && (

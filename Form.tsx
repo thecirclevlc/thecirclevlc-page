@@ -227,8 +227,27 @@ interface DynamicFieldProps {
 }
 
 function DynamicField({ field, value, onChange, error, index }: DynamicFieldProps) {
+  // ── Un solo lenguaje visual para todas las preguntas ─────────────
+  //
+  // Dos quejas de la clienta, una sola causa. Los tipos de campo nuevos
+  // (sí/no, desplegable, opción múltiple) se añadieron sin heredar nada del
+  // campo de texto original:
+  //
+  //   · Sólo el texto llevaba raya. Una pregunta de sí/no seguida de otra
+  //     parecía la MISMA pregunta, porque no había nada entre las dos.
+  //   · Y la raya iba a todo color y a todo ancho, así que se leía como un
+  //     separador entre preguntas en vez de como parte del campo. Sus
+  //     palabras: "las líneas del texto se confunden con las líneas de
+  //     separación de las preguntas".
+  //   · Las respuestas de sí/no eran text-base y las de texto md:text-2xl.
+  //
+  // Ahora toda respuesta usa el mismo tamaño y toda pregunta lleva la misma
+  // raya tenue, que se enciende al escribir en ella. Tenue se lee como
+  // "aquí se responde"; a todo color se leía como "aquí acaba la pregunta".
+  const answerText = 'text-fg text-base md:text-2xl font-mono';
+  const underline  = 'border-b border-primary/35 focus-within:border-primary transition-colors';
   const inputClass =
-    'w-full bg-transparent border-b border-primary py-4 text-fg text-base md:text-2xl font-mono focus:outline-none focus:border-primary transition-all placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl';
+    `w-full bg-transparent ${underline} py-4 ${answerText} focus:outline-none placeholder:text-[#888] placeholder:text-base md:placeholder:text-xl`;
 
   return (
     <motion.div
@@ -282,22 +301,22 @@ function DynamicField({ field, value, onChange, error, index }: DynamicFieldProp
         // Yes/no consent — the "acepto recibir correos" the client asked for.
         // Stored as the string 'yes'/'no' so the submission stays a flat
         // Record<string,string> and the CSV export needs no special case.
-        <label className="flex items-start gap-3 cursor-pointer group/cb py-2">
+        <label className={`flex items-center gap-4 cursor-pointer group/cb py-4 ${underline}`}>
           <input
             type="checkbox"
             name={field.name}
             checked={value === 'yes'}
             onChange={e => onChange(e.target.checked ? 'yes' : 'no')}
-            className="mt-1 w-5 h-5 flex-shrink-0 accent-primary cursor-pointer"
+            className="w-5 h-5 flex-shrink-0 accent-primary cursor-pointer"
           />
-          <span className="text-fg/80 text-sm md:text-base font-mono leading-relaxed group-hover/cb:text-fg transition-colors">
+          <span className={`${answerText} leading-snug group-hover/cb:opacity-80 transition-opacity`}>
             {field.placeholder || 'Yes'}
           </span>
         </label>
       ) : field.type === 'radio' ? (
-        <div role="radiogroup" aria-label={field.label} className="space-y-2 py-2">
+        <div role="radiogroup" aria-label={field.label} className={`space-y-3 py-4 ${underline}`}>
           {(field.options ?? []).map(opt => (
-            <label key={opt} className="flex items-center gap-3 cursor-pointer group/rd">
+            <label key={opt} className="flex items-center gap-4 cursor-pointer group/rd">
               <input
                 type="radio"
                 name={field.name}
@@ -306,7 +325,7 @@ function DynamicField({ field, value, onChange, error, index }: DynamicFieldProp
                 onChange={() => onChange(opt)}
                 className="w-5 h-5 flex-shrink-0 accent-primary cursor-pointer"
               />
-              <span className="text-fg/80 text-sm md:text-base font-mono group-hover/rd:text-fg transition-colors">
+              <span className={`${answerText} leading-snug group-hover/rd:opacity-80 transition-opacity`}>
                 {opt}
               </span>
             </label>

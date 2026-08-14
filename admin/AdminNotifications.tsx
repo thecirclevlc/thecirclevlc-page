@@ -24,7 +24,7 @@ import { supabase } from '../lib/supabase';
  */
 
 const KEY = 'email_notifications';
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
+const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const LABEL = 'block text-white text-xs font-medium tracking-wide mb-1.5';
 const HINT  = 'text-[#444] text-xs mt-1.5 font-mono leading-relaxed';
 

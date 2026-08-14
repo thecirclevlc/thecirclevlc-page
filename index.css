@@ -132,3 +132,27 @@ html {
 
 
 
+
+/* ── Aire vertical de la portada, elegido por sección desde el panel ──
+ *
+ * La clienta: "aquí en la homepage y también en otras páginas se crean estos
+ * espacios, estaría guay poderlos modificar desde el editor".
+ *
+ * El peor no era un padding sino `md:min-h-screen` en el bloque de APPLY:
+ * obligaba a una pantalla entera de alto para una caja pequeña centrada, así
+ * que dejaba cientos de píxeles de negro arriba y abajo hiciera lo que
+ * hiciera. Ese min-height ya no está; el aire se mide aquí.
+ *
+ * Una variable en el envoltorio en vez de clases en cada sección: el markup
+ * de las secciones no se toca (lleva animaciones de GSAP colgando de él) y
+ * añadir una sección nueva es heredar esto gratis.
+ */
+.home-section                        { --home-pad: 5rem; }
+.home-section[data-density="tight"]  { --home-pad: 2rem; }
+.home-section[data-density="roomy"]  { --home-pad: 8rem; }
+
+@media (min-width: 768px) {
+  .home-section                        { --home-pad: 8rem; }
+  .home-section[data-density="tight"]  { --home-pad: 3rem; }
+  .home-section[data-density="roomy"]  { --home-pad: 13rem; }
+}

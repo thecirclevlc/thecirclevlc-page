@@ -6,7 +6,8 @@ import {
 import { supabase } from '../lib/supabase';
 import {
   HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, HOME_SECTIONS, resolveHomeOrder,
-  type HomeLayout, type PageBlock, type PageBlockType,
+  densityOf, DENSITY_OPTIONS,
+  type HomeLayout, type PageBlock, type PageBlockType, type HomeDensity,
 } from '../lib/database.types';
 import { listForms, type FormListItem } from '../lib/formSchema';
 import { BlockEditor, BLOCK_TYPES, newBlock } from './AdminPageForm';
@@ -77,6 +78,9 @@ export default function AdminHome() {
     [arr[idx], arr[j]] = [arr[j], arr[idx]];
     patch({ order: arr });
   };
+
+  const setDensity = (id: string, value: HomeDensity) =>
+    patch({ density: { ...(layout.density ?? {}), [id]: value } });
 
   const toggleHidden = (id: string) => {
     const next = new Set(hidden);
@@ -172,6 +176,27 @@ export default function AdminHome() {
                   <p className="text-[#555] text-xs truncate">
                     {meta?.hint ?? blockMeta?.hint ?? ''}
                   </p>
+                  {/* How much empty space sits around this section. The gaps
+                      she pointed at were mostly here. */}
+                  {!isHidden && (
+                    <div className="flex items-center gap-1 mt-2">
+                      <span className="text-[#3a3a3a] text-[10px] uppercase tracking-[0.14em] mr-1">Space</span>
+                      {DENSITY_OPTIONS.map(o => (
+                        <button
+                          key={o.value}
+                          onClick={() => setDensity(id, o.value)}
+                          title={o.hint}
+                          className={`px-2 py-0.5 rounded text-[10px] leading-none transition-colors ${
+                            densityOf(layout, id) === o.value
+                              ? 'bg-white text-black font-medium'
+                              : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-0.5 flex-shrink-0">

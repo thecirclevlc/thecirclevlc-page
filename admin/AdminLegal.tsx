@@ -13,7 +13,7 @@ import { PRIVACY_DEFAULT, TERMS_DEFAULT } from '../lib/legal-defaults';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
+const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const TEXTAREA = INPUT + ' min-h-[100px] resize-y leading-relaxed';
 
 function uuid() {

@@ -641,6 +641,14 @@ export const HOME_SECTIONS: readonly { id: string; label: string; hint: string }
   { id: 'newsletter', label: 'Newsletter',      hint: 'Where visitors leave their email' },
 ] as const;
 
+export type HomeDensity = 'tight' | 'normal' | 'roomy';
+
+export const DENSITY_OPTIONS: { value: HomeDensity; label: string; hint: string }[] = [
+  { value: 'tight',  label: 'Tight',  hint: 'Closer together' },
+  { value: 'normal', label: 'Normal', hint: 'As it is now' },
+  { value: 'roomy',  label: 'Roomy',  hint: 'More air around it' },
+];
+
 export interface HomeLayout {
   /** Built-in section ids and custom block ids, in display order. */
   order:  string[];
@@ -648,6 +656,11 @@ export interface HomeLayout {
   hidden: string[];
   /** The blocks she added, same shapes as any other page. */
   blocks: PageBlock[];
+  /**
+   * Vertical breathing room per section. Missing means 'normal', so a layout
+   * saved before this existed looks exactly the same.
+   */
+  density?: Record<string, HomeDensity>;
 }
 
 export const HOME_LAYOUT_KEY = 'home_layout' as const;
@@ -656,7 +669,14 @@ export const DEFAULT_HOME_LAYOUT: HomeLayout = {
   order:  HOME_SECTIONS.map(s => s.id),
   hidden: [],
   blocks: [],
+  density: {},
 };
+
+/** The spacing for one section. Anything unrecognised falls back to normal. */
+export function densityOf(layout: HomeLayout, id: string): HomeDensity {
+  const value = layout.density?.[id];
+  return value === 'tight' || value === 'roomy' ? value : 'normal';
+}
 
 /**
  * The ids to render, in order.
