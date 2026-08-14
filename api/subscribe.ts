@@ -59,6 +59,35 @@ export function toReadableEndpoint(raw: string): string {
 }
 
 /**
+ * Unwraps Mailchimp's JSONP reply into the objects it carries.
+ *
+ * It answers `cb({…})`, but NOT always once: a rejected signup comes back as
+ * two concatenated replies, the first with the real reason and the second a
+ * generic "There are errors below". A single-object parse throws on the
+ * second `cb(` and — if that throw is swallowed — the caller falls back to the
+ * HTTP status, sees 200, and calls a refusal a success. That is exactly the
+ * silent failure this whole change exists to remove, so it is parsed properly
+ * and checked against real captured responses.
+ *
+ * Splitting on `cb(` is safe because we choose that callback name ourselves in
+ * toReadableEndpoint.
+ */
+export function parseJsonpReplies(text: string): Array<{ result?: string; msg?: string }> {
+  const out: Array<{ result?: string; msg?: string }> = [];
+  for (const chunk of String(text ?? '').split('cb(')) {
+    const end = chunk.lastIndexOf(')');
+    if (end < 1) continue;
+    try {
+      const value = JSON.parse(chunk.slice(0, end));
+      if (value && typeof value === 'object') out.push(value);
+    } catch {
+      // A 302 to the thank-you page, or a provider that is not Mailchimp.
+    }
+  }
+  return out;
+}
+
+/**
  * The urlencoded body Mailchimp expects.
  *
  * `tags` is the point of this function: it is a plain form field in the embed
@@ -147,28 +176,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // page, which is Mailchimp's success path.
     const accepted = upstream.status >= 200 && upstream.status < 400;
 
-    // Mailchimp's own words, when it gave us any. Never let a surprise body
-    // downgrade a request the status line already called accepted: the old
-    // behaviour is the floor, this only ever adds detail on top.
-    let detail: string | undefined;
-    try {
-      const text = await upstream.text();
-      const json = JSON.parse(text.replace(/^[^{]*\{/, '{').replace(/\}[^}]*$/, '}'));
-      if (typeof json?.msg === 'string') {
-        detail = json.msg.replace(/<[^>]*>/g, '').slice(0, 300);
-        // "already subscribed" is not a failure — she still has the contact,
-        // and the tag is applied all the same.
-        if (json.result !== 'success' && !/already/i.test(detail)) {
-          console.error('[subscribe] Mailchimp refused:', detail);
-          return res.status(200).json({ ok: false, status: upstream.status, detail });
-        }
-      }
-    } catch {
-      // 302 to a thank-you page, or a provider that is not Mailchimp.
+    // Mailchimp's own words, when it gave us any. A provider that says nothing
+    // we understand falls back to the status line, which is the old behaviour.
+    const replies = parseJsonpReplies(await upstream.text().catch(() => ''));
+    const spoke   = replies.find(r => typeof r.msg === 'string');
+    const detail  = spoke?.msg?.replace(/<[^>]*>/g, '').slice(0, 300);
+
+    if (!detail) {
+      if (!accepted) console.error('[subscribe] CRM returned', upstream.status);
+      return res.status(200).json({ ok: accepted, status: upstream.status });
     }
 
-    if (!accepted) console.error('[subscribe] CRM returned', upstream.status, detail ?? '');
-    return res.status(200).json({ ok: accepted, status: upstream.status, detail });
+    // "Already subscribed" is not a failure: she has the contact and the tag
+    // is applied all the same. Anything else it refused is a real problem and
+    // has to be loud, or we are back to a mailing list that quietly loses
+    // people.
+    const ok = replies.some(r => r.result === 'success') || /already/i.test(detail);
+    if (!ok) console.error('[subscribe] Mailchimp refused:', detail);
+
+    return res.status(200).json({ ok, status: upstream.status, detail });
   } catch (err) {
     console.error('[subscribe] CRM forward failed:', err);
     // 200 on purpose: the caller must not treat this as a failed submission.

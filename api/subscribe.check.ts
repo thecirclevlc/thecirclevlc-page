@@ -1,7 +1,7 @@
 // Check ejecutable de la lista blanca de destinos CRM:
 //   node api/subscribe.check.ts
 import assert from 'node:assert/strict';
-import { isAllowedCrmUrl, buildCrmBody, toReadableEndpoint } from './subscribe.ts';
+import { isAllowedCrmUrl, buildCrmBody, toReadableEndpoint, parseJsonpReplies } from './subscribe.ts';
 
 // Lo que la clienta pegará de verdad.
 assert.ok(isAllowedCrmUrl('https://thecircle.us1.list-manage.com/subscribe/post?u=abc&id=123'));
@@ -92,14 +92,45 @@ assert.ok(isAllowedCrmUrl(toReadableEndpoint(
   'https://thecirclevlc.us7.list-manage.com/subscribe/post?u=f9&id=72')));
 
 // ── Desenvolver el JSONP que contesta de verdad ──────────────────
-// Respuesta literal de su cuenta, copiada de la prueba contra producción.
-{
-  const real = 'cb({"result":"error","msg":"0 - An email address must contain a single @."})';
-  const json = JSON.parse(real.replace(/^[^{]*\{/, '{').replace(/\}[^}]*$/, '}'));
-  assert.equal(json.result, 'error');
-  assert.match(json.msg, /single @/);
-}
-// Y "ya está suscrito" no puede confundirse con un fallo.
-assert.match('alguien@x.com is already subscribed to list THECIRCLEVLC.', /already/i);
+// Todas estas son respuestas LITERALES de su cuenta, capturadas contra
+// producción. No inventadas: el fallo que arreglan no se veía de otro modo.
 
-console.log('subscribe OK — 40 casos');
+// Una sola respuesta, alta correcta.
+{
+  const r = parseJsonpReplies('cb({"result":"success","msg":"Thank you for subscribing!"})');
+  assert.equal(r.length, 1);
+  assert.equal(r[0].result, 'success');
+}
+
+// DOS respuestas pegadas. Este es el fallo: parsear sólo la primera reventaba,
+// el error se tragaba, y un rechazo de Mailchimp se reportaba como éxito.
+{
+  const real = 'cb({"result":"error","msg":"Too many subscribe attempts for this email address. '
+             + 'Please try again in about 5 minutes. (#6592)"})'
+             + 'cb({"result":"error","msg":"There are errors below","errors":"handleRecordAndEmailValidation","type":"validation_error"})';
+  const r = parseJsonpReplies(real);
+  assert.equal(r.length, 2, 'las dos respuestas se leen, no sólo la primera');
+  assert.match(r[0].msg!, /Too many subscribe attempts/);
+  assert.ok(!r.some(x => x.result === 'success'), 'y ninguna es un éxito');
+  // El paréntesis dentro del mensaje no puede cortar el recorte.
+  assert.match(r[0].msg!, /\(#6592\)$/);
+}
+
+// Email inválido.
+{
+  const r = parseJsonpReplies('cb({"result":"error","msg":"0 - An email address must contain a single @."})');
+  assert.match(r[0].msg!, /single @/);
+}
+
+// "Ya suscrito" no es un fallo: el contacto está y el tag se aplica igual.
+{
+  const r = parseJsonpReplies('cb({"result":"error","msg":"a@x.com is already subscribed to list THECIRCLEVLC."})');
+  assert.match(r[0].msg!, /already/i);
+}
+
+// Lo que no es JSONP no revienta: un 302 al thank-you, o cualquier otro CRM.
+assert.deepEqual(parseJsonpReplies('<!DOCTYPE html><html>…'), []);
+assert.deepEqual(parseJsonpReplies(''), []);
+assert.deepEqual(parseJsonpReplies(undefined as any), []);
+
+console.log('subscribe OK — 51 casos');
