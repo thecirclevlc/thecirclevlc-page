@@ -97,17 +97,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       (meta.noindex ? '<meta name="robots" content="noindex,follow" />' : '') +
       jsonLdScript(meta.jsonld);
 
+    // The site-wide share copy is the HOME page's copy, not every page's.
+    // It used to win everywhere: `defaults.og_title` is always set (the panel
+    // saves it), so /djs, /artists, every event and every profile shared as
+    // plain "THE CIRCLE" — the per-page <title> was right and the WhatsApp
+    // preview was wrong. Now it only fills in where the route has no title of
+    // its own, which is the home page.
+    const isHome = meta.canonical === SITE_URL + '/';
+    const shareTitle = isHome ? (defaults.og_title || meta.title) : meta.title;
+    const shareDesc  = isHome ? (defaults.og_description || meta.description) : meta.description;
+
+    // A page's own picture (an event cover, a profile photo) beats the
+    // site-wide one she uploads, which beats the file shipped with the build.
+    const shareImage = meta.image || defaults.og_image || null;
+
     const finalHtml = injectMeta(html, {
       title:               meta.title,
       description:         meta.description,
-      og_title:            defaults.og_title      ?? meta.title,
-      og_description:      defaults.og_description ?? meta.description,
-      twitter_title:       defaults.twitter_title  ?? meta.title,
-      twitter_description: defaults.twitter_description ?? meta.description,
+      og_title:            shareTitle,
+      og_description:      shareDesc,
+      twitter_title:       isHome ? (defaults.twitter_title || meta.title) : meta.title,
+      twitter_description: isHome ? (defaults.twitter_description || meta.description) : meta.description,
       canonical:           meta.canonical,
       og_url:              meta.canonical,
       twitter_url:         meta.canonical,
-      ...(meta.image ? { og_image: meta.image, twitter_image: meta.image } : {}),
+      ...(shareImage ? { og_image: shareImage, twitter_image: shareImage } : {}),
+      ...(defaults.favicon_url ? { favicon: defaults.favicon_url } : {}),
       head_extra:          head,
     });
 

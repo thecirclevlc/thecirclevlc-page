@@ -89,6 +89,19 @@ export function applyTheme(theme: SiteTheme): void {
   root.setProperty('--type-scale', String(scale));
   // The browser chrome on mobile picks this up.
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.bg_color);
+
+  // The built-in tab icon is a circle painted with a colour that was baked
+  // into index.html, so changing the brand colour left a red dot in the tab
+  // forever. Repaint it — but only when it IS the built-in one: an icon the
+  // admin uploaded is a real file and must be left alone.
+  const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (icon?.getAttribute('href')?.startsWith('data:image/svg+xml')) {
+    const fill = encodeURIComponent(theme.primary_color);
+    icon.setAttribute(
+      'href',
+      `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='${fill}'/></svg>`,
+    );
+  }
 }
 
 /**

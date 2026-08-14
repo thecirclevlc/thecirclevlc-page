@@ -222,6 +222,14 @@ export interface MetaSeo {
   og_description:      string;
   twitter_title:       string;
   twitter_description: string;
+  /**
+   * The picture WhatsApp, Facebook and X show when the site is shared.
+   * Empty falls back to the file shipped with the build. A page with its own
+   * image (an event's cover, a profile photo) still wins over this.
+   */
+  og_image:            string;
+  /** The little icon in the browser tab. Empty keeps the built-in circle. */
+  favicon_url:         string;
 }
 
 export const META_SEO_DEFAULTS: MetaSeo = {
@@ -231,6 +239,8 @@ export const META_SEO_DEFAULTS: MetaSeo = {
   og_description:      'An exclusive event. Request your access.',
   twitter_title:       'THE CIRCLE',
   twitter_description: 'An exclusive event. Request your access.',
+  og_image:            '',
+  favicon_url:         '',
 };
 
 export const META_SEO_KEY = 'meta_seo' as const;

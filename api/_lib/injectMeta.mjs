@@ -45,6 +45,8 @@ const ALLOWED_KEYS = new Set([
   'twitter_url',
   'og_image',
   'twitter_image',
+  // The browser-tab icon, uploadable from the panel.
+  'favicon',
 ]);
 
 /**

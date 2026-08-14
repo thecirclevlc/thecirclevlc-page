@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Upload, Trash2, Image, Film, Ban, Loader2, CheckCircle, AlertCircle,
+  Upload, Trash2, Image, Image as ImageIcon, Film, Ban, Loader2, CheckCircle, AlertCircle,
   Plus, GripVertical, Pencil, Check, X, Eye, Save,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -437,6 +437,7 @@ function SeoSection({ onToast }: SeoSectionProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [dirty, setDirty]     = useState(false);
+  const [busy, setBusy]       = useState<'og_image' | 'favicon_url' | null>(null);
 
   useEffect(() => {
     supabase
@@ -454,6 +455,21 @@ function SeoSection({ onToast }: SeoSectionProps) {
     setValues(prev => ({ ...prev, [field]: v }));
     setDirty(true);
   };
+
+  const pickImage = (field: 'og_image' | 'favicon_url') =>
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setBusy(field);
+      try {
+        update(field, await uploadImage(file, 'site'));
+      } catch (err: any) {
+        onToast({ text: err.message ?? 'Upload failed', type: 'error' });
+      } finally {
+        setBusy(null);
+        e.target.value = '';
+      }
+    };
 
   const save = async () => {
     setSaving(true);
@@ -519,8 +535,10 @@ function SeoSection({ onToast }: SeoSectionProps) {
           <span className="text-[#555] text-xs tracking-[0.2em] uppercase">Preview</span>
         </div>
         <div className="max-w-md bg-[#1f1f1f] rounded-lg overflow-hidden border border-[#2a2a2a]">
-          <div className="aspect-[1200/630] bg-gradient-to-br from-[#C42121]/20 to-black flex items-center justify-center">
-            <span className="text-[#C42121] font-bold text-2xl tracking-widest">THECIRCLE</span>
+          <div className="aspect-[1200/630] bg-gradient-to-br from-[#C42121]/20 to-black flex items-center justify-center overflow-hidden">
+            {values.og_image
+              ? <img src={values.og_image} alt="" className="w-full h-full object-cover" />
+              : <span className="text-[#C42121] font-bold text-2xl tracking-widest">THECIRCLE</span>}
           </div>
           <div className="p-4 space-y-1">
             <p className="text-white font-semibold text-sm leading-tight">
@@ -531,6 +549,46 @@ function SeoSection({ onToast }: SeoSectionProps) {
             </p>
             <p className="text-[#555] text-[11px] mt-2">thecirclevlc.com</p>
           </div>
+        </div>
+      </div>
+
+      {/* Pictures */}
+      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {([
+            { key: 'og_image',    label: 'Share picture',
+              hint: 'Shown when the site is shared. 1200 × 630 works everywhere. Events and profiles use their own picture instead.',
+              box: 'w-full aspect-[1200/630]' },
+            { key: 'favicon_url', label: 'Browser tab icon',
+              hint: 'The small icon in the tab. A square PNG of 64 px or more.',
+              box: 'w-16 h-16' },
+          ] as const).map(f => (
+            <div key={f.key}>
+              <label className="block text-white text-xs font-medium tracking-wide mb-1.5">{f.label}</label>
+              <div className="flex items-start gap-3">
+                <div className={`${f.box} flex-shrink-0 rounded-lg border border-[#1e1e1e] bg-[#0d0d0d] overflow-hidden flex items-center justify-center`}>
+                  {values[f.key]
+                    ? <img src={values[f.key]} alt="" className="w-full h-full object-cover" />
+                    : <ImageIcon size={16} className="text-[#333]" />}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#222] text-white text-xs cursor-pointer transition-colors w-fit">
+                    {busy === f.key ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                    {values[f.key] ? 'Replace' : 'Upload'}
+                    <input type="file" accept="image/*" className="hidden"
+                      disabled={busy !== null} onChange={pickImage(f.key)} />
+                  </label>
+                  {values[f.key] && (
+                    <button onClick={() => update(f.key, '')}
+                      className="text-[#555] hover:text-red-400 text-xs text-left transition-colors">
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-[#333] text-xs mt-2 font-mono leading-relaxed">{f.hint}</p>
+            </div>
+          ))}
         </div>
       </div>
 

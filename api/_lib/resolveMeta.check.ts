@@ -94,3 +94,33 @@ const xss = injectMeta('<title><!--META:title-->X<!--/META:title--></title>',
 assert.ok(!xss.includes('<script>alert(1)'), 'el título se escapa');
 
 console.log('resolveMeta + injectMeta OK — 32 casos');
+
+// ── Compartir por página, no el mismo título en todas ─────────────
+// Reproduce la precedencia de api/index.ts: los valores de meta_seo son la
+// copia de la PORTADA, no de todas las páginas. Antes ganaban en todas, así
+// que /djs, cada evento y cada perfil se compartían como "THE CIRCLE".
+{
+  const defaults = { og_title: 'THE CIRCLE', og_description: 'Un evento exclusivo.', og_image: 'https://cdn/site.png' };
+  const share = (meta) => {
+    const isHome = meta.canonical === SITE_URL + '/';
+    return {
+      og_title: isHome ? (defaults.og_title || meta.title) : meta.title,
+      og_image: meta.image || defaults.og_image || null,
+    };
+  };
+
+  assert.equal(share({ canonical: SITE_URL + '/', title: 'THE CIRCLE' }).og_title, 'THE CIRCLE',
+    'la portada conserva su propia copia de compartir');
+  assert.equal(share({ canonical: SITE_URL + '/djs', title: 'DJs · THE CIRCLE' }).og_title, 'DJs · THE CIRCLE',
+    'una página interior se comparte con SU título, no con el del sitio');
+  assert.equal(share({ canonical: SITE_URL + '/past-events/vol-iv', title: 'VOL. IV · THE CIRCLE' }).og_title,
+    'VOL. IV · THE CIRCLE', 'y un evento también');
+
+  assert.equal(share({ canonical: SITE_URL + '/djs' }).og_image, 'https://cdn/site.png',
+    'sin imagen propia se usa la que ella sube');
+  assert.equal(share({ canonical: SITE_URL + '/djs/x', image: 'https://cdn/foto.jpg' }).og_image,
+    'https://cdn/foto.jpg', 'la foto del perfil gana a la del sitio');
+  assert.equal(share({ canonical: SITE_URL + '/djs' }).og_image, 'https://cdn/site.png');
+}
+
+console.log('compartir por página OK — 6 casos');
