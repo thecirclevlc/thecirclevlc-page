@@ -5,6 +5,7 @@ import { HamburgerMenu } from './HamburgerMenu';
 import CircleLogo from './components/CircleLogo';
 import { useSiteBlock } from './hooks/useSiteContent';
 import {
+  visibleNavItems,
   DEFAULT_HAMBURGER, NAV_HAMBURGER_KEY,
   type HamburgerNavConfig, type NavItem,
 } from './lib/database.types';
@@ -44,7 +45,7 @@ export const StandardHeader: React.FC = () => {
     return () => cancelAnimationFrame(animationId);
   }, [rotation]);
 
-  const items = (nav.items ?? []).slice(0, MAX_INLINE_ITEMS);
+  const items = visibleNavItems(nav.items).slice(0, MAX_INLINE_ITEMS);
 
   const go = (item: NavItem) => {
     if (item.mode === 'external' && item.external_url) {

@@ -7,6 +7,7 @@ import {
   Instagram, Music, Youtube, Facebook, Linkedin, Mail, Globe, Twitter,
 } from 'lucide-react';
 import {
+  visibleNavItems,
   DEFAULT_HAMBURGER, NAV_HAMBURGER_KEY,
   type HamburgerNavConfig, type NavItem, type SocialLink, type SocialPlatform,
 } from './lib/database.types';
@@ -190,7 +191,7 @@ export const HamburgerMenu: React.FC = () => {
 
         <div ref={menuItemsRef} className="relative z-10 w-full max-w-5xl px-8">
           <nav className="flex flex-col items-center justify-center gap-3 md:gap-5 lg:gap-6">
-            {nav.items.map(item => (
+            {visibleNavItems(nav.items).map(item => (
               <MenuItem key={item.id} label={item.label} onClick={() => handleItemClick(item)} />
             ))}
           </nav>

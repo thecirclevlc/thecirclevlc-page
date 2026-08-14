@@ -6,6 +6,7 @@ import {
   Instagram, Music, Youtube, Facebook, Linkedin, Mail, Globe, Twitter,
 } from 'lucide-react';
 import {
+  visibleNavItems,
   DEFAULT_FOOTER, FOOTER_CONFIG_KEY,
   type FooterConfig, type NavItem, type SocialLink, type SocialPlatform,
 } from '../lib/database.types';
@@ -55,8 +56,9 @@ export default function Footer() {
     setTimeout(() => navigate(r.path!), 50);
   };
 
-  // Hide links pointing to the current page (existing behavior)
-  const visibleLinks = cfg.links.filter(link => {
+  // Hide links pointing to the current page (existing behavior), and the
+  // ones the admin has switched off with the eye.
+  const visibleLinks = visibleNavItems(cfg.links).filter(link => {
     if (link.mode !== 'route') return true;
     const p = link.route ?? '';
     return pathname !== p && !pathname.startsWith(p + '/');

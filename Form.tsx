@@ -394,6 +394,11 @@ export default function FormPage() {
   const [emptyFields, setEmptyFields] = useState<string[]>([]);
   const [captchaValue, setCaptchaValue] = useState<string | null>(null);
   const [showCaptchaError, setShowCaptchaError] = useState(false);
+
+  // Whether a captcha can be shown at all. Without the site key the widget
+  // never renders, so requiring it would lock everyone out of the form.
+  const captchaAvailable = Boolean(import.meta.env.VITE_RECAPTCHA_SITE_KEY);
+  const captchaEnforced  = schema.captcha_required && captchaAvailable;
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
@@ -440,7 +445,7 @@ export default function FormPage() {
       return;
     }
 
-    if (schema.captcha_required && !captchaValue) {
+    if (captchaEnforced && !captchaValue) {
       setShowCaptchaError(true); setChaosLevel(0.3);
       setTimeout(() => {
         const el = document.querySelector('.recaptcha-container') as HTMLElement | null;
@@ -458,7 +463,7 @@ export default function FormPage() {
 
     try {
       // Verify CAPTCHA in production
-      if (schema.captcha_required && import.meta.env.PROD && captchaValue) {
+      if (captchaEnforced && import.meta.env.PROD && captchaValue) {
         const v = await fetch('/api/verify-captcha', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -658,7 +663,7 @@ export default function FormPage() {
             )}
 
             {/* CAPTCHA */}
-            {schema.captcha_required && (
+            {captchaEnforced && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }}
                 className="flex flex-col items-center recaptcha-container"
@@ -668,14 +673,12 @@ export default function FormPage() {
                   transition={showCaptchaError ? { duration: 1.5, ease: 'easeInOut' } : {}}
                   className="transform scale-90 md:scale-100 origin-center"
                 >
-                  {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                      onChange={handleCaptchaChange}
-                      theme="dark"
-                    />
-                  )}
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    onChange={handleCaptchaChange}
+                    theme="dark"
+                  />
                 </motion.div>
                 {showCaptchaError && (
                   <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-[#ff0000] text-sm font-mono mt-4 tracking-wider uppercase">

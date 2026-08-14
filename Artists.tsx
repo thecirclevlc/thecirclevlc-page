@@ -147,6 +147,8 @@ export default function Artists() {
   const [error, setError]     = useState<string | null>(null);
   const { bgUrl, bgType }     = usePageBackground('page_artists');
   const { title: heroTitle, subtitle: heroSubtitle, setContent: setArtistsContent } = useSiteContent('content_artists_hero');
+  // El nombre real de la página de eventos, no una copia escrita a mano.
+  const { title: eventsTitle } = useSiteContent('content_events_hero');
   const { data: ctaData, setData: setCtaData } = useSiteBlock<CtaBlock>('content_cta_artists', {
     title: 'WANT TO PERFORM?',
     subtitle: "We're always looking for artists who push boundaries. Apply to join The Circle.",
@@ -342,7 +344,7 @@ export default function Artists() {
             <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
                 <p className="text-[10px] font-mono text-primary/40 tracking-[0.2em] uppercase mb-2">Where they perform</p>
-                <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">THE EVENTS</h3>
+                <h3 className="text-3xl md:text-4xl font-black tracking-tight uppercase">{eventsTitle}</h3>
               </div>
               <button
                 className="border border-primary/40 px-8 py-3 text-sm font-mono tracking-widest text-primary hover:bg-primary hover:text-black transition-all duration-300 uppercase cursor-pointer flex-shrink-0"

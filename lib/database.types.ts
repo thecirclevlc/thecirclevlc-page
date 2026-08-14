@@ -245,6 +245,19 @@ export interface NavItem {
   mode:          NavItemMode;
   route?:        string;        // when mode='route' — must match AVAILABLE_ROUTES
   external_url?: string;        // when mode='external' — must start with http(s)://
+  /**
+   * Taken out of the menu without being deleted. The panel only offered a bin,
+   * so hiding a page for a week meant deleting the entry and rebuilding it —
+   * losing its label, its position and its destination.
+   *
+   * Optional and false-by-default: every entry saved before this stays visible.
+   */
+  hidden?:       boolean;
+}
+
+/** The entries a visitor actually sees. Used by the header, menu and footer. */
+export function visibleNavItems(items: readonly NavItem[] | undefined): NavItem[] {
+  return (items ?? []).filter(i => !i.hidden);
 }
 
 export interface HamburgerNavConfig {

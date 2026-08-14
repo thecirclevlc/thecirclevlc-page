@@ -51,7 +51,9 @@ function NavItemEditor({
   canDown:    boolean;
 }) {
   return (
-    <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4 space-y-3">
+    <div className={`bg-[#0d0d0d] border rounded-lg p-4 space-y-3 transition-colors ${
+      item.hidden ? 'border-[#141414] opacity-50' : 'border-[#1a1a1a]'
+    }`}>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_auto] gap-3">
         <div>
           <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Label</label>
@@ -115,6 +117,12 @@ function NavItemEditor({
             className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
             aria-label="Move down"
           ><ArrowDown size={14} /></button>
+          <button
+            onClick={() => onChange({ ...item, hidden: !item.hidden })}
+            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+            aria-label={item.hidden ? 'Show on the site' : 'Hide without deleting'}
+            title={item.hidden ? 'Hidden — click to show' : 'Visible — click to hide'}
+          >{item.hidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
           <button
             onClick={onDelete}
             className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"

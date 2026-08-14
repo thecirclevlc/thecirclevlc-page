@@ -3,6 +3,7 @@
 // Falla con código != 0 si la fusión se rompe.
 import assert from 'node:assert/strict';
 import { mergeBlock } from '../lib/mergeBlock.ts';
+import { visibleNavItems } from '../lib/database.types.ts';
 
 const CTA = { title: 'DON\'T MISS THE NEXT CHAPTER', subtitle: 'The next Circle is forming.' };
 
@@ -66,4 +67,23 @@ assert.deepEqual(
   { a: { list: [9] } },
   'los arrays no se fusionan elemento a elemento');
 
-console.log('mergeBlock OK — 15 casos');
+// ── Ocultar entradas de menú sin borrarlas ───────────────────────
+// Lo que importa aquí es el defecto: todas las entradas guardadas antes de
+// que existiera el ojo no tienen el campo, y tienen que seguir viéndose.
+const HOME = { id: 'a', label: 'Home', mode: 'route' as const, route: '/' };
+const DJS  = { id: 'b', label: 'DJs',  mode: 'route' as const, route: '/djs' };
+
+assert.deepEqual(visibleNavItems([HOME, DJS]), [HOME, DJS],
+  'sin el campo, todo se ve — el menú de ayer no se vacía solo');
+assert.deepEqual(visibleNavItems([HOME, { ...DJS, hidden: true }]), [HOME],
+  'oculta la marcada y conserva el resto');
+assert.deepEqual(visibleNavItems([{ ...HOME, hidden: false }]), [{ ...HOME, hidden: false }],
+  'hidden:false se ve');
+assert.deepEqual(visibleNavItems(undefined), [], 'sin lista no revienta');
+assert.deepEqual(visibleNavItems([]), []);
+// Ocultar no es borrar: la entrada sigue en lo guardado, con su destino.
+const saved = [HOME, { ...DJS, hidden: true }];
+assert.equal(saved.length, 2, 'la entrada oculta sigue guardada');
+assert.equal(saved[1].route, '/djs', 'y conserva su destino para cuando vuelva');
+
+console.log('mergeBlock + menú OK — 22 casos');

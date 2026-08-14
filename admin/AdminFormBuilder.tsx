@@ -576,6 +576,20 @@ export default function AdminFormBuilder() {
           />
           Require the "I'm not a robot" check
         </label>
+        {/* The key lives in the hosting environment, not in the database, so
+            this switch can be on while the widget has nothing to render. It
+            used to fail silently. */}
+        {schema.captcha_required && !import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
+          <p className="flex items-start gap-2 text-amber-300/90 text-xs leading-relaxed
+                        bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
+            <AlertCircle size={14} className="flex-shrink-0 mt-px" />
+            <span>
+              The robot check is switched on but this site has no reCAPTCHA key,
+              so it will not appear and the form will send without it. Nothing is
+              broken — ask your developer to add the key when you want it active.
+            </span>
+          </p>
+        )}
       </section>
 
       {/* Success + buttons */}
