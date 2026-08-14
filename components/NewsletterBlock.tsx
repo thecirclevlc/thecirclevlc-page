@@ -73,12 +73,17 @@ export default function NewsletterBlock() {
     void supabase
       .from('site_settings').select('value').eq('id', NEWSLETTER_FORM_KEY).maybeSingle()
       .then(({ data }) => {
-        const url = (data?.value as { crm_post_url?: string } | null)?.crm_post_url;
-        if (!url) return;
+        const crm = data?.value as { crm_post_url?: string; crm_tags?: string } | null;
+        if (!crm?.crm_post_url) return;
         return fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ crmPostUrl: url, email: value, fields: { email: value } }),
+          body: JSON.stringify({
+            crmPostUrl: crm.crm_post_url,
+            email:      value,
+            fields:     { email: value },
+            tags:       crm.crm_tags ?? '',
+          }),
         }).catch(() => {});
       });
 

@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Loader2, Save, Plus, Trash2, ArrowUp, ArrowDown,
-  CheckCircle, AlertCircle, Copy, ExternalLink, FilePlus2,
+  CheckCircle, AlertCircle, AlertTriangle, Copy, ExternalLink, FilePlus2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { slugify } from '../lib/slugify';
 import { mergeBlock } from '../lib/mergeBlock';
 import {
-  DEFAULT_FORM_SLUG, formKeyForSlug, formPath, CTA_BLOCKS,
+  DEFAULT_FORM_SLUG, formKeyForSlug, formPath, CTA_BLOCKS, BOOLEAN_FIELD_TYPES,
   type FormSchema, type FormFieldSchema, type FormFieldType,
   type CtaBlock, type CtaKey,
 } from '../lib/database.types';
@@ -258,6 +258,11 @@ export default function AdminFormBuilder() {
   }, [slug]);
 
   const update = (patch: Partial<FormSchema>) => { setSchema(prev => ({ ...prev, ...patch })); setDirty(true); };
+
+  // Only a tick-box can carry consent. Offering a text answer here would let
+  // her wire the mailing list to something that is never 'yes'.
+  const consentCandidates = schema.fields.filter(f => BOOLEAN_FIELD_TYPES.includes(f.type));
+
   const setFields = (fields: FormFieldSchema[]) =>
     update({ fields: fields.map((f, i) => ({ ...f, sort_order: i })) });
 
@@ -536,6 +541,58 @@ export default function AdminFormBuilder() {
             {schema.fields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
           </select>
         </div>
+        <div className="max-w-xs">
+          <label className={LABEL}>Mailchimp tag</label>
+          <input
+            className={INPUT + ' font-mono text-xs'}
+            value={schema.crm_tags}
+            onChange={e => update({ crm_tags: e.target.value })}
+            placeholder="3313342"
+          />
+          <p className="text-[#555] text-xs mt-1.5">
+            Optional. Everyone from this form gets this tag, so you can write to just
+            this group later. In Mailchimp open <span className="text-[#888]">Audience → Tags</span>,
+            create the tag, then <span className="text-[#888]">Signup forms → Embedded form</span> and
+            copy the number in <code className="text-amber-400/80">name="tags"</code>.
+            Separate several with commas.
+          </p>
+        </div>
+
+        <div className="max-w-xs">
+          <label className={LABEL}>Only if they tick</label>
+          <select
+            className={INPUT}
+            value={schema.crm_consent_field}
+            onChange={e => update({ crm_consent_field: e.target.value })}
+          >
+            <option value="">Everyone who sends the form</option>
+            {consentCandidates.map(f => (
+              <option key={f.id} value={f.name}>{f.label}</option>
+            ))}
+          </select>
+          <p className="text-[#555] text-xs mt-1.5">
+            Filling in a form is not the same as asking for a newsletter. Pick the
+            tick-box that asks for it, and only those people go to your mailing list —
+            everyone else still arrives in Applications.
+          </p>
+        </div>
+
+        {/* Sending applicants to a mailing list on the strength of a terms
+            checkbox is the mistake this catches. It is a legal one, not a
+            visual one, so it says what to do rather than just going red. */}
+        {schema.crm_post_url && !schema.crm_consent_field && (
+          <p className="flex items-start gap-2 text-amber-300/80 text-xs bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2.5">
+            <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+            <span>
+              Everyone who sends this form is added to your mailing list, whether they
+              asked for it or not.{' '}
+              {consentCandidates.length === 0
+                ? 'Add a tick-box question like "I would like to receive news about future events" and choose it above.'
+                : 'Choose the tick-box above so only the people who ask for it are added.'}
+            </span>
+          </p>
+        )}
+
         <p className="text-[#444] text-xs">
           Every answer is stored here first, so nothing is lost if the mailing list is down or the address is wrong.
         </p>

@@ -410,6 +410,23 @@ export interface FormSchema {
   crm_post_url:           string;
   /** Field `name` whose value carries the subscriber email to the CRM. */
   crm_email_field:        string;
+  /**
+   * Mailchimp tag IDs for this form, comma-separated — the numbers in the
+   * `tags` hidden input of its generated embed code. Empty = no tag.
+   *
+   * IDs rather than names because that is what the embed endpoint takes, and
+   * they live here rather than in code so a new category (VOLUNTEERS,
+   * PARTNERS…) is a paste into the panel, not a deploy.
+   */
+  crm_tags:               string;
+  /**
+   * Field `name` of the newsletter opt-in checkbox. When set, only the people
+   * who tick it are sent to the mailing list; everyone else is still stored.
+   *
+   * Empty = send everyone, which is the old behaviour and is only lawful when
+   * the form itself IS the newsletter signup.
+   */
+  crm_consent_field:      string;
   fields:                 FormFieldSchema[];
 }
 

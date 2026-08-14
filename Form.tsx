@@ -527,7 +527,14 @@ export default function FormPage() {
       // Forward to the client's CRM only AFTER the row is safely stored, and
       // never let it break the submission — she keeps the applicant either way.
       const crmEmail = data[schema.crm_email_field || 'email'];
-      if (schema.crm_post_url && crmEmail) {
+
+      // Applying is not subscribing. When she has named an opt-in box, only
+      // the people who ticked it reach the mailing list — the rest are stored
+      // exactly the same, they just do not get marketing.
+      const consentField = schema.crm_consent_field;
+      const optedIn = !consentField || data[consentField] === 'yes';
+
+      if (schema.crm_post_url && crmEmail && optedIn) {
         void fetch('/api/subscribe', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -535,6 +542,7 @@ export default function FormPage() {
             crmPostUrl: schema.crm_post_url,
             email:      crmEmail,
             fields:     data,
+            tags:       schema.crm_tags,
           }),
         }).catch(err => console.error('CRM forward failed (submission is saved):', err));
       }

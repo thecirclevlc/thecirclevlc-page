@@ -30,6 +30,8 @@ export const DEFAULT_FORM_SCHEMA: FormSchema = {
   captcha_required:     true,
   crm_post_url:         '',
   crm_email_field:      'email',
+  crm_tags:             '',
+  crm_consent_field:    '',
   fields: [
     { id: 'f-name',         name: 'fullName',    label: 'Full Name',                                                        placeholder: 'Your complete name',         type: 'text',     required: true,  sort_order: 0 },
     { id: 'f-age',          name: 'age',         label: 'Age',                                                              placeholder: 'Your age',                   type: 'text',     required: true,  sort_order: 1 },
@@ -50,6 +52,9 @@ export function blankFormSchema(name: string): FormSchema {
     title:      name.toUpperCase(),
     subtitle:   '',
     event_info: '',
+    // The opt-in below is the one that gates the mailing list. Wired up here
+    // so a new form is lawful by default instead of only if she remembers.
+    crm_consent_field: 'optIn',
     fields: [
       { id: 'f-name',  name: 'fullName', label: 'Full Name',      placeholder: 'Your complete name', type: 'text',  required: true,  sort_order: 0 },
       { id: 'f-email', name: 'email',    label: 'E-mail address', placeholder: 'your@email.com',     type: 'email', required: true,  sort_order: 1 },
