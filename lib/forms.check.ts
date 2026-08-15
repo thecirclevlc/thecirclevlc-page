@@ -9,6 +9,21 @@ import {
 } from './database.types.ts';
 import { slugify } from './slugify.ts';
 
+// ── Casilla obligatoria vs pregunta de sí/no ─────────────────────
+// El fallo que detectó la clienta: una casilla obligatoria SÓLO se puede
+// contestar que sí. Cuatro preguntas del formulario de DJs eran así, de modo
+// que quien no pudiera llevar equipo, o no estuviera libre en París, no podía
+// enviar la solicitud. Se perdían en silencio.
+assert.equal(isFieldBlank({ type: 'checkbox' }, 'yes'), false);
+assert.equal(isFieldBlank({ type: 'checkbox' }, 'no'), true,
+  'una casilla obligatoria sin marcar bloquea el envío: eso es "sí forzoso"');
+
+// Con "Yes / No — they choose" el no es una respuesta válida y el formulario
+// se envía. Ésta es la diferencia entera.
+assert.equal(isFieldBlank({ type: 'radio' }, 'No'), false, 'poder decir que no');
+assert.equal(isFieldBlank({ type: 'radio' }, 'Yes'), false);
+assert.equal(isFieldBlank({ type: 'radio' }, ''), true, 'pero sigue habiendo que contestar');
+
 // ── Rutas ────────────────────────────────────────────────────────
 // /form debe seguir funcionando: hay enlaces vivos apuntando ahí.
 assert.equal(formPath(DEFAULT_FORM_SLUG), '/form');
@@ -51,4 +66,4 @@ assert.equal(uniqueFormSlug('Solicitud de Artistas', [], slugify), 'solicitud-de
 // Nunca puede chocar con el formulario principal por accidente.
 assert.notEqual(uniqueFormSlug('Join', ['join'], slugify), DEFAULT_FORM_SLUG);
 
-console.log('forms OK — 18 casos');
+console.log("forms OK — 23 casos");

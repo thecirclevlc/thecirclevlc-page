@@ -32,8 +32,12 @@ const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: 'date',     label: 'Date' },
   { value: 'textarea', label: 'Long text' },
   { value: 'select',   label: 'Dropdown' },
-  { value: 'radio',    label: 'Pick one' },
-  { value: 'checkbox', label: 'Yes / No' },
+  // These two names were the whole problem. "Yes / No" sat on the single tick
+  // box, so a yes/no QUESTION got a lone "Yes" to tick — and made required it
+  // could not be answered "no" at all. She picked the right-sounding one and
+  // got the wrong control; the label was lying, not her.
+  { value: 'radio',    label: 'Yes / No — they choose' },
+  { value: 'checkbox', label: 'Tick box to agree' },
 ];
 
 /** Field names the submission row uses for its own bookkeeping. */
@@ -89,9 +93,11 @@ function FieldEditor({
                   onChange({
                     ...field,
                     type,
-                    // Seed two options so a new "pick one" is never an empty group.
+                    // Never leave a choice with an empty list. Yes/No for the
+                    // radio because that is what it is for here — anything
+                    // else she types over in two seconds.
                     options: (type === 'select' || type === 'radio') && !field.options?.length
-                      ? ['Option A', 'Option B']
+                      ? (type === 'radio' ? ['Yes', 'No'] : ['Option A', 'Option B'])
                       : field.options,
                   });
                 }}
@@ -125,6 +131,21 @@ function FieldEditor({
               )}
             </div>
           </div>
+
+          {/* The trap that lost applications: a required tick box cannot be
+              answered "no" — it can only be ticked or left, and leaving it
+              blocks the send. Fine for "I accept the terms", wrong for any
+              real question. */}
+          {field.type === 'checkbox' && field.required && (
+            <p className="flex items-start gap-2 text-amber-300/80 text-xs bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2.5">
+              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+              <span>
+                A required tick box can only be answered <strong className="font-medium">yes</strong> —
+                anyone who would say no cannot send the form at all. Keep this only for things they must
+                agree to. For a real question use <strong className="font-medium">Yes / No — they choose</strong>.
+              </span>
+            </p>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
