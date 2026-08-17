@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   Loader2, Save, ArrowUp, ArrowDown, Eye, EyeOff, Trash2,
-  CheckCircle, AlertCircle, ExternalLink, Lock,
+  CheckCircle, AlertCircle, ExternalLink, Lock, GripVertical,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useDragList, reorder } from '../hooks/useDragList';
 import {
   HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, HOME_SECTIONS, resolveHomeOrder,
   densityOf, DENSITY_OPTIONS,
@@ -79,6 +80,10 @@ export default function AdminHome() {
     patch({ order: arr });
   };
 
+  const drag = useDragList((fromId, toId) =>
+    patch({ order: reorder(order, order.indexOf(fromId), order.indexOf(toId)) }),
+  );
+
   const setDensity = (id: string, value: HomeDensity) =>
     patch({ density: { ...(layout.density ?? {}), [id]: value } });
 
@@ -135,8 +140,8 @@ export default function AdminHome() {
         <div>
           <h1 className="text-white text-lg font-semibold">Home page</h1>
           <p className="text-[#555] text-sm mt-1">
-            Drag order with the arrows, switch a section off with the eye, and add
-            anything else underneath. Nothing here is deleted by hiding it.
+            Drag a section by its handle to move it, switch one off with the eye, and
+            add anything else underneath. Nothing here is deleted by hiding it.
           </p>
         </div>
         <a
@@ -162,10 +167,23 @@ export default function AdminHome() {
             return (
               <div
                 key={id}
+                data-drag-item
+                {...drag.targetProps(id)}
                 className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
-                  isHidden ? 'border-[#141414] bg-[#0b0b0b] opacity-50' : 'border-[#1e1e1e] bg-[#0d0d0d]'
+                  isHidden ? 'bg-[#0b0b0b] opacity-50' : 'bg-[#0d0d0d]'
+                } ${drag.dragId === id ? 'opacity-30' : ''} ${
+                  drag.overId === id ? 'border-[#059669]'
+                  : isHidden ? 'border-[#141414]' : 'border-[#1e1e1e]'
                 }`}
               >
+                <span
+                  {...drag.handleProps(id)}
+                  title="Drag to move this section"
+                  aria-label="Drag to move this section"
+                  className="-ml-1 w-5 flex-shrink-0 flex items-center justify-center text-[#3a3a3a] hover:text-white transition-colors cursor-grab active:cursor-grabbing"
+                >
+                  <GripVertical size={14} />
+                </span>
                 <span className="text-[#333] text-xs font-mono w-5 flex-shrink-0">{idx + 1}</span>
 
                 <div className="min-w-0 flex-1">
@@ -177,8 +195,12 @@ export default function AdminHome() {
                     {meta?.hint ?? blockMeta?.hint ?? ''}
                   </p>
                   {/* How much empty space sits around this section. The gaps
-                      she pointed at were mostly here. */}
-                  {!isHidden && (
+                      she pointed at were mostly here.
+                      Built-in sections only: these chips set --home-pad, and
+                      only the hard-coded sections read it. On one of her own
+                      blocks they did nothing at all — its air comes from its
+                      own Spacing control, below. */}
+                  {!isHidden && meta && (
                     <div className="flex items-center gap-1 mt-2">
                       <span className="text-[#3a3a3a] text-[10px] uppercase tracking-[0.14em] mr-1">Space</span>
                       {DENSITY_OPTIONS.map(o => (

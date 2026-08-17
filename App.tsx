@@ -12,7 +12,7 @@ import EditableText from './components/EditableText';
 import { brandColor, hexToRgb01 } from './lib/cssVar';
 import HomeEvents from './components/HomeEvents';
 import NewsletterBlock from './components/NewsletterBlock';
-import type { HomeJoinBlock, HomeLayout } from './lib/database.types';
+import type { HomeJoinBlock, HomeLayout, PageBlock } from './lib/database.types';
 import { HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, visibleHomeOrder, densityOf } from './lib/database.types';
 import PageBlocks from './components/PageBlocks';
 import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
@@ -848,18 +848,37 @@ export default function TheCircleApp() {
         <NewsletterBlock />
           </>),
         };
-        return visibleHomeOrder(homeLayout).map(id => {
+        // Blocks of her own that sit next to each other are handed over
+        // together, so two set to half a row can actually share one. Rendered
+        // one at a time — as they were — each is alone in its row and a photo
+        // beside a paragraph is impossible here but possible on every other
+        // page, which is the kind of inconsistency she has to debug for us.
+        // A built-in section always stands on its own.
+        // `hasOwn`, not a bare lookup: SECTIONS is an object literal, so `id`
+        // values like "constructor" or "toString" would otherwise resolve
+        // through Object.prototype and swallow one of her blocks.
+        const builtIn = (id: string) => (Object.hasOwn(SECTIONS, id) ? SECTIONS[id] : undefined);
+
+        const groups = visibleHomeOrder(homeLayout).reduce<string[][]>((acc, id) => {
+          const last = acc[acc.length - 1];
+          if (last && !builtIn(id) && !builtIn(last[0])) last.push(id);
+          else acc.push([id]);
+          return acc;
+        }, []);
+
+        return groups.map(group => {
+          const blocks = group
+            .map(id => (homeLayout.blocks ?? []).find(b => b.id === id))
+            .filter((b): b is PageBlock => Boolean(b));
+          const node = builtIn(group[0]) ?? (blocks.length ? <PageBlocks blocks={blocks} /> : null);
+          if (!node) return null;
           // The wrapper carries the spacing she chose; the sections read it as
           // a CSS variable, so their own markup stays untouched.
-          const wrap = (node: React.ReactNode) => (
-            <div key={id} className="home-section" data-density={densityOf(homeLayout, id)}>
+          return (
+            <div key={group[0]} className="home-section" data-density={densityOf(homeLayout, group[0])}>
               {node}
             </div>
           );
-          const builtIn = SECTIONS[id];
-          if (builtIn) return wrap(builtIn);
-          const block = (homeLayout.blocks ?? []).find(b => b.id === id);
-          return block ? wrap(<PageBlocks blocks={[block]} />) : null;
         });
       })()}
       </main>

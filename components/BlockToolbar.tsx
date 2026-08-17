@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowUp, ArrowDown, Copy, Trash2, SlidersHorizontal, X, Eye, EyeOff,
+  ArrowUp, ArrowDown, Copy, Trash2, SlidersHorizontal, X, Eye, EyeOff, GripVertical,
 } from 'lucide-react';
-import {
-  DEFAULT_BLOCK_STYLE,
-  WIDTH_OPTIONS, ALIGN_OPTIONS, SPACING_OPTIONS, SURFACE_OPTIONS, REVEAL_OPTIONS,
-  type BlockStyle,
-} from '../lib/blockStyle';
+import BlockLayoutControls from './BlockLayoutControls';
+import { type BlockStyle } from '../lib/blockStyle';
 
 /**
  * The controls that appear over a block while edit mode is on.
@@ -29,60 +26,31 @@ interface Props {
   onDuplicate: () => void;
   onDelete: () => void;
   onToggleHidden: () => void;
-}
-
-const CHIP = 'px-2.5 py-1.5 rounded text-[11px] leading-none transition-colors cursor-pointer';
-
-function Choice<T extends string>({ label, hint, value, options, onChange }: {
-  label: string;
-  hint?: string;
-  value: T;
-  options: readonly { value: T; label: string; hint?: string }[];
-  onChange: (v: T) => void;
-}) {
-  const active = options.find(o => o.value === value);
-  return (
-    <div>
-      <p className="text-[#666] text-[10px] tracking-[0.14em] uppercase mb-1.5">{label}</p>
-      <div className="flex flex-wrap gap-1">
-        {options.map(o => (
-          <button
-            key={o.value}
-            onClick={() => onChange(o.value)}
-            title={o.hint}
-            className={`${CHIP} ${
-              o.value === value
-                ? 'bg-white text-black font-medium'
-                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-      {(active?.hint || hint) && (
-        <p className="text-[#555] text-[10px] mt-1.5 leading-relaxed">{active?.hint ?? hint}</p>
-      )}
-    </div>
-  );
+  /** Spread from useDragList. Absent means this host has no drag. */
+  dragHandleProps?: React.HTMLAttributes<HTMLElement> & { draggable?: true };
+  /**
+   * Whether the layout panel is open. Held by the parent, not here: changing a
+   * block's share of the row repacks the rows, which remounts this component,
+   * and local state would close the panel she is in the middle of using.
+   */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export default function BlockToolbar({
   style, hidden, canUp, canDown, onStyle, onMove, onDuplicate, onDelete, onToggleHidden,
+  dragHandleProps, open, onOpenChange,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const setOpen = onOpenChange;
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  const s = { ...DEFAULT_BLOCK_STYLE, ...style };
-  const set = (patch: Partial<BlockStyle>) => onStyle({ ...style, ...patch });
 
   // Position the panel next to the button, in page coordinates.
   useEffect(() => {
     if (!open || !btnRef.current) return;
     const r = btnRef.current.getBoundingClientRect();
-    const width = 300;
+    const width = 320;
     setPos({
       top: r.bottom + window.scrollY + 8,
       left: Math.max(12, Math.min(r.right + window.scrollX - width, window.innerWidth - width - 12)),
@@ -121,17 +89,32 @@ export default function BlockToolbar({
 
   return (
     <>
+      {/* Above the block, not inside it. It used to float in the band's 80px of
+          side padding; now that the band belongs to the whole row, `top-3` would
+          sit on top of the content — over the top of a photo, exactly where she
+          is looking. */}
       <div
-        className="absolute top-3 right-3 z-30 flex items-center gap-0.5 rounded-lg
-                   bg-black/85 backdrop-blur-md border border-white/15 p-1
-                   opacity-0 group-hover/block:opacity-100 focus-within:opacity-100 transition-opacity"
+        className={`absolute bottom-full right-0 mb-1 z-30 flex items-center gap-0.5 rounded-lg
+                   bg-black/85 backdrop-blur-md border border-white/15 p-1 transition-opacity ${
+                     open ? 'opacity-100' : 'opacity-0 group-hover/block:opacity-100 focus-within:opacity-100'
+                   }`}
       >
+        {dragHandleProps && (
+          <span
+            {...dragHandleProps}
+            title="Drag to move this block"
+            aria-label="Drag to move this block"
+            className="w-7 h-8 flex items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical size={14} />
+          </span>
+        )}
         <Btn title="Move up"   disabled={!canUp}   onClick={() => onMove(-1)}><ArrowUp size={14} /></Btn>
         <Btn title="Move down" disabled={!canDown} onClick={() => onMove(1)}><ArrowDown size={14} /></Btn>
         <span className="w-px h-4 bg-white/15 mx-0.5" />
         <button
           ref={btnRef}
-          onClick={() => setOpen(o => !o)}
+          onClick={() => setOpen(!open)}
           title="Layout"
           aria-label="Layout"
           aria-expanded={open}
@@ -159,7 +142,7 @@ export default function BlockToolbar({
       {open && createPortal(
         <div
           ref={panelRef}
-          style={{ position: 'absolute', top: pos.top, left: pos.left, width: 300, zIndex: 9999 }}
+          style={{ position: 'absolute', top: pos.top, left: pos.left, width: 320, zIndex: 9999 }}
           className="rounded-xl bg-[#0b0b0b]/97 backdrop-blur-xl border border-white/15 shadow-2xl p-4 space-y-4"
         >
           <div className="flex items-center justify-between">
@@ -170,11 +153,7 @@ export default function BlockToolbar({
             </button>
           </div>
 
-          <Choice label="Width"    value={s.width}   options={WIDTH_OPTIONS}   onChange={v => set({ width: v })} />
-          <Choice label="Align"    value={s.align}   options={ALIGN_OPTIONS}   onChange={v => set({ align: v })} />
-          <Choice label="Spacing"  value={s.spacing} options={SPACING_OPTIONS} onChange={v => set({ spacing: v })} />
-          <Choice label="Surface"  value={s.surface} options={SURFACE_OPTIONS} onChange={v => set({ surface: v })} />
-          <Choice label="Entrance" value={s.reveal}  options={REVEAL_OPTIONS}  onChange={v => set({ reveal: v })} />
+          <BlockLayoutControls style={style} onStyle={onStyle} />
 
           <p className="text-[#555] text-[10px] leading-relaxed pt-1 border-t border-white/10">
             Changes save as you make them. Scroll the block out of view and back to watch its entrance again.

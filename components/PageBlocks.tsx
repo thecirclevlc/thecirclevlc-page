@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LegalBody from './LegalBody';
 import ImageLightbox from './ImageLightbox';
 import ProfileGallery from './ProfileGallery';
@@ -8,7 +8,9 @@ import BlockReveal, { SplitWords } from './BlockReveal';
 import BlockToolbar from './BlockToolbar';
 import EditableText from './EditableText';
 import { useEditMode } from '../contexts/EditModeContext';
-import { sectionClasses, contentClasses, isWordReveal, type BlockStyle } from '../lib/blockStyle';
+import { useDragList, reorder } from '../hooks/useDragList';
+import { packRows, rowLayout, isWordReveal, type BlockStyle } from '../lib/blockStyle';
+import { linkTarget, type LinkTarget } from '../lib/blockLink';
 import { supabase } from '../lib/supabase';
 import { embedUrl } from '../lib/embedUrl';
 import { formPath, ratioClass, type PageBlock } from '../lib/database.types';
@@ -91,36 +93,103 @@ function TextBlock({ block, edit }: {
   );
 }
 
+/**
+ * A destination the client typed, as a real link.
+ *
+ * A real `<a>` or router `<Link>` rather than an onClick: middle-click, "open
+ * in new tab" and copying the address all have to work on a photo that leads
+ * somewhere, and a button gives none of them. Where it points is decided by
+ * `linkTarget`, which the admin panel also uses to describe it — one function,
+ * so the panel cannot promise something the page does not do.
+ */
+function BlockLink({ target, className, label, children }: {
+  target: LinkTarget; className?: string; label?: string; children: React.ReactNode;
+}) {
+  const { editMode } = useEditMode();
+  // With edit mode on, following the link would throw her off the page she is
+  // building. Same bargain EditableText makes: while editing, a click edits.
+  const hold = editMode ? (e: React.MouseEvent) => e.preventDefault() : undefined;
+
+  if (target.kind === 'external') {
+    return (
+      <a
+        href={target.href}
+        {...(target.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        className={className}
+        aria-label={label}
+        onClick={hold}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={target.href} className={className} aria-label={label} onClick={hold}>
+      {children}
+    </Link>
+  );
+}
+
 function ImageBlock({ block }: { block: Extract<PageBlock, { type: 'image' }> }) {
   const [open, setOpen] = useState(false);
   if (!block.url) return null;
   const fit   = block.display?.fit ?? 'cover';
   const shape = ratioClass(block.display?.ratio);
+  // An address we refuse to turn into a link falls back to the lightbox rather
+  // than leaving a photo that looks clickable and does nothing.
+  const target = linkTarget(block.href ?? '');
+
+  const img = (
+    <img
+      src={block.url}
+      alt={block.alt ?? ''}
+      loading="lazy"
+      decoding="async"
+      className={[
+        shape ? `w-full h-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}` : 'w-full h-auto',
+        // Only on a photo that leads somewhere, where it is the one signal that
+        // there is anything to click. Photos without a link are left exactly as
+        // they were rather than all quietly gaining a hover effect.
+        target ? 'transition-transform duration-700 group-hover:scale-[1.03]' : '',
+      ].filter(Boolean).join(' ')}
+      style={{ objectPosition: objectPosition(block.display?.focus) }}
+    />
+  );
+  const frame = `block w-full group overflow-hidden bg-black ${shape}`;
+
   return (
     <figure className="max-w-4xl">
-      <button
-        onClick={() => setOpen(true)}
-        className={`block w-full cursor-zoom-in group overflow-hidden bg-black ${shape}`}
-        aria-label={block.alt || 'Enlarge image'}
-      >
-        <img
-          src={block.url}
-          alt={block.alt ?? ''}
-          loading="lazy"
-          decoding="async"
-          className={shape
-            ? `w-full h-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}`
-            : 'w-full h-auto'}
-          style={{ objectPosition: objectPosition(block.display?.focus) }}
-        />
-      </button>
+      {target ? (
+        // A photo that leads somewhere no longer opens the lightbox: two
+        // different things on one click is how a visitor ends up at neither.
+        //
+        // A link whose only content is an image with an empty alt is announced
+        // as just "link", so the label falls back through the caption.
+        <BlockLink
+          target={target}
+          className={`${frame} cursor-pointer`}
+          label={block.alt || block.caption || 'Open link'}
+        >
+          {img}
+        </BlockLink>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className={`${frame} cursor-zoom-in`}
+          aria-label={block.alt || 'Enlarge image'}
+        >
+          {img}
+        </button>
+      )}
       <span className="block border border-primary/15 -mt-px pointer-events-none" />
       {block.caption && (
         <figcaption className="mt-3 text-xs font-mono text-fg/40 tracking-wider uppercase">
           {block.caption}
         </figcaption>
       )}
-      <ImageLightbox images={[block.url]} initialIndex={0} isOpen={open} onClose={() => setOpen(false)} />
+      {!target && (
+        <ImageLightbox images={[block.url]} initialIndex={0} isOpen={open} onClose={() => setOpen(false)} />
+      )}
     </figure>
   );
 }
@@ -179,15 +248,17 @@ function ButtonsBlock({ block }: { block: Extract<PageBlock, { type: 'buttons' }
   const items = (block.items ?? []).filter(b => b.label?.trim() && b.url?.trim());
   if (items.length === 0) return null;
 
+  // Same classifier as the photo links, on purpose. This block is where the
+  // panel tells her to paste "your PayPal.me, Ko-fi or Stripe payment link" —
+  // so it is the likeliest place of all for a bare `paypal.me/thecircle`, which
+  // the old "does it start with http" test sent to a 404 on her own site.
+  // Donation links are still just external URLs: no payment code anywhere.
   const go = (url: string) => {
-    if (/^https?:\/\//i.test(url)) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    // Anything else is an internal path. Donation links are just external URLs
-    // (PayPal, Ko-fi, a Stripe payment link) — which is why "donations" needs
-    // no payment code at all.
-    navigate(url.startsWith('/') ? url : `/${url}`);
+    const target = linkTarget(url);
+    if (!target) return;
+    if (target.kind === 'internal') { navigate(target.href); return; }
+    if (target.newTab) { window.open(target.href, '_blank', 'noopener,noreferrer'); return; }
+    window.location.href = target.href;
   };
 
   return (
@@ -358,54 +429,102 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
       return i < 0 ? [...cur, block] : [...cur.slice(0, i + 1), block, ...cur.slice(i + 1)];
     });
 
+  // Dropping a block onto another puts it in that one's place. Which row a
+  // block ends up in falls out of the order, so dragging a photo above a
+  // paragraph and dragging it beside one are the same gesture.
+  const drag = useDragList((fromId, toId) =>
+    void write(cur => reorder(
+      cur,
+      cur.findIndex(b => b.id === fromId),
+      cur.findIndex(b => b.id === toId),
+    )),
+  );
+
+  // Rows are packed from what is on screen: a hidden block keeps its place in
+  // the row while she is editing, and the row closes up the moment it goes
+  // live. ponytail: pack the visible list, no separate preview of the public
+  // layout — turning edit mode off is the preview.
+  const rows = packRows(shown);
+  let revealIndex = 0;
+
+  // Which block's layout panel is open, held here rather than in each toolbar.
+  // Changing a block's share of the row repacks the rows, which remounts the
+  // block's section — and with the state inside the toolbar, the panel closed on
+  // the very click that paired the photo with the text.
+  const [openBlockId, setOpenBlockId] = useState<string | null>(null);
+
   return (
     <>
       {editing && <AddBlockRail onAdd={t => add(t, null)} />}
-      {shown.map((block, i) => {
-        const edit = pageId ? (field: string) => makePersist(block.id)(field) : undefined;
-        const all = blocks ?? [];
-        const realIndex = all.findIndex(b => b.id === block.id);
 
+      {rows.map(row => {
+        const layout = rowLayout(row);
         return (
-          <section
-            key={block.id}
-            className={`group/block ${sectionClasses(block.style)} ${
-              editing ? 'outline-1 outline-dashed outline-primary/25 hover:outline-primary/60 -outline-offset-1' : ''
-            } ${block.hidden ? 'opacity-40' : ''}`}
-          >
-            {editing && (
-              <BlockToolbar
-                style={block.style}
-                hidden={block.hidden}
-                canUp={realIndex > 0}
-                canDown={realIndex < all.length - 1}
-                onStyle={s => setStyle(block.id, s)}
-                onMove={d => move(block.id, d)}
-                onDuplicate={() => duplicate(block.id)}
-                onDelete={() => remove(block.id)}
-                onToggleHidden={() => toggleHidden(block.id)}
-              />
-            )}
+          <React.Fragment key={row[0].id}>
+            <div className={layout.band}>
+              <div className={layout.grid}>
+                {row.map((block, cell) => {
+                  const edit = pageId ? (field: string) => makePersist(block.id)(field) : undefined;
+                  const all = blocks ?? [];
+                  const realIndex = all.findIndex(b => b.id === block.id);
+                  const delay = Math.min(revealIndex++, 4) * 0.05;
 
-            <BlockReveal kind={block.style?.reveal} delay={Math.min(i, 4) * 0.05}>
-              <div className={contentClasses(block.style)}>
-                {block.type === 'text'    ? <TextBlock    block={block} edit={edit as any} />
-               : block.type === 'image'   ? <ImageBlock   block={block} />
-               : block.type === 'gallery' ? <GalleryBlock block={block} />
-               : block.type === 'video'   ? <VideoBlock   block={block} />
-               : block.type === 'buttons' ? <ButtonsBlock block={block} />
-               : block.type === 'form'    ? <FormBlock    block={block} />
-               /* Unknown type — a block saved by a newer version. Render
-                  nothing rather than crash the whole page. */
-               : null}
+                  return (
+                    <section
+                      key={block.id}
+                      {...(editing ? drag.targetProps(block.id) : {})}
+                      className={`group/block relative ${layout.cells[cell].outer} ${
+                        editing ? 'outline-1 outline-dashed outline-primary/25 hover:outline-primary/60 -outline-offset-1' : ''
+                      } ${block.hidden ? 'opacity-40' : ''} ${
+                        drag.dragId === block.id ? 'opacity-30' : ''
+                      } ${
+                        drag.overId === block.id ? 'outline-2 outline-solid outline-primary' : ''
+                      }`}
+                    >
+                      {editing && (
+                        <BlockToolbar
+                          style={block.style}
+                          hidden={block.hidden}
+                          canUp={realIndex > 0}
+                          canDown={realIndex < all.length - 1}
+                          onStyle={s => setStyle(block.id, s)}
+                          onMove={d => move(block.id, d)}
+                          onDuplicate={() => duplicate(block.id)}
+                          onDelete={() => remove(block.id)}
+                          onToggleHidden={() => toggleHidden(block.id)}
+                          dragHandleProps={drag.handleProps(block.id)}
+                          open={openBlockId === block.id}
+                          onOpenChange={o => setOpenBlockId(o ? block.id : null)}
+                        />
+                      )}
+
+                      {/* The reveal wrapper stays inside the cell. Put it around
+                          the cells instead and they stop being grid items. */}
+                      <BlockReveal kind={block.style?.reveal} delay={delay}>
+                        <div className={layout.cells[cell].inner}>
+                          {block.type === 'text'    ? <TextBlock    block={block} edit={edit as any} />
+                         : block.type === 'image'   ? <ImageBlock   block={block} />
+                         : block.type === 'gallery' ? <GalleryBlock block={block} />
+                         : block.type === 'video'   ? <VideoBlock   block={block} />
+                         : block.type === 'buttons' ? <ButtonsBlock block={block} />
+                         : block.type === 'form'    ? <FormBlock    block={block} />
+                         /* Unknown type — a block saved by a newer version. Render
+                            nothing rather than crash the whole page. */
+                         : null}
+                        </div>
+                      </BlockReveal>
+                    </section>
+                  );
+                })}
               </div>
-            </BlockReveal>
-          </section>
+            </div>
+            {/* A rail after every row, not just at the two ends: adding a
+                section in the middle of a page used to mean adding it at the
+                bottom and clicking ↑ until it arrived. */}
+            {editing && <AddBlockRail onAdd={t => add(t, row[row.length - 1].id)} />}
+          </React.Fragment>
         );
       })}
-      {editing && shown.length > 0 && (
-        <AddBlockRail onAdd={t => add(t, shown[shown.length - 1].id)} />
-      )}
     </>
   );
 }

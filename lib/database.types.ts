@@ -571,7 +571,7 @@ export type PageBlockStyle = import('./blockStyle').BlockStyle;
 
 export type PageBlock =
   | { id: string; type: 'text';    hidden?: boolean; style?: PageBlockStyle; heading?: string; body: string }
-  | { id: string; type: 'image';   hidden?: boolean; style?: PageBlockStyle; url: string; alt?: string; caption?: string; display?: ImageDisplay }
+  | { id: string; type: 'image';   hidden?: boolean; style?: PageBlockStyle; url: string; alt?: string; caption?: string; display?: ImageDisplay; href?: string }
   | { id: string; type: 'gallery'; hidden?: boolean; style?: PageBlockStyle; heading?: string; images: string[]; display?: ImageDisplay }
   | { id: string; type: 'video';   hidden?: boolean; style?: PageBlockStyle; heading?: string; url: string; caption?: string }
   | { id: string; type: 'buttons'; hidden?: boolean; style?: PageBlockStyle; heading?: string; items: PageButton[] }

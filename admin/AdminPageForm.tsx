@@ -2,14 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Loader2, Save, Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff,
-  CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Clock,
+  CheckCircle, AlertCircle, ExternalLink, ArrowLeft, Clock, GripVertical,
   Type, Image as ImageIcon, Images, Film, MousePointerClick, FormInput,
+  SlidersHorizontal, Link2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { slugify } from '../lib/slugify';
 import { uploadImage } from '../lib/imageUpload';
 import { embedUrl } from '../lib/embedUrl';
 import AdminHistory from './AdminHistory';
+import BlockLayoutControls from '../components/BlockLayoutControls';
+import { useDragList, reorder } from '../hooks/useDragList';
+import { spanOf, packRows, rowFill, SPAN_OPTIONS } from '../lib/blockStyle';
+import { describeLinkTarget } from '../lib/blockLink';
 import {
   validatePageSlug, ratioClass,
   IMAGE_FIT_OPTIONS, IMAGE_FOCUS_OPTIONS, IMAGE_RATIO_OPTIONS,
@@ -54,6 +59,7 @@ export function newBlock(type: PageBlockType): PageBlock {
 
 export function BlockEditor({
   block, forms, onChange, onMoveUp, onMoveDown, onDelete, canUp, canDown,
+  dragHandleProps, dragState,
 }: {
   block: PageBlock;
   forms: FormListItem[];
@@ -63,10 +69,15 @@ export function BlockEditor({
   onDelete: () => void;
   canUp: boolean;
   canDown: boolean;
+  /** Spread from useDragList. Absent means this host has no drag. */
+  dragHandleProps?: React.HTMLAttributes<HTMLElement> & { draggable?: true };
+  dragState?: { dragging: boolean; over: boolean };
 }) {
   const [uploading, setUploading] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const meta = BLOCK_TYPES.find(t => t.type === block.type);
   const Icon = meta?.icon ?? Type;
+  const span = spanOf(block.style);
 
   const patch = (p: Partial<PageBlock>) => onChange({ ...block, ...p } as PageBlock);
 
@@ -82,12 +93,39 @@ export function BlockEditor({
   };
 
   return (
-    <div className={`bg-[#0d0d0d] border rounded-lg p-4 space-y-3 ${block.hidden ? 'border-[#1a1a1a] opacity-50' : 'border-[#1a1a1a]'}`}>
+    <div className={`bg-[#0d0d0d] border rounded-lg p-4 space-y-3 transition-colors ${
+      block.hidden ? 'opacity-50' : ''
+    } ${dragState?.dragging ? 'opacity-30' : ''} ${
+      dragState?.over ? 'border-[#059669]' : 'border-[#1a1a1a]'
+    }`}>
       <div className="flex items-center gap-2">
+        {dragHandleProps && (
+          <span
+            {...dragHandleProps}
+            title="Drag to move this block"
+            aria-label="Drag to move this block"
+            className="-ml-1 w-6 h-8 flex items-center justify-center rounded text-[#444] hover:text-white hover:bg-[#1a1a1a] transition-colors cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical size={14} />
+          </span>
+        )}
         <Icon size={14} className="text-[#666] flex-shrink-0" />
         <span className="text-[#888] text-xs tracking-[0.12em] uppercase">{meta?.label}</span>
+        {/* What she needs to see at a glance is which blocks share a row —
+            that is the whole difference between a stack and a layout. */}
+        {span !== 'full' && (
+          <span className="text-[#059669] text-[10px] uppercase tracking-widest">
+            {SPAN_OPTIONS.find(o => o.value === span)?.label}
+          </span>
+        )}
         {block.hidden && <span className="text-amber-500/70 text-[10px] uppercase tracking-widest">hidden</span>}
         <div className="ml-auto flex gap-1">
+          <button onClick={() => setLayoutOpen(o => !o)}
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              layoutOpen ? 'bg-[#1a1a1a] text-white' : 'text-[#666] hover:text-white hover:bg-[#1a1a1a]'
+            }`}
+            aria-expanded={layoutOpen}
+            title="Layout — how much of the row it takes, and its air"><SlidersHorizontal size={13} /></button>
           <button onClick={() => patch({ hidden: !block.hidden } as Partial<PageBlock>)}
             className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
             title={block.hidden ? 'Show on the page' : 'Hide without deleting'}>
@@ -104,6 +142,15 @@ export function BlockEditor({
             aria-label="Delete"><Trash2 size={13} /></button>
         </div>
       </div>
+
+      {layoutOpen && (
+        <div className="rounded-lg border border-[#1e1e1e] bg-[#0a0a0a] p-4">
+          <BlockLayoutControls
+            style={block.style}
+            onStyle={s => patch({ style: s } as Partial<PageBlock>)}
+          />
+        </div>
+      )}
 
       {'heading' in block && (
         <div>
@@ -150,6 +197,21 @@ export function BlockEditor({
                 onChange={e => patch({ alt: e.target.value } as Partial<PageBlock>)}
                 placeholder="What the photo shows" />
             </div>
+          </div>
+
+          {/* Her request: "oportunidad de poner enlaces en las fotos para que
+              redireccionen a algún lugar". */}
+          <div>
+            <label className={LABEL}>
+              <Link2 size={11} className="inline -mt-0.5 mr-1" />
+              Where the photo goes when clicked (optional)
+            </label>
+            <input className={INPUT} value={block.href ?? ''}
+              onChange={e => patch({ href: e.target.value } as Partial<PageBlock>)}
+              placeholder="/artists or https://instagram.com/…" />
+            {/* Described by the same function the page renders with, so this
+                can never promise something the photo does not do. */}
+            <p className="text-[#444] text-xs mt-1">{describeLinkTarget(block.href ?? '')}</p>
           </div>
 
           {/* How the photo sits in its frame. Without this, an upload either
@@ -304,6 +366,8 @@ export function BlockEditor({
           </button>
           <p className="text-[#444] text-xs">
             For donations, paste your PayPal.me, Ko-fi or Stripe payment link here.
+            An address with a dot in it opens in a new tab; anything else is treated
+            as a page on your own site.
           </p>
         </div>
       )}
@@ -369,6 +433,11 @@ export default function AdminPageForm() {
     [arr[idx], arr[j]] = [arr[j], arr[idx]];
     setBlocks(arr);
   };
+
+  const drag = useDragList((fromId, toId) => {
+    const arr = page?.blocks ?? [];
+    setBlocks(reorder(arr, arr.findIndex(b => b.id === fromId), arr.findIndex(b => b.id === toId)));
+  });
 
   const slugProblem = page ? validatePageSlug(page.slug, takenSlugs) : null;
 
@@ -466,22 +535,61 @@ export default function AdminPageForm() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-white text-sm font-medium">Content ({(page.blocks ?? []).length})</p>
-          <p className="text-[#555] text-xs">Reorder with ↑ ↓ · the eye hides a block without deleting it</p>
+          <p className="text-[#555] text-xs">
+            Drag by the handle or use ↑ ↓ · the sliders set how much of a row a block takes
+          </p>
         </div>
 
-        {(page.blocks ?? []).map((block, idx, arr) => (
-          <BlockEditor
-            key={block.id}
-            block={block}
-            forms={forms}
-            onChange={next => setBlocks(arr.map((b, i) => i === idx ? next : b))}
-            onMoveUp={() => moveBlock(idx, -1)}
-            onMoveDown={() => moveBlock(idx, 1)}
-            onDelete={() => { if (confirm('Delete this block?')) setBlocks(arr.filter((_, i) => i !== idx)); }}
-            canUp={idx > 0}
-            canDown={idx < arr.length - 1}
-          />
-        ))}
+        {/* Grouped into the rows the page will actually render, from the same
+            packRows the site uses. Without this, "Half" is a promise the panel
+            never keeps in front of her: two blocks that cannot fit on one row
+            (two thirds plus a half is fourteen twelfths) look identical here to
+            two that can, and the page comes out with the empty space she asked
+            us to remove. The bracket is the answer to "which of these are
+            side by side". */}
+        {packRows(page.blocks ?? []).map(row => {
+          const arr = page.blocks ?? [];
+          const shares = row.length > 1;
+          // The gap she asked us to remove, named before she publishes it.
+          const spare = 12 - rowFill(row);
+          return (
+            <div
+              key={row[0].id}
+              className={shares || spare > 0 ? 'relative pl-4 border-l-2 space-y-3' : 'space-y-3'}
+              style={shares || spare > 0
+                ? { borderColor: spare > 0 ? 'rgba(245,158,11,0.4)' : 'rgba(5,150,105,0.4)' }
+                : undefined}
+            >
+              {(shares || spare > 0) && (
+                <p className={`text-[10px] uppercase tracking-[0.14em] ${
+                  spare > 0 ? 'text-amber-500/80' : 'text-[#059669]/80'
+                }`}>
+                  {shares ? `Side by side — ${row.length} blocks on one row` : 'Alone on its row'}
+                  {spare > 0 && ` · ${spare}/12 of the width left empty`}
+                </p>
+              )}
+              {row.map(block => {
+                const idx = arr.findIndex(b => b.id === block.id);
+                return (
+                  <div key={block.id} data-drag-item {...drag.targetProps(block.id)}>
+                    <BlockEditor
+                      block={block}
+                      forms={forms}
+                      onChange={next => setBlocks(arr.map((b, i) => i === idx ? next : b))}
+                      onMoveUp={() => moveBlock(idx, -1)}
+                      onMoveDown={() => moveBlock(idx, 1)}
+                      onDelete={() => { if (confirm('Delete this block?')) setBlocks(arr.filter((_, i) => i !== idx)); }}
+                      canUp={idx > 0}
+                      canDown={idx < arr.length - 1}
+                      dragHandleProps={drag.handleProps(block.id)}
+                      dragState={{ dragging: drag.dragId === block.id, over: drag.overId === block.id }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
 
         <div className="bg-[#0d0d0d] border border-dashed border-[#222] rounded-lg p-4">
           <p className={LABEL}>Add content</p>
