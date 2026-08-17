@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowUp, ArrowDown, Copy, Trash2, SlidersHorizontal, X, Eye, EyeOff, GripVertical,
+  ArrowUp, ArrowDown, Copy, Trash2, SlidersHorizontal, X, Eye, EyeOff, GripVertical, Rows3,
 } from 'lucide-react';
 import BlockLayoutControls from './BlockLayoutControls';
 import { type BlockStyle } from '../lib/blockStyle';
@@ -35,11 +35,17 @@ interface Props {
    */
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Given when this block shares its row. Taking it back out has to be one
+   * click too, or a row she made by dragging something a bit too far to the
+   * left is a row she is stuck with.
+   */
+  onSeparate?: () => void;
 }
 
 export default function BlockToolbar({
   style, hidden, canUp, canDown, onStyle, onMove, onDuplicate, onDelete, onToggleHidden,
-  dragHandleProps, open, onOpenChange,
+  dragHandleProps, open, onOpenChange, onSeparate,
 }: Props) {
   const setOpen = onOpenChange;
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -124,6 +130,11 @@ export default function BlockToolbar({
         >
           <SlidersHorizontal size={14} />
         </button>
+        {onSeparate && (
+          <Btn title="Give this block its own row again" onClick={onSeparate}>
+            <Rows3 size={14} />
+          </Btn>
+        )}
         <Btn title={hidden ? 'Show on the page' : 'Hide without deleting'} onClick={onToggleHidden}>
           {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
         </Btn>

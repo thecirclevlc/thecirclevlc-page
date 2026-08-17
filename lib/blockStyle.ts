@@ -194,6 +194,170 @@ export function packRows<T extends { style?: BlockStyle }>(blocks: T[]): T[][] {
 export const rowFill = (row: { style?: BlockStyle }[]): number =>
   row.reduce((sum, b) => sum + SPAN_TWELFTHS[spanOf(b.style)], 0);
 
+/** The span that divides a row evenly between that many blocks. */
+const evenSpan = (count: number): BlockSpan | null =>
+  count === 1 ? 'full' : count === 2 ? 'half' : count === 3 ? 'third' : null;
+
+/**
+ * Inserts blocks after `afterId`, keeping a multi-block arrangement intact.
+ *
+ * THE BUG THIS EXISTS FOR: rows are packed greedily from the flat list, so
+ * adding the "Photo + text" pair straight after a block that is alone on a
+ * half-width row made the *photo* pair up with that block and left the *text*
+ * stranded on a row of its own. She clicks "Photo + text" and does not get a
+ * photo next to text — which is the entire promise of the button.
+ *
+ * So the partial row above is closed first, its blocks dividing their row
+ * evenly. That is a change to something she already had, but always in the
+ * direction she asked for: a block sitting alone on half a row is a block with
+ * half a row of blank space next to it, and this fills it.
+ */
+export function insertBlocks<T extends { id: string; style?: BlockStyle }>(
+  list: T[],
+  blocks: T[],
+  afterId: string | null,
+): T[] {
+  const found = afterId === null ? -1 : list.findIndex(b => b.id === afterId);
+  const at = afterId === null ? 0 : found < 0 ? list.length : found + 1;
+  const next = [...list.slice(0, at), ...blocks, ...list.slice(at)];
+  if (blocks.length < 2) return next;
+
+  const rowAbove = packRows(list.slice(0, at)).pop();
+  if (!rowAbove || rowFill(rowAbove) === 12) return next;
+
+  const span = evenSpan(rowAbove.length);
+  if (!span) return next;
+  const ids = new Set(rowAbove.map(b => b.id));
+  return next.map(b => (ids.has(b.id) ? { ...b, style: { ...b.style, span } } : b));
+}
+
+/**
+ * Moves one block to sit beside another, and sets both spans so they fit.
+ *
+ * This is the answer to the client's "no entiendo cómo sería el mover la
+ * organización para que el texto se mueva y de otro lado esté una imagen".
+ * Asking her to open a menu on two separate blocks and pick "Half" on each —
+ * having first understood that a row is twelve columns — is not something
+ * anyone should have to learn. Dragging the photo onto the side of the
+ * paragraph is the whole gesture, and this works out the arithmetic.
+ *
+ * The rule is one sentence: everything that ends up sharing the row divides it
+ * evenly. Two blocks are halves, three are thirds. A fourth will not fit, so
+ * the drop is refused and the list comes back untouched rather than silently
+ * doing something else.
+ */
+export function placeBeside<T extends { id: string; style?: BlockStyle }>(
+  list: T[],
+  fromId: string,
+  toId: string,
+  side: 'left' | 'right',
+): T[] {
+  const from = list.findIndex(b => b.id === fromId);
+  const to   = list.findIndex(b => b.id === toId);
+  if (from < 0 || to < 0 || fromId === toId) return list;
+
+  const rows = packRows(list);
+  // Whoever already shares the target's row comes along: dropping a third
+  // photo beside a pair makes all three thirds, not a pair plus an orphan.
+  const targetRow = rows.find(row => row.some(b => b.id === toId)) ?? [];
+  const sourceRow = rows.find(row => row.some(b => b.id === fromId)) ?? [];
+  const group = [...targetRow.filter(b => b.id !== fromId), list[from]];
+
+  const span = evenSpan(group.length);
+  if (!span) return list;
+  const groupIds = new Set(group.map(b => b.id));
+
+  // THE BUG THIS GUARDS: the blocks the dragged one leaves behind have to close
+  // up too. Rows are packed greedily over the flat list, so a row left one slot
+  // short swallows the next block along — and dragging a photo across the page
+  // silently dragged a *different* section up into the hole behind it. She
+  // would have watched two blocks move when she moved one.
+  const orphans     = sourceRow.filter(b => b.id !== fromId && !groupIds.has(b.id));
+  const orphanSpan  = orphans.length ? evenSpan(orphans.length) : null;
+  const orphanIds   = new Set(orphans.map(b => b.id));
+
+  const moved = list[from];
+  const rest  = list.filter(b => b.id !== fromId);
+  const at    = rest.findIndex(b => b.id === toId);
+  const next  = [...rest.slice(0, side === 'left' ? at : at + 1), moved,
+                 ...rest.slice(side === 'left' ? at : at + 1)];
+
+  return next.map(b =>
+    groupIds.has(b.id) ? { ...b, style: { ...b.style, span } }
+    : orphanSpan && orphanIds.has(b.id) ? { ...b, style: { ...b.style, span: orphanSpan } }
+    : b);
+}
+
+/** Whether `placeBeside` would actually do something, so the UI can say so. */
+export function canPlaceBeside<T extends { id: string; style?: BlockStyle }>(
+  list: T[], fromId: string, toId: string,
+): boolean {
+  if (fromId === toId) return false;
+  const row = packRows(list).find(r => r.some(b => b.id === toId));
+  if (!row) return false;
+  return evenSpan(row.filter(b => b.id !== fromId).length + 1) !== null;
+}
+
+/**
+ * Takes a block out of the row it shares and gives it the full width back.
+ *
+ * The way out has to be as easy as the way in, or a layout she made by accident
+ * is a layout she is stuck with.
+ *
+ * It also *moves* — down to just past its old row. Re-spanning in place was not
+ * enough: pulling the middle block out of three-across left the outer two as
+ * halves with the full-width block still sitting between them, so neither could
+ * reach the other and the page ended up with two half-empty rows instead of one
+ * tidy one.
+ */
+export function separate<T extends { id: string; style?: BlockStyle }>(
+  list: T[],
+  id: string,
+): T[] {
+  const row = packRows(list).find(r => r.some(b => b.id === id));
+  if (!row) return list;
+
+  const staying    = row.filter(b => b.id !== id);
+  const span       = staying.length ? evenSpan(staying.length) : null;
+  const stayingIds = new Set(staying.map(b => b.id));
+  // Anchored to the last block that STAYS, not the last of the row — the block
+  // being pulled out is often that one, and looking for it after removing it
+  // sent the section to the very bottom of the page.
+  const anchor     = staying.length ? staying[staying.length - 1].id : null;
+
+  const original = list[list.findIndex(b => b.id === id)];
+  const me   = { ...original, style: { ...original.style, span: 'full' as BlockSpan } };
+  const rest = list.filter(b => b.id !== id);
+  const at   = anchor === null ? -1 : rest.findIndex(b => b.id === anchor);
+  const next = at < 0
+    ? list.map(b => (b.id === id ? me : b))   // alone on its row: nothing to move past
+    : [...rest.slice(0, at + 1), me, ...rest.slice(at + 1)];
+
+  return next.map(b =>
+    span && stayingIds.has(b.id) ? { ...b, style: { ...b.style, span } } : b);
+}
+
+/**
+ * Removes a block and closes up the row it leaves behind.
+ *
+ * Deleting one half of a "photo + text" pair used to leave the survivor at half
+ * width with a permanently blank half-row beside it — the exact empty space the
+ * client asked to be rid of, reintroduced by the delete button.
+ */
+export function removeBlock<T extends { id: string; style?: BlockStyle }>(
+  list: T[],
+  id: string,
+): T[] {
+  const row = packRows(list).find(r => r.some(b => b.id === id));
+  const staying = (row ?? []).filter(b => b.id !== id);
+  const span = staying.length ? evenSpan(staying.length) : null;
+  const stayingIds = new Set(staying.map(b => b.id));
+
+  return list
+    .filter(b => b.id !== id)
+    .map(b => (span && stayingIds.has(b.id) ? { ...b, style: { ...b.style, span } } : b));
+}
+
 export interface RowLayout {
   /** Outer band: side padding, vertical air, and the surface of a lone block. */
   band: string;

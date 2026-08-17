@@ -25,11 +25,49 @@ export function reorder<T>(list: T[], from: number, to: number): T[] {
   return out;
 }
 
+/**
+ * Where in the target the block would land.
+ *
+ * `left` and `right` are what make arranging a page a drag rather than a
+ * lesson: drop the photo on the side of the paragraph and they end up side by
+ * side, with no menu and nothing to know about columns. The middle two thirds
+ * stay plain reordering, so the old gesture still does the old thing.
+ */
+export type DropZone = 'left' | 'over' | 'right';
+
+/**
+ * Which zone of the target the dragged block is over.
+ *
+ * Measured as *sideways movement since the grab*, not as raw pointer position.
+ *
+ * THE BUG THIS EXISTS FOR: the grip lives at one edge of a block, so the
+ * pointer starts near that edge and stays there when you drag straight down a
+ * list. Comparing raw position against the target meant the pointer was always
+ * in the same outer third it started in, and every ordinary reorder in the
+ * panel came out as "put these two side by side". Dragging straight down now
+ * reads as no sideways intent at all, whatever edge the handle sits on.
+ */
+export function zoneAt(
+  clientX: number,
+  rect: { left: number; width: number },
+  grab?: { offsetX: number; width: number },
+): DropZone {
+  if (rect.width <= 0) return 'over';
+  const here = (clientX - rect.left) / rect.width;
+  // Where in its own block she took hold of it. Without a grab we fall back to
+  // the block's centre, which is the same thing for a drag that never moved.
+  const held = grab && grab.width > 0 ? grab.offsetX / grab.width : 0.5;
+  const moved = here - held;
+  return moved < -0.25 ? 'left' : moved > 0.25 ? 'right' : 'over';
+}
+
 export interface DragList {
   /** Id being dragged, for dimming it while it travels. */
   dragId: string | null;
   /** Id currently under the pointer, for showing where it would land. */
   overId: string | null;
+  /** Which part of that target, for showing which side it would land on. */
+  overZone: DropZone;
   /**
    * Spread onto the grip. If the grip sits inside an element marked
    * `data-drag-item`, that element becomes the drag preview.
@@ -47,22 +85,34 @@ export interface DragList {
   };
 }
 
-export function useDragList(onDropped: (fromId: string, toId: string) => void): DragList {
+export function useDragList(
+  onDropped: (fromId: string, toId: string, zone: DropZone) => void,
+): DragList {
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [overZone, setZone] = useState<DropZone>('over');
   // The id also lives in a ref because Safari empties dataTransfer during
   // dragover, and some browsers hand back the wrong type on drop. The ref is
   // the source of truth; dataTransfer is set only to make the drag legal.
   const dragging = useRef<string | null>(null);
+  // Where inside its own block she took hold, so a straight-down drag reads as
+  // no sideways intent regardless of which edge the handle sits on.
+  const grab = useRef<{ offsetX: number; width: number } | undefined>(undefined);
 
   return {
     dragId,
     overId,
+    overZone,
     handleProps: id => ({
       draggable: true,
       onDragStart: e => {
         dragging.current = id;
         setDragId(id);
+        const item = (e.currentTarget as HTMLElement).closest('[data-drag-item]')
+          ?? (e.currentTarget as HTMLElement).closest('section')
+          ?? (e.currentTarget as HTMLElement);
+        const r = item.getBoundingClientRect();
+        grab.current = { offsetX: e.clientX - r.left, width: r.width };
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', id);
         // Otherwise the drag preview is the little grip icon on its own, which
@@ -71,7 +121,7 @@ export function useDragList(onDropped: (fromId: string, toId: string) => void): 
         const ghost = (e.currentTarget as HTMLElement).closest('[data-drag-item]');
         if (ghost) e.dataTransfer.setDragImage(ghost, 24, 24);
       },
-      onDragEnd: () => { dragging.current = null; setDragId(null); setOverId(null); },
+      onDragEnd: () => { dragging.current = null; grab.current = undefined; setDragId(null); setOverId(null); setZone('over'); },
     }),
     targetProps: id => ({
       onDragOver: e => {
@@ -80,7 +130,9 @@ export function useDragList(onDropped: (fromId: string, toId: string) => void): 
         // refuses the drop and the cursor stays a "no entry" sign.
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        const zone = zoneAt(e.clientX, e.currentTarget.getBoundingClientRect(), grab.current);
         if (overId !== id) setOverId(id);
+        if (overZone !== zone) setZone(zone);
       },
       onDragLeave: () => setOverId(prev => (prev === id ? null : prev)),
       onDrop: e => {
@@ -91,10 +143,16 @@ export function useDragList(onDropped: (fromId: string, toId: string) => void): 
         const from = dragging.current;
         if (!from) return;
         e.preventDefault();
+        // Read the zone from this event rather than from state: the last
+        // dragover may have been a frame ago, and dropping on the very edge
+        // has to land where the indicator said it would.
+        const zone = zoneAt(e.clientX, e.currentTarget.getBoundingClientRect(), grab.current);
         dragging.current = null;
+        grab.current = undefined;
         setDragId(null);
         setOverId(null);
-        if (from !== id) onDropped(from, id);
+        setZone('over');
+        if (from !== id) onDropped(from, id, zone);
       },
     }),
   };

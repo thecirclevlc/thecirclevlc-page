@@ -3,7 +3,8 @@
 // Falla con código != 0 si algo se rompe.
 import assert from 'node:assert/strict';
 import {
-  packRows, rowLayout, rowFill, spanOf, isWordReveal,
+  packRows, rowLayout, rowFill, spanOf, isWordReveal, placeBeside, separate, insertBlocks,
+  removeBlock, canPlaceBeside,
   DEFAULT_BLOCK_STYLE, SPAN_OPTIONS, WIDTH_OPTIONS, REVEAL_OPTIONS, SURFACE_OPTIONS,
   type BlockStyle, type BlockSpan,
 } from './blockStyle.ts';
@@ -196,4 +197,148 @@ for (const span of spanValues)
       assert.ok(!all.includes('undefined'), `combinación rota: ${span}/${w}/${r}`);
     }
 
-console.log('blockStyle OK — 80 casos');
+
+// ── Soltar un bloque al lado de otro ─────────────────────────────
+// Lo que pidió la clienta después de probarlo: "no entiendo cómo sería el mover
+// la organización para que el texto se mueva y de otro lado esté una imagen...
+// requiero que sea más fácil y effortless". Arrastrar la foto al lado del
+// párrafo es el gesto entero; la aritmética la hace esto.
+const named = (...ids: string[]) => ids.map(id => ({ id, style: {} }));
+const seen = (list: { id: string; style?: BlockStyle }[]) =>
+  list.map(b => `${b.id}:${spanOf(b.style)}`).join(' ');
+
+// La foto (b) cae a la derecha del texto (a): quedan medias filas, en ese orden.
+assert.equal(seen(placeBeside(named('a', 'b'), 'b', 'a', 'right')), 'a:half b:half');
+// Y a la izquierda, al otro lado.
+assert.equal(seen(placeBeside(named('a', 'b'), 'b', 'a', 'left')), 'b:half a:half');
+// Traer uno de lejos también lo coloca al lado, no al final.
+assert.equal(seen(placeBeside(named('a', 'b', 'c'), 'c', 'a', 'right')), 'a:half c:half b:full');
+
+// Un tercero que cae sobre una pareja reparte la fila en tres, no deja huérfano.
+const pareja = placeBeside(named('a', 'b', 'c'), 'b', 'a', 'right');
+assert.equal(seen(placeBeside(pareja, 'c', 'a', 'right')), 'a:third c:third b:third');
+// Un cuarto ya no cabe: se rechaza entero en vez de inventar algo.
+const trio = placeBeside(pareja, 'c', 'a', 'right');
+const cuatro = placeBeside([...trio, { id: 'd', style: {} }], 'd', 'a', 'right');
+assert.equal(seen(cuatro), seen([...trio, { id: 'd', style: {} }]), 'un cuarto en la fila no se acepta');
+
+// Entradas imposibles devuelven la lista tal cual, sin romper nada.
+assert.equal(seen(placeBeside(named('a', 'b'), 'a', 'a', 'right')), 'a:full b:full', 'soltarse encima de sí mismo no hace nada');
+assert.equal(seen(placeBeside(named('a', 'b'), 'zzz', 'a', 'right')), 'a:full b:full', 'un id que no existe no hace nada');
+
+// ── Y deshacerlo ─────────────────────────────────────────────────
+// La salida tiene que ser tan fácil como la entrada, o una fila hecha sin
+// querer es una fila para siempre.
+// pareja es [a:half b:half c:full] y trio es [a:third c:third b:third].
+assert.equal(seen(separate(pareja, 'b')), 'a:full b:full c:full', 'separar deshace la pareja del todo');
+// El separado baja debajo de su fila, y los dos que quedan se juntan de verdad.
+assert.equal(seen(separate(trio, 'c')), 'a:half b:half c:full',
+  'al salir uno de tres, los dos que quedan quedan pegados y se reparten la fila');
+assert.equal(seen(separate(named('a'), 'a')), 'a:full', 'separar un bloque ya solo no lo estropea');
+assert.equal(seen(separate(named('a', 'b'), 'zzz')), 'a:full b:full', 'un id que no existe no toca nada');
+
+// Ninguna fila resultante se pasa de doce, hagas lo que hagas.
+for (const l of [pareja, trio, separate(trio, 'c'), placeBeside(trio, 'b', 'c', 'left')])
+  for (const row of packRows(l)) assert.ok(rowFill(row) <= 12, `fila de ${rowFill(row)}`);
+
+// ── Insertar una combinación entera ──────────────────────────────
+// EL FALLO QUE ESTO PROTEGE: las filas se reparten en avalancha sobre la lista
+// plana, así que meter la pareja "Photo + text" justo detrás de un bloque que
+// estaba solo a media fila emparejaba la FOTO con ese bloque y dejaba el TEXTO
+// tirado en otra fila. Pulsas "foto + texto" y no obtienes foto junto a texto,
+// que es la única promesa del botón.
+const filas = (l: { id: string; style?: BlockStyle }[]) =>
+  packRows(l).map(r => r.map(b => b.id).join('+')).join(' | ');
+
+type Test = { id: string; style: BlockStyle };
+const suelto: Test[] = [{ id: 'A', style: { span: 'half' } }];
+const pareja2: Test[] = [{ id: 'C', style: { span: 'half' } }, { id: 'D', style: { span: 'half' } }];
+assert.equal(filas([...suelto, ...pareja2]), 'A+C | D', 'así se rompía antes');
+assert.equal(filas(insertBlocks(suelto, pareja2, 'A')), 'A | C+D',
+  'la fila de arriba se cierra y la pareja entra entera');
+
+// Detrás de una fila ya llena no hace falta tocar nada.
+const llena: Test[] = [{ id: 'A', style: { span: 'half' } }, { id: 'B', style: { span: 'half' } }];
+assert.equal(filas(insertBlocks(llena, pareja2, 'B')), 'A+B | C+D');
+assert.deepEqual(insertBlocks(llena, pareja2, 'B').slice(0, 2), llena, 'no toca lo que ya estaba bien');
+
+// Al principio de la página no hay nada que cerrar.
+assert.equal(filas(insertBlocks(suelto, pareja2, null)), 'C+D | A');
+
+// Un bloque suelto se inserta sin reordenar nada de lo de arriba.
+const uno: Test[] = [{ id: 'X', style: {} }];
+assert.deepEqual(insertBlocks(suelto, uno, 'A').map(b => b.id), ['A', 'X']);
+assert.equal(spanOf(insertBlocks(suelto, uno, 'A')[0].style), 'half',
+  'añadir un solo bloque no reescribe la fila de arriba');
+
+// Un id que ya no existe mete la combinación al final, sin perderla.
+assert.deepEqual(insertBlocks(suelto, pareja2, 'zzz').map(b => b.id), ['A', 'C', 'D']);
+
+// Tres tercios detrás de una fila a medias también entran enteros.
+const tercios: Test[] = ['C', 'D', 'E'].map(id => ({ id, style: { span: 'third' } }));
+assert.equal(filas(insertBlocks(suelto, tercios, 'A')), 'A | C+D+E');
+
+// Y jamás sale una fila de más de doce.
+for (const l of [insertBlocks(suelto, pareja2, 'A'), insertBlocks(suelto, tercios, 'A'),
+                 insertBlocks(llena, tercios, 'A')])
+  for (const row of packRows(l)) assert.ok(rowFill(row) <= 12, `fila de ${rowFill(row)}`);
+
+// ── Arrastrar no puede descolocar lo que ella no tocó ────────────
+// EL FALLO QUE ESTO PROTEGE: al sacar un bloque de su fila, los que se quedan
+// mantenían su media/tercio, así que esa fila quedaba corta — y el reparto
+// avaricioso se tragaba el bloque siguiente para rellenarla. Mover una foto
+// movía además una sección que ella no había tocado. Reproducido de verdad:
+// [P1a P1b][P2a P2b] soltando P1b a la derecha de P2a daba [P1a P2a][P1b P2b].
+const H = (id: string): Test => ({ id, style: { span: 'half' } });
+const dosParejas: Test[] = [H('P1a'), H('P1b'), H('P2a'), H('P2b')];
+
+assert.equal(filas(placeBeside(dosParejas, 'P1b', 'P2a', 'right')), 'P1a | P2a+P1b+P2b',
+  'la fila de origen se cierra y P1b aterriza a la derecha de P2a');
+assert.equal(filas(placeBeside(dosParejas, 'P1b', 'P2a', 'left')), 'P1a | P1b+P2a+P2b',
+  'y a la izquierda, del otro lado');
+// Nadie más se mueve de fila: P1a se queda donde estaba, ahora a fila entera.
+assert.equal(spanOf(placeBeside(dosParejas, 'P1b', 'P2a', 'right')[0].style), 'full');
+for (const side of ['left', 'right'] as const)
+  for (const row of packRows(placeBeside(dosParejas, 'P1b', 'P2a', side)))
+    assert.ok(rowFill(row) === 12, `fila a medias tras arrastrar: ${rowFill(row)}`);
+
+// Mover dentro de la propia fila sólo intercambia los lados.
+assert.equal(filas(placeBeside([H('A'), H('B')], 'B', 'A', 'left')), 'B+A');
+assert.equal(filas(placeBeside([H('A'), H('B')], 'B', 'A', 'right')), 'A+B');
+
+// ── Lo que no cabe se dice antes, no después ─────────────────────
+// Enseñar la barra de "aquí cae" y luego no hacer nada es peor que no dejarla.
+const tresAncho: Test[] = ['A', 'B', 'C'].map(id => ({ id, style: { span: 'third' } }));
+const conCuarto: Test[] = [...tresAncho, { id: 'D', style: {} }];
+assert.equal(canPlaceBeside(conCuarto, 'D', 'A'), false, 'un cuarto no cabe en una fila de tres');
+assert.equal(filas(placeBeside(conCuarto, 'D', 'A', 'right')), filas(conCuarto), 'y no hace nada');
+assert.equal(canPlaceBeside([H('A'), H('B')], 'B', 'A'), true, 'dentro de la pareja sí cabe');
+assert.equal(canPlaceBeside(dosParejas, 'P1b', 'P2a'), true, 'de una pareja a otra, tres caben');
+assert.equal(canPlaceBeside(dosParejas, 'P1a', 'P1a'), false, 'sobre sí mismo no');
+assert.equal(canPlaceBeside(dosParejas, 'P1a', 'zzz'), false, 'sobre un id que no existe no');
+
+// ── Separar tiene que dejar la página cerrada ────────────────────
+// EL FALLO QUE ESTO PROTEGE: sacar el bloque del medio de tres re-anchaba a los
+// otros dos a mitad... pero el bloque separado seguía FÍSICAMENTE entre ellos,
+// así que no podían juntarse y quedaban dos filas a medias. Ahora baja debajo.
+assert.equal(filas(separate(tresAncho, 'B')), 'A+C | B',
+  'el de en medio baja y los otros dos se juntan');
+assert.equal(filas(separate(tresAncho, 'A')), 'B+C | A');
+assert.equal(filas(separate([H('A'), H('B')], 'A')), 'B | A', 'de una pareja salen dos filas enteras');
+for (const id of ['A', 'B', 'C'])
+  for (const row of packRows(separate(tresAncho, id)))
+    assert.ok(rowFill(row) === 12, `separar dejó una fila a medias: ${rowFill(row)}`);
+
+// ── Borrar tampoco puede dejar hueco ─────────────────────────────
+// Borrar la mitad de una pareja dejaba a la superviviente a media fila con la
+// otra media en blanco para siempre: el hueco que ella pidió quitar, devuelto
+// por el botón de borrar.
+assert.equal(filas(removeBlock([H('A'), H('B')], 'B')), 'A', 'la superviviente recupera la fila entera');
+assert.equal(spanOf(removeBlock([H('A'), H('B')], 'B')[0].style), 'full');
+assert.equal(filas(removeBlock(tresAncho, 'B')), 'A+C', 'de tres a dos, mitades');
+assert.equal(removeBlock([H('A'), H('B')], 'zzz').length, 2, 'un id que no existe no borra nada');
+assert.equal(removeBlock([H('A')], 'A').length, 0);
+for (const row of packRows(removeBlock(tresAncho, 'B')))
+  assert.ok(rowFill(row) === 12, 'borrar dejó una fila a medias');
+
+console.log('blockStyle OK — 136 casos');

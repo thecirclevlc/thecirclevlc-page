@@ -9,7 +9,11 @@ import BlockToolbar from './BlockToolbar';
 import EditableText from './EditableText';
 import { useEditMode } from '../contexts/EditModeContext';
 import { useDragList, reorder } from '../hooks/useDragList';
-import { packRows, rowLayout, isWordReveal, type BlockStyle } from '../lib/blockStyle';
+import {
+  packRows, rowLayout, placeBeside, canPlaceBeside, separate, removeBlock, insertBlocks,
+  spanOf, isWordReveal, type BlockStyle,
+} from '../lib/blockStyle';
+import { isBlockEmpty, emptyBlockHint, BLOCK_PRESETS } from '../lib/pageBlock';
 import { linkTarget, type LinkTarget } from '../lib/blockLink';
 import { supabase } from '../lib/supabase';
 import { embedUrl } from '../lib/embedUrl';
@@ -204,18 +208,24 @@ function GalleryBlock({ block }: { block: Extract<PageBlock, { type: 'gallery' }
 function VideoBlock({ block }: { block: Extract<PageBlock, { type: 'video' }> }) {
   const embed = embedUrl(block.url ?? '');
   if (!embed) {
-    // Not embeddable — but she typed *something*, so surface it as a link
-    // instead of swallowing it. Silently dropping her content is how she
-    // ends up thinking the panel is broken.
-    return block.url ? (
+    // The heading comes out either way. It used to be inside the `block.url`
+    // branch, so a heading typed before the link was pasted was dropped on the
+    // floor while the block still painted its whole band — the invisible gap
+    // again, this time with her words inside it.
+    return (
       <>
         <BlockHeading text={block.heading} style={block.style} />
-        <a href={block.url} target="_blank" rel="noopener noreferrer"
-           className="text-primary underline underline-offset-4 hover:text-fg transition-colors break-all">
-          {block.url}
-        </a>
+        {/* Not embeddable — but she typed *something*, so surface it as a link
+            instead of swallowing it. Silently dropping her content is how she
+            ends up thinking the panel is broken. */}
+        {block.url && (
+          <a href={block.url} target="_blank" rel="noopener noreferrer"
+             className="text-primary underline underline-offset-4 hover:text-fg transition-colors break-all">
+            {block.url}
+          </a>
+        )}
       </>
-    ) : null;
+    );
   }
   return (
     <>
@@ -246,7 +256,10 @@ function VideoBlock({ block }: { block: Extract<PageBlock, { type: 'video' }> })
 function ButtonsBlock({ block }: { block: Extract<PageBlock, { type: 'buttons' }> }) {
   const navigate = useNavigate();
   const items = (block.items ?? []).filter(b => b.label?.trim() && b.url?.trim());
-  if (items.length === 0) return null;
+  // Not `return null` when there are no usable buttons: a heading typed before
+  // the button was filled in would vanish while the block still painted its
+  // band, which is the invisible gap all over again with her words inside it.
+  if (items.length === 0) return <BlockHeading text={block.heading} style={block.style} />;
 
   // Same classifier as the photo links, on purpose. This block is where the
   // panel tells her to paste "your PayPal.me, Ko-fi or Stripe payment link" —
@@ -297,29 +310,27 @@ function FormBlock({ block }: { block: Extract<PageBlock, { type: 'form' }> }) {
   );
 }
 
-/** A new block, with the site's defaults already applied. */
-function newBlock(type: PageBlock['type']): PageBlock {
-  const id = (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
-    ?? Math.random().toString(36).slice(2);
-  const base = { id, style: {} as BlockStyle };
-  switch (type) {
-    case 'text':    return { ...base, type, heading: 'New section', body: 'Write here.' };
-    case 'image':   return { ...base, type, url: '', alt: '', caption: '' };
-    case 'gallery': return { ...base, type, heading: '', images: [] };
-    case 'video':   return { ...base, type, heading: '', url: '', caption: '' };
-    case 'buttons': return { ...base, type, heading: '', items: [] };
-    case 'form':    return { ...base, type, heading: '', form_slug: '' };
-  }
+/**
+ * What an empty block looks like while she is editing.
+ *
+ * It used to look like nothing at all — but still took up its band, so the page
+ * grew 96px on a phone and 160px on a desktop of blank space with nothing in it
+ * to click. That is the "espacio que ya no pude borrar". Visitors now skip it
+ * entirely; she gets a box that says what it is and how to get rid of it.
+ */
+function EmptyBlock({ block }: { block: PageBlock }) {
+  return (
+    <div className="border border-dashed border-primary/30 rounded-lg px-5 py-6 text-center">
+      <p className="text-fg/50 text-sm">{emptyBlockHint(block)}</p>
+      {/* Not just "invisible": the row closes up without it, so what a visitor
+          sees is a different arrangement from the one on this screen until she
+          fills it in. Better said here than discovered after publishing. */}
+      <p className="text-fg/25 text-[11px] mt-1 font-mono uppercase tracking-widest">
+        Visitors skip this — the row closes up without it
+      </p>
+    </div>
+  );
 }
-
-const ADD_TYPES: { type: PageBlock['type']; label: string }[] = [
-  { type: 'text',    label: 'Text' },
-  { type: 'image',   label: 'Photo' },
-  { type: 'gallery', label: 'Gallery' },
-  { type: 'video',   label: 'Video' },
-  { type: 'buttons', label: 'Buttons' },
-  { type: 'form',    label: 'Form' },
-];
 
 /**
  * The thin strip between blocks that adds a new one.
@@ -327,26 +338,36 @@ const ADD_TYPES: { type: PageBlock['type']; label: string }[] = [
  * Nearly invisible until you approach it — the page has to stay readable while
  * being edited, or she cannot judge what she is making.
  */
-function AddBlockRail({ onAdd }: { onAdd: (t: PageBlock['type']) => void }) {
+function AddBlockRail({ onAdd }: { onAdd: (blocks: PageBlock[]) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative h-8 group/rail flex items-center justify-center px-5">
       <span className="absolute inset-x-5 h-px bg-primary/15 group-hover/rail:bg-primary/40 transition-colors" />
       {open ? (
-        <div className="relative z-20 flex flex-wrap gap-1 rounded-lg bg-black/90 backdrop-blur-md border border-white/15 p-1">
-          {ADD_TYPES.map(t => (
-            <button
-              key={t.type}
-              onClick={() => { onAdd(t.type); setOpen(false); }}
-              className="px-3 py-1.5 rounded text-[11px] text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              {t.label}
+        // Arrangements, not parts: "Photo + text" puts both in, already side by
+        // side. Picking the shape you want should not require knowing that a
+        // row is twelve columns wide.
+        <div className="relative z-20 w-[min(30rem,90vw)] rounded-lg bg-black/95 backdrop-blur-md border border-white/15 p-2">
+          <div className="flex items-center justify-between px-1 pb-1.5">
+            <p className="text-white/40 text-[10px] uppercase tracking-[0.14em]">Add here</p>
+            <button onClick={() => setOpen(false)} aria-label="Cancel"
+              className="text-white/40 hover:text-white transition-colors cursor-pointer text-[11px] px-1">
+              ✕
             </button>
-          ))}
-          <button onClick={() => setOpen(false)} aria-label="Cancel"
-            className="px-2 py-1.5 rounded text-[11px] text-white/40 hover:text-white transition-colors cursor-pointer">
-            ✕
-          </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+            {BLOCK_PRESETS.map(p => (
+              <button
+                key={p.id}
+                onClick={() => { onAdd(p.build()); setOpen(false); }}
+                title={p.hint}
+                className="px-2.5 py-2 rounded text-left hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <span className="block text-white/85 text-[12px] leading-tight">{p.label}</span>
+                <span className="block text-white/35 text-[10px] leading-tight mt-0.5">{p.hint}</span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <button
@@ -411,34 +432,39 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
 
   const remove = (blockId: string) => {
     if (!confirm('Delete this block? You can put it back from Change history.')) return;
-    void write(cur => cur.filter(b => b.id !== blockId));
+    // removeBlock, not a filter: deleting one half of a pair used to leave the
+    // survivor at half width with a blank half-row beside it for good.
+    void write(cur => removeBlock(cur, blockId));
   };
 
   const toggleHidden = (blockId: string) =>
     void write(cur => cur.map(b => b.id === blockId ? { ...b, hidden: !b.hidden } : b));
 
   // Hidden blocks stay on the page while editing — greyed out — so she can put
-  // them back. Visitors never see them.
-  const shown = (blocks ?? []).filter(b => editing || !b.hidden);
+  // them back. Visitors never see them, and never see a block with nothing in
+  // it either: an empty block used to paint an invisible band of blank page
+  // that could not be clicked, and so could not be removed.
+  const shown = (blocks ?? []).filter(b => editing || (!b.hidden && !isBlockEmpty(b)));
 
-  const add = (type: PageBlock['type'], afterId: string | null) =>
-    void write(cur => {
-      const block = newBlock(type);
-      if (afterId === null) return [block, ...cur];
-      const i = cur.findIndex(b => b.id === afterId);
-      return i < 0 ? [...cur, block] : [...cur.slice(0, i + 1), block, ...cur.slice(i + 1)];
-    });
+  // insertBlocks, not a plain splice: a pair added after a block that sits
+  // alone on half a row would otherwise be split up by the row packing.
+  const add = (blocks: PageBlock[], afterId: string | null) =>
+    void write(cur => insertBlocks(cur, blocks, afterId));
 
-  // Dropping a block onto another puts it in that one's place. Which row a
-  // block ends up in falls out of the order, so dragging a photo above a
-  // paragraph and dragging it beside one are the same gesture.
-  const drag = useDragList((fromId, toId) =>
-    void write(cur => reorder(
-      cur,
-      cur.findIndex(b => b.id === fromId),
-      cur.findIndex(b => b.id === toId),
-    )),
+  // Drop on the middle of a block and it changes place, as before. Drop on the
+  // left or right edge and the two end up side by side — the whole "photo next
+  // to the text" arrangement, as one gesture, with no menu and nothing to know
+  // about columns.
+  const drag = useDragList((fromId, toId, zone) =>
+    void write(cur => zone !== 'over' && canPlaceBeside(cur, fromId, toId)
+      ? placeBeside(cur, fromId, toId, zone)
+      // A row that is already three across cannot take a fourth, so the drop
+      // falls back to reordering rather than quietly doing nothing after the
+      // indicator promised a landing.
+      : reorder(cur, cur.findIndex(b => b.id === fromId), cur.findIndex(b => b.id === toId))),
   );
+
+  const detach = (blockId: string) => void write(cur => separate(cur, blockId));
 
   // Rows are packed from what is on screen: a hidden block keeps its place in
   // the row while she is editing, and the row closes up the moment it goes
@@ -455,7 +481,7 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
 
   return (
     <>
-      {editing && <AddBlockRail onAdd={t => add(t, null)} />}
+      {editing && <AddBlockRail onAdd={bs => add(bs, null)} />}
 
       {rows.map(row => {
         const layout = rowLayout(row);
@@ -478,9 +504,23 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
                       } ${block.hidden ? 'opacity-40' : ''} ${
                         drag.dragId === block.id ? 'opacity-30' : ''
                       } ${
-                        drag.overId === block.id ? 'outline-2 outline-solid outline-primary' : ''
+                        drag.overId === block.id && (drag.overZone === 'over'
+                          || !(drag.dragId && canPlaceBeside(blocks ?? [], drag.dragId, block.id)))
+                          ? 'outline-2 outline-solid outline-primary' : ''
                       }`}
                     >
+                      {/* A bar down the edge you are about to drop on, so the
+                          side-by-side gesture announces itself before you let
+                          go rather than after. */}
+                      {drag.overId === block.id && drag.overZone !== 'over'
+                        && drag.dragId && canPlaceBeside(blocks ?? [], drag.dragId, block.id) && (
+                        <span
+                          aria-hidden
+                          className={`absolute inset-y-0 w-1.5 bg-primary rounded-full z-40 pointer-events-none ${
+                            drag.overZone === 'left' ? 'left-0 -ml-0.5' : 'right-0 -mr-0.5'
+                          }`}
+                        />
+                      )}
                       {editing && (
                         <BlockToolbar
                           style={block.style}
@@ -495,6 +535,7 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
                           dragHandleProps={drag.handleProps(block.id)}
                           open={openBlockId === block.id}
                           onOpenChange={o => setOpenBlockId(o ? block.id : null)}
+                          onSeparate={spanOf(block.style) !== 'full' ? () => detach(block.id) : undefined}
                         />
                       )}
 
@@ -502,7 +543,14 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
                           the cells instead and they stop being grid items. */}
                       <BlockReveal kind={block.style?.reveal} delay={delay}>
                         <div className={layout.cells[cell].inner}>
-                          {block.type === 'text'    ? <TextBlock    block={block} edit={edit as any} />
+                          {/* An emptied text block keeps its own editor rather
+                              than being replaced by the placeholder: the
+                              placeholder said "click it to write something" and
+                              clicking it did nothing, because the thing you
+                              write into had just been swapped out. */}
+                          {isBlockEmpty(block) && !(block.type === 'text' && edit)
+                                                    ? <EmptyBlock    block={block} />
+                         : block.type === 'text'    ? <TextBlock    block={block} edit={edit as any} />
                          : block.type === 'image'   ? <ImageBlock   block={block} />
                          : block.type === 'gallery' ? <GalleryBlock block={block} />
                          : block.type === 'video'   ? <VideoBlock   block={block} />
@@ -521,7 +569,7 @@ export default function PageBlocks({ blocks, pageId, onBlocksChange }: BlocksPro
             {/* A rail after every row, not just at the two ends: adding a
                 section in the middle of a page used to mean adding it at the
                 bottom and clicking ↑ until it arrived. */}
-            {editing && <AddBlockRail onAdd={t => add(t, row[row.length - 1].id)} />}
+            {editing && <AddBlockRail onAdd={bs => add(bs, row[row.length - 1].id)} />}
           </React.Fragment>
         );
       })}

@@ -11,7 +11,9 @@ import {
   type HomeLayout, type PageBlock, type PageBlockType, type HomeDensity,
 } from '../lib/database.types';
 import { listForms, type FormListItem } from '../lib/formSchema';
-import { BlockEditor, BLOCK_TYPES, newBlock } from './AdminPageForm';
+import { BlockEditor, BLOCK_TYPES } from './AdminPageForm';
+import { BLOCK_PRESETS } from '../lib/pageBlock';
+import { insertBlocks } from '../lib/blockStyle';
 
 /**
  * The home page, as something she arranges rather than something she receives.
@@ -93,9 +95,18 @@ export default function AdminHome() {
     patch({ hidden: [...next] });
   };
 
-  const addBlock = (type: PageBlockType) => {
-    const block = newBlock(type);
-    patch({ blocks: [...layout.blocks, block], order: [...order, block.id] });
+  // A preset can be more than one block ("Photo + text" is two, already side by
+  // side), so both the block list and the order take all of them.
+  const addPreset = (blocks: PageBlock[]) => {
+    // The home page renders by `order`, not by the `blocks` array, so the row
+    // packing has to be reasoned about in display order — otherwise "Photo +
+    // text" was still split apart here even though the page editor got it right.
+    const ordered = order
+      .map(id => layout.blocks.find(b => b.id === id))
+      .filter((b): b is PageBlock => Boolean(b));
+    const last = ordered.length ? ordered[ordered.length - 1].id : null;
+    const next = insertBlocks(ordered, blocks, last);
+    patch({ blocks: next, order: [...order, ...blocks.map(b => b.id)] });
   };
 
   const editBlock = (id: string, next: PageBlock) =>
@@ -281,16 +292,23 @@ export default function AdminHome() {
       <section className={SECTION}>
         <p className={LABEL}>Add to the home page</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {BLOCK_TYPES.map(t => (
-            <button key={t.type} onClick={() => addBlock(t.type)}
-              className="flex items-start gap-2 px-3 py-2.5 bg-[#0d0d0d] hover:bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-left transition-colors">
-              <t.icon size={14} className="text-[#666] mt-0.5 flex-shrink-0" />
-              <span>
-                <span className="block text-[#ccc] text-sm">{t.label}</span>
-                <span className="block text-[#555] text-xs">{t.hint}</span>
-              </span>
-            </button>
-          ))}
+          {BLOCK_PRESETS.map(p => {
+            const Icon = BLOCK_TYPES.find(t => t.type === p.icon)?.icon;
+            const pairs = p.build().length > 1;
+            return (
+              <button key={p.id} onClick={() => addPreset(p.build())}
+                className="flex items-start gap-2 px-3 py-2.5 bg-[#0d0d0d] hover:bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-left transition-colors">
+                {Icon && <Icon size={14} className="text-[#666] mt-0.5 flex-shrink-0" />}
+                <span className="min-w-0">
+                  <span className="block text-[#ccc] text-sm">
+                    {p.label}
+                    {pairs && <span className="text-[#059669] text-[10px] ml-1.5 uppercase tracking-widest">row</span>}
+                  </span>
+                  <span className="block text-[#555] text-xs">{p.hint}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 

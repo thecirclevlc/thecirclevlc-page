@@ -13,7 +13,10 @@ import { embedUrl } from '../lib/embedUrl';
 import AdminHistory from './AdminHistory';
 import BlockLayoutControls from '../components/BlockLayoutControls';
 import { useDragList, reorder } from '../hooks/useDragList';
-import { spanOf, packRows, rowFill, SPAN_OPTIONS } from '../lib/blockStyle';
+import {
+  spanOf, packRows, rowFill, placeBeside, canPlaceBeside, removeBlock, insertBlocks, SPAN_OPTIONS,
+} from '../lib/blockStyle';
+import { BLOCK_PRESETS, newBlock, uuid } from '../lib/pageBlock';
 import { describeLinkTarget } from '../lib/blockLink';
 import {
   validatePageSlug, ratioClass,
@@ -38,22 +41,11 @@ export const BLOCK_TYPES: { type: PageBlockType; label: string; hint: string; ic
   { type: 'form',    label: 'Form',    hint: 'Send people to one of your forms', icon: FormInput },
 ];
 
-export function uuid() {
-  return (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
-    ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
-export function newBlock(type: PageBlockType): PageBlock {
-  const id = uuid();
-  switch (type) {
-    case 'text':    return { id, type, heading: '', body: '' };
-    case 'image':   return { id, type, url: '', alt: '', caption: '' };
-    case 'gallery': return { id, type, heading: '', images: [] };
-    case 'video':   return { id, type, heading: '', url: '', caption: '' };
-    case 'buttons': return { id, type, heading: '', items: [{ id: uuid(), label: '', url: '', primary: true }] };
-    case 'form':    return { id, type, heading: '', form_slug: '' };
-  }
-}
+// `newBlock` and `uuid` now live in lib/pageBlock.ts and are re-exported here
+// so the screens that already imported them from this file keep working. They
+// had drifted from the live editor's copies: the same button produced an empty
+// text block here and a filled one there.
+export { newBlock, uuid };
 
 // ── One block's editor ────────────────────────────────────────────
 
@@ -424,7 +416,12 @@ export default function AdminPageForm() {
   const update = (patch: Partial<Page>) => { setPage(prev => prev && { ...prev, ...patch }); setDirty(true); };
   const setBlocks = (blocks: PageBlock[]) => update({ blocks });
 
-  const addBlock = (type: PageBlockType) => setBlocks([...(page?.blocks ?? []), newBlock(type)]);
+  // insertBlocks rather than a plain append: a pair tacked onto a page whose
+  // last row is only half full would be pulled apart by the row packing.
+  const addPreset = (blocks: PageBlock[]) => {
+    const arr = page?.blocks ?? [];
+    setBlocks(insertBlocks(arr, blocks, arr.length ? arr[arr.length - 1].id : null));
+  };
 
   const moveBlock = (idx: number, dir: -1 | 1) => {
     const arr = (page?.blocks ?? []).slice();
@@ -434,9 +431,15 @@ export default function AdminPageForm() {
     setBlocks(arr);
   };
 
-  const drag = useDragList((fromId, toId) => {
+  // Dropping on the left or right edge of another block puts the two side by
+  // side; the middle just reorders. Same gesture as on the live page.
+  const drag = useDragList((fromId, toId, zone) => {
     const arr = page?.blocks ?? [];
-    setBlocks(reorder(arr, arr.findIndex(b => b.id === fromId), arr.findIndex(b => b.id === toId)));
+    setBlocks(zone !== 'over' && canPlaceBeside(arr, fromId, toId)
+      ? placeBeside(arr, fromId, toId, zone)
+      // A row already three across cannot take a fourth, so fall back to
+      // reordering instead of doing nothing at all.
+      : reorder(arr, arr.findIndex(b => b.id === fromId), arr.findIndex(b => b.id === toId)));
   });
 
   const slugProblem = page ? validatePageSlug(page.slug, takenSlugs) : null;
@@ -536,7 +539,8 @@ export default function AdminPageForm() {
         <div className="flex items-center justify-between">
           <p className="text-white text-sm font-medium">Content ({(page.blocks ?? []).length})</p>
           <p className="text-[#555] text-xs">
-            Drag by the handle or use ↑ ↓ · the sliders set how much of a row a block takes
+            Drag by the handle onto the <strong className="text-[#888] font-normal">side</strong> of
+            another block to put the two side by side · onto the middle to just reorder
           </p>
         </div>
 
@@ -578,7 +582,7 @@ export default function AdminPageForm() {
                       onChange={next => setBlocks(arr.map((b, i) => i === idx ? next : b))}
                       onMoveUp={() => moveBlock(idx, -1)}
                       onMoveDown={() => moveBlock(idx, 1)}
-                      onDelete={() => { if (confirm('Delete this block?')) setBlocks(arr.filter((_, i) => i !== idx)); }}
+                      onDelete={() => { if (confirm('Delete this block?')) setBlocks(removeBlock(arr, block.id)); }}
                       canUp={idx > 0}
                       canDown={idx < arr.length - 1}
                       dragHandleProps={drag.handleProps(block.id)}
@@ -593,17 +597,27 @@ export default function AdminPageForm() {
 
         <div className="bg-[#0d0d0d] border border-dashed border-[#222] rounded-lg p-4">
           <p className={LABEL}>Add content</p>
+          {/* Arrangements, not parts. "Photo + text" drops in both blocks
+              already side by side, so getting the layout she pictured never
+              requires knowing that a row is twelve columns wide. */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {BLOCK_TYPES.map(t => (
-              <button key={t.type} onClick={() => addBlock(t.type)}
-                className="flex items-start gap-2 px-3 py-2.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-left transition-colors">
-                <t.icon size={14} className="text-[#666] mt-0.5 flex-shrink-0" />
-                <span>
-                  <span className="block text-[#ccc] text-sm">{t.label}</span>
-                  <span className="block text-[#555] text-xs">{t.hint}</span>
-                </span>
-              </button>
-            ))}
+            {BLOCK_PRESETS.map(p => {
+              const Icon = BLOCK_TYPES.find(t => t.type === p.icon)?.icon ?? Type;
+              const pairs = p.build().length > 1;
+              return (
+                <button key={p.id} onClick={() => addPreset(p.build())}
+                  className="flex items-start gap-2 px-3 py-2.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-left transition-colors">
+                  <Icon size={14} className="text-[#666] mt-0.5 flex-shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block text-[#ccc] text-sm">
+                      {p.label}
+                      {pairs && <span className="text-[#059669] text-[10px] ml-1.5 uppercase tracking-widest">row</span>}
+                    </span>
+                    <span className="block text-[#555] text-xs">{p.hint}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
