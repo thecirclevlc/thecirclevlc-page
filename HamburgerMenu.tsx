@@ -1,5 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
+import type { gsap as Gsap } from 'gsap';
+import { loadGsap } from './lib/gsapReady';
+
+/**
+ * GSAP, once it has arrived.
+ *
+ * Unlike the scroll reveals, this menu genuinely needs it: the overlay starts
+ * at `opacity: 0` in the markup and it is GSAP that reveals it. So it is not
+ * gated on `prefers-reduced-motion` — that would leave the menu unopenable for
+ * anyone who asked for less motion.
+ *
+ * It is still fetched after the first paint, and warmed on mount, so by the
+ * time a finger reaches the button it has long since landed.
+ */
+let G: typeof Gsap | null = null;
+const withGsap = (fn: (g: typeof Gsap) => void) => {
+  if (G) { fn(G); return; }
+  void loadGsap().then(({ gsap }) => { G = gsap; fn(gsap); });
+};
 import { useNavigate } from 'react-router-dom';
 import { useSiteBlock } from './hooks/useSiteContent';
 import { supabase } from './lib/supabase';
@@ -80,64 +98,74 @@ export const HamburgerMenu: React.FC = () => {
 
     if (!overlay || !menuItems || !button || !c1 || !c2 || !c3) return;
 
-    if (isOpen) {
-      const buttonRect = button.getBoundingClientRect();
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-      const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-      const maxDistX = Math.max(buttonCenterX, window.innerWidth - buttonCenterX);
-      const maxDistY = Math.max(buttonCenterY, window.innerHeight - buttonCenterY);
-      const maxRadius = Math.sqrt(maxDistX * maxDistX + maxDistY * maxDistY);
+    let cancelled = false;
+    withGsap(gsap => {
+    if (cancelled) return;
 
-      document.body.style.overflow = 'hidden';
+      if (isOpen) {
+        const buttonRect = button.getBoundingClientRect();
+        const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+        const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+        const maxDistX = Math.max(buttonCenterX, window.innerWidth - buttonCenterX);
+        const maxDistY = Math.max(buttonCenterY, window.innerHeight - buttonCenterY);
+        const maxRadius = Math.sqrt(maxDistX * maxDistX + maxDistY * maxDistY);
 
-      const tl = gsap.timeline();
-      tl.to(c1, { rotation: 45, x: 5, y: 0, duration: 0.6, ease: 'expo.inOut' })
-        .to(c2, { opacity: 0, scale: 0, duration: 0.4, ease: 'expo.inOut' }, '-=0.5')
-        .to(c3, { rotation: -45, x: -5, y: 0, duration: 0.6, ease: 'expo.inOut' }, '-=0.6');
+        document.body.style.overflow = 'hidden';
 
-      gsap.fromTo(
-        overlay,
-        { opacity: 1, clipPath: `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)` },
-        { clipPath: `circle(${maxRadius}px at ${buttonCenterX}px ${buttonCenterY}px)`,
-          duration: 1.2, ease: 'expo.inOut', delay: 0.1 },
-      );
+        const tl = gsap.timeline();
+        tl.to(c1, { rotation: 45, x: 5, y: 0, duration: 0.6, ease: 'expo.inOut' })
+          .to(c2, { opacity: 0, scale: 0, duration: 0.4, ease: 'expo.inOut' }, '-=0.5')
+          .to(c3, { rotation: -45, x: -5, y: 0, duration: 0.6, ease: 'expo.inOut' }, '-=0.6');
 
-      const items = menuItems.querySelectorAll('.menu-item');
-      gsap.fromTo(
-        items,
-        {
-          opacity: 0, scale: 0.3,
-          x: window.innerWidth / 2 - buttonCenterX,
-          y: window.innerHeight / 2 - buttonCenterY,
-        },
-        { opacity: 1, scale: 1, x: 0, y: 0,
-          duration: 1, stagger: 0.1, delay: 0.5, ease: 'expo.out' },
-      );
-    } else {
-      const tl = gsap.timeline({ onComplete: () => { document.body.style.overflow = ''; } });
-      tl.to(c1, { rotation: 0, x: 0, y: 0, duration: 0.5, ease: 'expo.inOut' })
-        .to(c2, { opacity: 1, scale: 1, duration: 0.4, ease: 'expo.inOut' }, '-=0.4')
-        .to(c3, { rotation: 0, x: 0, y: 0, duration: 0.5, ease: 'expo.inOut' }, '-=0.5');
+        gsap.fromTo(
+          overlay,
+          { opacity: 1, clipPath: `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)` },
+          { clipPath: `circle(${maxRadius}px at ${buttonCenterX}px ${buttonCenterY}px)`,
+            duration: 1.2, ease: 'expo.inOut', delay: 0.1 },
+        );
 
-      const items = menuItems.querySelectorAll('.menu-item');
-      gsap.to(items, { opacity: 0, scale: 0.3, duration: 0.5, stagger: 0.05, ease: 'expo.in' });
+        const items = menuItems.querySelectorAll('.menu-item');
+        gsap.fromTo(
+          items,
+          {
+            opacity: 0, scale: 0.3,
+            x: window.innerWidth / 2 - buttonCenterX,
+            y: window.innerHeight / 2 - buttonCenterY,
+          },
+          { opacity: 1, scale: 1, x: 0, y: 0,
+            duration: 1, stagger: 0.1, delay: 0.5, ease: 'expo.out' },
+        );
+      } else {
+        const tl = gsap.timeline({ onComplete: () => { document.body.style.overflow = ''; } });
+        tl.to(c1, { rotation: 0, x: 0, y: 0, duration: 0.5, ease: 'expo.inOut' })
+          .to(c2, { opacity: 1, scale: 1, duration: 0.4, ease: 'expo.inOut' }, '-=0.4')
+          .to(c3, { rotation: 0, x: 0, y: 0, duration: 0.5, ease: 'expo.inOut' }, '-=0.5');
 
-      const buttonRect = button.getBoundingClientRect();
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-      const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+        const items = menuItems.querySelectorAll('.menu-item');
+        gsap.to(items, { opacity: 0, scale: 0.3, duration: 0.5, stagger: 0.05, ease: 'expo.in' });
 
-      gsap.to(overlay, {
-        clipPath: `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)`,
-        duration: 0.8, delay: 0.2, ease: 'expo.inOut',
-        onComplete: () => { gsap.set(overlay, { opacity: 0 }); },
+        const buttonRect = button.getBoundingClientRect();
+        const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+        const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+
+        gsap.to(overlay, {
+          clipPath: `circle(0px at ${buttonCenterX}px ${buttonCenterY}px)`,
+          duration: 0.8, delay: 0.2, ease: 'expo.inOut',
+          onComplete: () => { gsap.set(overlay, { opacity: 0 }); },
       });
     }
 
+    });
+
     return () => {
+      cancelled = true;
       document.body.style.overflow = '';
-      gsap.killTweensOf([overlay, menuItems, c1, c2, c3, ...Array.from(menuItems.querySelectorAll('.menu-item'))]);
+      G?.killTweensOf([overlay, menuItems, c1, c2, c3, ...Array.from(menuItems.querySelectorAll('.menu-item'))]);
     };
   }, [isOpen]);
+
+  // Warm it on mount — after the paint, long before anyone clicks.
+  useEffect(() => { void loadGsap().then(({ gsap }) => { G = gsap; }); }, []);
 
   const handleItemClick = (item: NavItem) => {
     if (item.mode === 'external' && item.external_url) {
@@ -221,13 +249,14 @@ export const HamburgerMenu: React.FC = () => {
 const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo(({ label, onClick }) => {
   const textRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
-  const tlRef = useRef<gsap.core.Timeline | null>(null);
+  const tlRef = useRef<ReturnType<typeof Gsap.timeline> | null>(null);
 
   useEffect(() => () => { tlRef.current?.kill(); }, []);
 
   const handleMouseEnter = () => {
+    if (!G) return;   // not landed yet; the underline simply does not draw
     tlRef.current?.kill();
-    const tl = gsap.timeline();
+    const tl = G.timeline();
     tlRef.current = tl;
     tl.to(textRef.current, { y: -4, color: brandColor(), duration: 0.45, ease: 'power3.out' }, 0);
     tl.fromTo(lineRef.current,
@@ -237,8 +266,9 @@ const MenuItem: React.FC<{ label: string; onClick?: () => void }> = React.memo((
   };
 
   const handleMouseLeave = () => {
+    if (!G) return;
     tlRef.current?.kill();
-    const tl = gsap.timeline();
+    const tl = G.timeline();
     tlRef.current = tl;
     tl.to(textRef.current, { y: 0, color: brandColor(), duration: 0.4, ease: 'power2.out' }, 0);
     tl.to(lineRef.current, { scaleX: 0, transformOrigin: '100% 50%', duration: 0.35, ease: 'power3.in' }, 0);

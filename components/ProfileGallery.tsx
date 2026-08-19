@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ImageLightbox from './ImageLightbox';
+import { sizedImage, sizedSrcSet } from '../lib/imageUrl';
 
 /**
  * Editorial photo gallery — a contact sheet, not a grid of squares.
@@ -76,7 +77,10 @@ export default function ProfileGallery({ images, label = 'Gallery' }: Props) {
                         ${cellClass(i)}`}
           >
             <img
-              src={url}
+              // A thumbnail in a grid; the lightbox is what serves the original.
+              src={sizedImage(url, 640)}
+              srcSet={sizedSrcSet(url, [320, 640, 800])}
+              sizes="(max-width: 768px) 45vw, 30vw"
               alt=""
               loading={i < 4 ? 'eager' : 'lazy'}
               decoding="async"

@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { loadGsap, wantsMotion, alreadySeen } from '../lib/gsapReady';
+import { sizedImage, sizedSrcSet } from '../lib/imageUrl';
 import type { Event as DBEvent } from '../lib/database.types';
-
-gsap.registerPlugin(ScrollTrigger);
 
 /**
  * The event card, shared by /past-events and the home page.
@@ -57,18 +55,23 @@ const EventCard: React.FC<{
 
   useEffect(() => {
     const card = cardRef.current;
-    if (!card) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        card,
-        { opacity: 0, y: 80, scale: 0.95 },
-        {
-          opacity: 1, y: 0, scale: 1, duration: 1.2, delay: index * 0.15, ease: 'power3.out',
-          scrollTrigger: { trigger: card, start: 'top 85%', toggleActions: 'play none none none' },
-        },
-      );
-    }, card);
-    return () => { ctx.revert(); };
+    if (!card || !wantsMotion()) return;
+    let ctx: { revert: () => void } | undefined;
+    let cancelled = false;
+    void loadGsap().then(({ gsap }) => {
+      if (cancelled || alreadySeen(card)) return;
+      ctx = gsap.context(() => {
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 80, scale: 0.95 },
+          {
+            opacity: 1, y: 0, scale: 1, duration: 1.2, delay: index * 0.15, ease: 'power3.out',
+            scrollTrigger: { trigger: card, start: 'top 85%', toggleActions: 'play none none none' },
+          },
+        );
+      }, card);
+    });
+    return () => { cancelled = true; ctx?.revert(); };
   }, [index]);
 
   return (
@@ -85,7 +88,11 @@ const EventCard: React.FC<{
         <div className="relative aspect-[3/4] flex-shrink-0 overflow-hidden bg-black border border-primary/20 group-hover:border-primary/50 transition-colors">
           {event.coverImage ? (
             <img
-              src={event.coverImage}
+              // The card is 320-420 CSS px wide, so it never needs the 1920px
+              // original: that was 664kB a piece and eleven seconds on a phone.
+              src={sizedImage(event.coverImage, 640)}
+              srcSet={sizedSrcSet(event.coverImage, [320, 640, 800])}
+              sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
               alt=""
               loading={index < 3 ? 'eager' : 'lazy'}
               decoding="async"

@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useMotionValue, useScroll, useTransform, useVelocity, useSpring, useInView } from 'framer-motion';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // Icons no longer needed
 import { useNavigate } from 'react-router-dom';
 import { StandardHeader } from './StandardHeader';
@@ -13,6 +11,7 @@ import { brandColor, hexToRgb01 } from './lib/cssVar';
 import HomeEvents from './components/HomeEvents';
 import NewsletterBlock from './components/NewsletterBlock';
 import type { HomeJoinBlock, HomeLayout, PageBlock } from './lib/database.types';
+import { loadGsap, wantsMotion, alreadySeen } from './lib/gsapReady';
 import { HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT, visibleHomeOrder, densityOf } from './lib/database.types';
 import PageBlocks from './components/PageBlocks';
 import { SITE_THEME_KEY, DEFAULT_BACKGROUND, type SiteTheme, type SiteBackground } from './hooks/useSiteTheme';
@@ -21,7 +20,6 @@ import HeroMedia from './components/HeroMedia';
 import { usePageBackground } from './hooks/usePageBackground';
 
 // Register GSAP plugins
-gsap.registerPlugin(ScrollTrigger);
 
 // Smooth scroll utility - Extra slow and smooth (50% slower)
 let scrollAnimationId: number | null = null;
@@ -438,10 +436,19 @@ const ManifestoSection: React.FC = () => {
         const p2 = p2Ref.current;
         const p3 = p3Ref.current;
 
-        if (!leftCol || !p1 || !p2 || !p3) return;
+        if (!leftCol || !p1 || !p2 || !p3 || !wantsMotion()) return;
+
+        let cancelled = false;
+        let mm: ReturnType<typeof import('gsap').gsap.matchMedia> | undefined;
+        // Fetched after the paint rather than before it: none of this draws the
+        // section, it only decorates how it arrives.
+        void loadGsap().then(({ gsap, ScrollTrigger }) => {
+        if (cancelled) return;
 
         // Very subtle fade in and slide up for each paragraph
         [p1, p2, p3].forEach((p, index) => {
+            // Already read by the time the library landed — leave it alone.
+            if (alreadySeen(p)) return;
             gsap.fromTo(p,
                 {
                     opacity: 0,
@@ -466,7 +473,7 @@ const ManifestoSection: React.FC = () => {
         });
 
         // Very subtle parallax on left column (only on desktop)
-        const mm = gsap.matchMedia();
+        mm = gsap.matchMedia();
 
         mm.add("(min-width: 768px)", () => {
             gsap.to(leftCol, {
@@ -481,9 +488,15 @@ const ManifestoSection: React.FC = () => {
             });
         });
 
+        });
+
         // Cleanup
         return () => {
-            ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+            cancelled = true;
+            mm?.revert();
+            void loadGsap().then(({ ScrollTrigger }) => {
+                (ScrollTrigger as { getAll(): { kill(): void }[] }).getAll().forEach(t => t.kill());
+            });
         };
     }, []);
 

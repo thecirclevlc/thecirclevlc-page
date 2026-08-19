@@ -15,6 +15,7 @@ import {
 } from '../lib/blockStyle';
 import { isBlockEmpty, emptyBlockHint, BLOCK_PRESETS } from '../lib/pageBlock';
 import { linkTarget, type LinkTarget } from '../lib/blockLink';
+import { sizedImage, sizedSrcSet } from '../lib/imageUrl';
 import { supabase } from '../lib/supabase';
 import { embedUrl } from '../lib/embedUrl';
 import { formPath, ratioClass, type PageBlock } from '../lib/database.types';
@@ -145,7 +146,11 @@ function ImageBlock({ block }: { block: Extract<PageBlock, { type: 'image' }> })
 
   const img = (
     <img
-      src={block.url}
+      // A block photo is shown at 900px at the very widest (max-w-4xl), and
+      // half that when it shares a row. The original off her phone is 1920+.
+      src={sizedImage(block.url, 1200)}
+      srcSet={sizedSrcSet(block.url, [640, 800, 1200, 1600])}
+      sizes="(max-width: 768px) 92vw, 900px"
       alt={block.alt ?? ''}
       loading="lazy"
       decoding="async"

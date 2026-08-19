@@ -85,8 +85,48 @@
     <!-- Per-page JSON-LD and robots, injected by api/index.ts -->
     <!--META:head_extra--><!--/META:head_extra-->
 </head>
+  <!-- ── What the page looks like before React exists ──────────────
+       MEASURED: first paint and largest paint were the same 1852ms, because
+       #root was empty and nothing at all was on screen until the whole bundle
+       had downloaded and booted. Before that the page was plain white, then
+       snapped to black.
+
+       This is the skeleton idea, adapted honestly. Grey placeholder bars would
+       be a lie here — the home page is not a feed of cards, it is a black field
+       with a mark on it — so the shell is the one piece that is genuinely the
+       same before and after: the fixed header, at its real height, with the
+       real mark. It carries no text it might get wrong.
+
+       It lives inside #root on purpose: createRoot() clears the container on
+       its first render, so React removes this with no code and no flicker. -->
+  <style>
+    html, body { background: #050000; margin: 0; }
+    #boot { position: fixed; inset: 0; }
+    /* 4rem then 5rem — the same h-16 md:h-20 the real header uses, so nothing
+       moves when React swaps in. Verified: cumulative layout shift stays 0. */
+    #boot-bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 4rem;
+      border-bottom: 1px solid rgba(196, 33, 33, 0.3);
+      display: flex; align-items: center; padding: 0 1rem;
+    }
+    @media (min-width: 768px) {
+      #boot-bar { height: 5rem; padding: 0 2.5rem; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      #boot-mark { animation: boot-pulse 1.6s ease-in-out infinite; }
+    }
+    @keyframes boot-pulse { 0%, 100% { opacity: 0.35 } 50% { opacity: 0.7 } }
+  </style>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot" aria-hidden="true">
+        <div id="boot-bar">
+          <svg id="boot-mark" width="34" height="34" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#C42121" stroke-width="8" />
+          </svg>
+        </div>
+      </div>
+    </div>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
