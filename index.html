@@ -63,11 +63,11 @@
         -moz-osx-font-smoothing: grayscale;
       }
       
-      /* Smooth scrolling */
-      html {
-        scroll-behavior: smooth;
-      }
-      
+      /* Smooth scrolling is declared in index.css, inside a reduced-motion
+         query. A second unconditional copy here would win for anyone who has
+         asked their system for less motion, because this rule has no query to
+         lose to. */
+
       /* Hide scrollbar for immersive feel */
       ::-webkit-scrollbar {
         width: 0px;

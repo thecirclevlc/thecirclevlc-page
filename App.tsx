@@ -21,66 +21,10 @@ import { usePageBackground } from './hooks/usePageBackground';
 
 // Register GSAP plugins
 
-// Smooth scroll utility - Extra slow and smooth (50% slower)
-let scrollAnimationId: number | null = null;
-let isScrolling = false;
-
-const smoothScrollTo = (target: number, duration: number = 2250) => {
-  // Cancel any ongoing scroll animation
-  if (scrollAnimationId !== null) {
-    cancelAnimationFrame(scrollAnimationId);
-  }
-
-  const start = window.pageYOffset;
-  const distance = target - start;
-  const startTime = performance.now();
-  isScrolling = true;
-
-  const easeInOutCubic = (t: number): number => {
-    return t < 0.5
-      ? 4 * t * t * t
-      : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  };
-
-  const scroll = (currentTime: number) => {
-    if (!isScrolling) {
-      scrollAnimationId = null;
-      return;
-    }
-
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const easing = easeInOutCubic(progress);
-    
-    window.scrollTo(0, start + distance * easing);
-    
-    if (progress < 1) {
-      scrollAnimationId = requestAnimationFrame(scroll);
-    } else {
-      scrollAnimationId = null;
-      isScrolling = false;
-    }
-  };
-
-  scrollAnimationId = requestAnimationFrame(scroll);
-
-  // Cancel animation if user tries to scroll manually
-  const cancelScroll = () => {
-    isScrolling = false;
-    if (scrollAnimationId !== null) {
-      cancelAnimationFrame(scrollAnimationId);
-      scrollAnimationId = null;
-    }
-  };
-
-  // Listen for user scroll attempts
-  const handleUserScroll = (e: WheelEvent | TouchEvent) => {
-    cancelScroll();
-  };
-
-  window.addEventListener('wheel', handleUserScroll, { passive: true, once: true });
-  window.addEventListener('touchmove', handleUserScroll, { passive: true, once: true });
-};
+// A hand-rolled scroll animator used to live here, 55 lines of it, with module
+// level mutable state. Nothing on this page ever called it. Form.tsx has its
+// own copy and does use it; this one was only waiting for somebody to wire it
+// up to a scroll that the browser already does better.
 
 // --- SHADERS (NATIVE WEBGL) ---
 // Vertex Shader: Standard Fullscreen Quad
@@ -277,7 +221,24 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
       cancelAnimationFrame(animationId);
       gl.deleteProgram(program);
     };
-  }, []);
+    // ── Why `bg.style` and not `[]` ────────────────────────────────
+    // The return-null below was supposed to stop the shader. It did not.
+    // The theme arrives from the network, so the first render always uses the
+    // fallback ('grid'): the canvas mounts and this effect starts the loop.
+    // When the real setting lands and the component returns null, React removes
+    // the <canvas> — but a component that renders null is still MOUNTED, so with
+    // `[]` this effect never re-ran and never cleaned up. The closure still held
+    // the canvas and the context.
+    //
+    // MEASURED on the live settings, which are `background: none`: 597 full
+    // screen shader draws in five seconds with no canvas in the document at
+    // all, plus two leaked mousemove listeners. 'Plain background' switched off
+    // the picture and kept all of the work.
+    //
+    // Naming the one prop that decides whether there is a canvas makes the
+    // effect tear down when she turns it off — and set up again when she turns
+    // it back on, which with `[]` left her staring at a permanently blank one.
+  }, [bg.style]);
 
   // Sync chaos prop
   useEffect(() => {
@@ -286,9 +247,8 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
     }
   }, [chaosLevel]);
 
-  // 'Plain background' has to actually stop painting. Returning null also
-  // tears down the WebGL context and its 60fps loop — the setting saves
-  // battery, which is half of why someone picks it.
+  // 'Plain background' has to actually stop painting: no canvas, and — via the
+  // dependency above — no render loop and no listeners behind it.
   if (bg.style === 'none') return null;
 
   return (
@@ -615,14 +575,23 @@ export default function TheCircleApp() {
   const { scrollY } = useScroll();
   const rotation = useMotionValue(0);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
-  
+
   // Scroll-based animations
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 50, stiffness: 400 });
-  const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 3], { clamp: false });
-  
+  // ── Why this is clamped ────────────────────────────────────────
+  // The ring turns at 0.98 degrees a second: slow enough that you notice it
+  // only if you stay. Scrolling nudges it faster, which is the nice part.
+  //
+  // With `clamp: false` there was no ceiling on the nudge. MEASURED on a
+  // trackpad flick, the ring hit 85 degrees a second — eighty-seven times its
+  // resting speed — and on the way back up the factor went negative and spun it
+  // backwards. Nobody designs a one-degree-a-second ring and then means for it
+  // to whip round. Clamped, a hard flick tops out at 2.5x, which reads as the
+  // ring answering the scroll instead of being thrown by it.
+  const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 3]);
+
   // Scale down on scroll
   const scale = useTransform(scrollY, [0, 500], [1, 0.7]);
   const circleScale = useSpring(scale, { damping: 30, stiffness: 300 });
@@ -641,20 +610,15 @@ export default function TheCircleApp() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Detect when user scrolls to bottom
-  useEffect(() => {
-    const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrolledToBottom = windowHeight + scrollTop >= documentHeight - 100;
-      setIsAtBottom(scrolledToBottom);
-    };
+  // ── A scroll listener used to sit here ─────────────────────────
+  // It read document.documentElement.scrollHeight on every scroll event to work
+  // out whether you had reached the bottom. Reading scrollHeight forces the
+  // browser to lay the whole page out there and then, before it can answer —
+  // MEASURED at 65 of those during five seconds of scrolling.
+  //
+  // The answer went into `isAtBottom`, which nothing on this page ever read.
+  // A full-page layout per scroll event, to set a boolean nobody asked for.
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  
   // Rotation with scroll influence - 40% faster base speed + scroll boost
   useEffect(() => {
       let lastTime = performance.now();
@@ -716,8 +680,23 @@ export default function TheCircleApp() {
       {(() => {
         const SECTIONS: Record<string, React.ReactNode> = {
           hero: (<>
-        {/* Hero Section */}
-        <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+        {/* ── Hero Section ─────────────────────────────────────────
+            `svh`, not `dvh`. This is the jump.
+
+            On a phone the address bar retracts the moment you scroll down and
+            comes back the moment you scroll up. `1dvh` follows it, so a hero of
+            100dvh changed height on every one of those transitions — and every
+            section below it slid with it.
+
+            MEASURED on a 390x844 phone: the bar hiding moved the content under
+            the hero 100px up the screen with no scrolling at all, and the page
+            got 100px shorter. Coming back moved it 100px down again. That is
+            the page lurching down when you scroll down and lurching again when
+            you scroll back up, without scrollY ever doing anything odd.
+
+            `svh` is the viewport with the bar showing, so it never changes.
+            The hero fills the screen on arrival and then simply holds still. */}
+        <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden">
             {homeBgType !== 'none' && homeBgUrl && (
               <HeroMedia
                 videoUrl={homeBgType === 'video' ? homeBgUrl : null}

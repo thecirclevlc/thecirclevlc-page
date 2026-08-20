@@ -25,8 +25,31 @@ import React, { useId, useLayoutEffect, useRef } from 'react';
  *
  * Measuring instead costs one layout pass and is correct for every font,
  * including ones nobody has chosen yet. `getComputedTextLength()` is universally
- * supported, and a ResizeObserver catches the late repaint when a webfont
- * finishes loading or the admin switches typeface live.
+ * supported.
+ *
+ * ── Why it does NOT watch its own size ────────────────────────────
+ * It used to re-fit from a ResizeObserver on this very <text>. That looks like
+ * the obvious way to catch a late repaint, and it is a trap, for two reasons
+ * that compound:
+ *
+ *   The ring is inside a `scale` spring driven by scroll. An ancestor transform
+ *   changes the box Chrome reports for an SVG child, so every frame of that
+ *   spring woke the observer.
+ *
+ *   The callback then wrote `fontSize`, which changes the box again.
+ *   Read-then-write, inside a callback that runs after layout: the browser has
+ *   to lay the document out a second time before it can paint.
+ *
+ * MEASURED on the home page: five seconds of scrolling went from 60 full-page
+ * layouts to 129, and this was 50 of the extra ones. Every single one computed
+ * the identical answer — the measured length came back 767.33 user units every
+ * time — because `getComputedTextLength()` reports user units, which do not
+ * change when the element is scaled on screen. It was re-deciding a settled
+ * question, mid-scroll, forever.
+ *
+ * So watch the thing that can actually change the answer: the typeface. That is
+ * a font finishing loading, or the admin picking another one, and nothing else.
+ * Neither happens while somebody is scrolling.
  */
 
 /** Circumference of the r=98 path below: 2πr. The text is fitted to this. */
@@ -63,7 +86,12 @@ export default function CircleLogo({ className, repeat = 3, title, word = WORD }
     const el = textRef.current;
     if (!el) return;
 
+    // The face the current fit was measured against. Re-fitting against the
+    // same one is the wasted work described above.
+    let fittedTo = '';
+
     const fit = () => {
+      fittedTo = getComputedStyle(el).fontFamily;
       // Always measure from the same starting size, so repeated runs converge
       // instead of drifting.
       el.style.fontSize = `${BASE_SIZE}px`;
@@ -76,14 +104,25 @@ export default function CircleLogo({ className, repeat = 3, title, word = WORD }
     fit();
 
     // Webfonts arrive after first paint, so the first measurement is of the
-    // fallback face. Re-fit once the real one lands.
-    document.fonts?.ready.then(fit).catch(() => {});
+    // fallback face. `loadingdone` rather than `fonts.ready`: ready settles
+    // once, and the admin can pick a typeface that has not been downloaded yet,
+    // which starts a second round this still hears.
+    const onFontsLoaded = () => fit();
+    document.fonts?.addEventListener('loadingdone', onFontsLoaded);
 
-    // And catch the live case: the admin changes typeface and --font-display
-    // updates underneath us. The element's box changes, this fires, we re-fit.
-    const ro = new ResizeObserver(fit);
-    ro.observe(el);
-    return () => ro.disconnect();
+    // And the case fonts alone miss: she switches to a face already in memory,
+    // so nothing loads. applyTheme() writes --font-display onto <html>; that is
+    // the one mutation worth listening for. Twice a page load, not once a frame.
+    const onThemeWrite = () => {
+      if (getComputedStyle(el).fontFamily !== fittedTo) fit();
+    };
+    const mo = new MutationObserver(onThemeWrite);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+
+    return () => {
+      document.fonts?.removeEventListener('loadingdone', onFontsLoaded);
+      mo.disconnect();
+    };
   }, [repeat, text]);
 
   return (

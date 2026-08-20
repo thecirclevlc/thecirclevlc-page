@@ -152,15 +152,18 @@ const WebGLBackground: React.FC<{ chaosLevel: number; bg: SiteBackground }> = ({
       window.removeEventListener('resize', onResize); window.removeEventListener('mousemove', onMove);
       cancelAnimationFrame(raf); gl.deleteProgram(prog);
     };
-  }, []);
+    // `bg.style`, not `[]` — same fix, same reason as the copy in App.tsx, and
+    // it matters more here: this page renders the component twice, so it leaked
+    // two shader loops instead of one. Rendering null does not unmount, so with
+    // `[]` the loop below survived the setting being turned off.
+  }, [bg.style]);
   useEffect(() => {
     if (canvasRef.current && (canvasRef.current as any).updateChaos) {
       (canvasRef.current as any).updateChaos(chaosLevel);
     }
   }, [chaosLevel]);
-  // 'Plain background' has to actually stop painting. Returning null also
-  // tears down the WebGL context and its 60fps loop — the setting saves
-  // battery, which is half of why someone picks it.
+  // 'Plain background' has to actually stop painting: no canvas, and — via the
+  // dependency above — no render loop and no listeners behind it.
   if (bg.style === 'none') return null;
 
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;

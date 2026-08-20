@@ -357,7 +357,11 @@ export default function EventDetail() {
       <div className="relative z-10 pt-16 md:pt-20">
 
         {/* ── Hero ──────────────────────────────────────── */}
-        <section ref={heroRef} className="relative h-[100dvh] flex items-end overflow-hidden">
+        {/* `svh` for the same reason as the home page hero: `dvh` follows the
+            phone's address bar, so this box changed height every time the bar
+            hid or returned. Here the content is pinned to the bottom edge, so
+            the event title itself was the thing sliding 100px. */}
+        <section ref={heroRef} className="relative h-[100svh] flex items-end overflow-hidden">
           <HeroMedia
             videoUrl={event.hero_video_url}
             imageUrl={coverImage}

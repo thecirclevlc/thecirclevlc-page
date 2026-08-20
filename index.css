@@ -103,9 +103,27 @@ html {
   --font-display: 'Poppins', sans-serif;
 }
 
-/* Extra Smooth Scroll Global - Slower and smoother */
+/* ── Smooth scrolling, where it belongs ──────────────────────────
+ *
+ * Anchor jumps glide instead of teleporting. That is all this is for; it has
+ * no effect on scrolling with a wheel, a trackpad or a finger.
+ *
+ * It used to be declared three times: unconditionally on `html`, again inside
+ * the reduced-motion query, and once on `*`. Two of those were wrong.
+ *
+ * `*` handed the animation to every scrollable box on the site, including the
+ * admin panels, where nobody asked for it — and it had already cost us a real
+ * bug (see ScrollToTop in AppRouter.tsx: a scrollTo(0,0) that was supposed to
+ * be instant turned into a half-second animation, and navigating from the
+ * footer left you at the bottom of the next page).
+ *
+ * And declaring it outside the query meant somebody who has asked their system
+ * for less motion got the animation anyway. Now only the query grants it.
+ *
+ * `scroll-timeline: auto` went with them. `auto` is not a valid value for that
+ * property — it never did anything at all.
+ */
 html {
-  scroll-behavior: smooth;
   scroll-padding-top: 80px; /* Account for fixed header */
 }
 
@@ -113,12 +131,6 @@ html {
   html {
     scroll-behavior: smooth;
   }
-}
-
-/* Make scroll even smoother with CSS animation timing */
-* {
-  scroll-behavior: smooth;
-  scroll-timeline: auto;
 }
 
 /* Performance Optimization */
