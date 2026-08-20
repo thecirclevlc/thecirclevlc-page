@@ -391,19 +391,40 @@ const ManifestoSection: React.FC = () => {
     const p3Ref = useRef<HTMLParagraphElement>(null);
 
     useEffect(() => {
+        const section = sectionRef.current;
         const leftCol = leftColRef.current;
         const p1 = p1Ref.current;
         const p2 = p2Ref.current;
         const p3 = p3Ref.current;
 
-        if (!leftCol || !p1 || !p2 || !p3 || !wantsMotion()) return;
+        if (!section || !leftCol || !p1 || !p2 || !p3 || !wantsMotion()) return;
 
         let cancelled = false;
+        let ctx: { revert: () => void } | undefined;
         let mm: ReturnType<typeof import('gsap').gsap.matchMedia> | undefined;
         // Fetched after the paint rather than before it: none of this draws the
         // section, it only decorates how it arrives.
-        void loadGsap().then(({ gsap, ScrollTrigger }) => {
+        void loadGsap().then(({ gsap }) => {
         if (cancelled) return;
+
+        // ── Everything below is recorded against this section ──────
+        // gsap.context() remembers what was created inside it, scoped to this
+        // element, so revert() on the way out undoes exactly that and nothing
+        // else. Same pattern EventCard already uses.
+        //
+        // What it replaces: the old cleanup called
+        // `ScrollTrigger.getAll().forEach(t => t.kill())`. getAll() is every
+        // trigger in the document, not this section's. MEASURED on the home
+        // page: seven triggers exist, three of them are these paragraphs, and
+        // the cleanup killed all seven — the other four being the event cards
+        // and a block of hers further down. Kill a reveal before it has fired
+        // and its element stays at the `opacity: 0` it starts from, for good.
+        // That is the block that goes invisible and never comes back.
+        //
+        // revert() is also kinder than kill(): kill() abandons an element
+        // wherever the tween left it, revert() puts back the styles it had
+        // before GSAP touched it.
+        ctx = gsap.context(() => {
 
         // Very subtle fade in and slide up for each paragraph
         [p1, p2, p3].forEach((p, index) => {
@@ -440,7 +461,7 @@ const ManifestoSection: React.FC = () => {
                 y: -30,
                 ease: 'none',
                 scrollTrigger: {
-                    trigger: sectionRef.current,
+                    trigger: section,
                     start: 'top bottom',
                     end: 'bottom top',
                     scrub: 1
@@ -448,15 +469,16 @@ const ManifestoSection: React.FC = () => {
             });
         });
 
+        }, section);
         });
 
-        // Cleanup
+        // Cleanup. Both are scoped to this section — nothing here can reach a
+        // reveal that belongs to another component. mm.revert() stays explicit
+        // rather than trusting the context to have collected it.
         return () => {
             cancelled = true;
             mm?.revert();
-            void loadGsap().then(({ ScrollTrigger }) => {
-                (ScrollTrigger as { getAll(): { kill(): void }[] }).getAll().forEach(t => t.kill());
-            });
+            ctx?.revert();
         };
     }, []);
 
