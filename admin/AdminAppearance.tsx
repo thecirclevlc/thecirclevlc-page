@@ -10,12 +10,12 @@ import {
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
-const LABEL   = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
-const INPUT   = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40 transition-colors';
+const SECTION = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4';
+const LABEL   = 'block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5';
+const INPUT   = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent-line)] transition-colors';
 
 const DEFAULTS: SiteTheme = {
-  primary_color: '#C42121', bg_color: '#050000', font: 'poppins',
+  primary_color: '#C42121', bg_color: '#050000', font: 'poppins',   // tokens:data
   type_scale: 1, background: DEFAULT_BACKGROUND,
 };
 
@@ -28,16 +28,16 @@ function Slider({ label, hint, value, min, max, step, format, onChange }: {
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
         <label className={LABEL + ' mb-0'}>{label}</label>
-        <span className="text-[#666] text-xs font-mono tabular-nums">
+        <span className="text-[var(--fg-muted)] text-xs font-mono tabular-nums">
           {format ? format(value) : value}
         </span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full accent-[#059669] cursor-pointer"
+        className="w-full accent-[var(--tc-brand)] cursor-pointer"
       />
-      {hint && <p className="text-[#444] text-xs mt-1">{hint}</p>}
+      {hint && <p className="text-[var(--fg-faint)] text-xs mt-1">{hint}</p>}
     </div>
   );
 }
@@ -45,11 +45,11 @@ function Slider({ label, hint, value, min, max, step, format, onChange }: {
 /** Named starting points, so she is not left alone with a colour wheel. */
 const PRESETS: { label: string; note: string; theme: Pick<SiteTheme, 'primary_color' | 'bg_color'> }[] = [
   { label: 'Original red', note: 'What the site launched with',
-    theme: { primary_color: '#C42121', bg_color: '#050000' } },
+    theme: { primary_color: '#C42121', bg_color: '#050000' } },   // tokens:data
   { label: 'Readable red', note: 'Same red, light enough to pass accessibility',
-    theme: { primary_color: '#E05A5A', bg_color: '#050000' } },
+    theme: { primary_color: '#E05A5A', bg_color: '#050000' } },   // tokens:data
   { label: 'Off-white',    note: 'Quiet and very legible',
-    theme: { primary_color: '#E0E0E0', bg_color: '#0A0A0A' } },
+    theme: { primary_color: '#E0E0E0', bg_color: '#0A0A0A' } },   // tokens:data
 ];
 
 function ColorField({ label, value, onChange }: {
@@ -63,7 +63,7 @@ function ColorField({ label, value, onChange }: {
           type="color"
           value={value}
           onChange={e => onChange(e.target.value.toUpperCase())}
-          className="w-12 h-10 rounded-lg bg-transparent border border-[#1e1e1e] cursor-pointer p-1"
+          className="w-12 h-10 rounded-lg bg-transparent border border-[var(--line)] cursor-pointer p-1"
           aria-label={label}
         />
         <input
@@ -119,7 +119,7 @@ export default function AdminAppearance() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-16"><Loader2 size={20} className="text-[#444] animate-spin" /></div>;
+    return <div className="flex items-center justify-center py-16"><Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" /></div>;
   }
 
   const bg      = theme.background ?? DEFAULT_BACKGROUND;
@@ -130,20 +130,20 @@ export default function AdminAppearance() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Appearance</h1>
-          <p className="text-[#555] text-sm mt-1">
+          <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Appearance</h1>
+          <p className="text-[var(--fg-muted)] text-sm mt-1">
             Colour and typeface for the whole public site. Changes preview here instantly and go live when you save.
           </p>
         </div>
         <a href="/" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+          className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
           <ExternalLink size={13} /> View site
         </a>
       </div>
 
       {/* Presets */}
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Start from a preset</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Start from a preset</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {PRESETS.map(p => {
             const r = contrastRatio(p.theme.primary_color, p.theme.bg_color);
@@ -152,15 +152,15 @@ export default function AdminAppearance() {
             return (
               <button key={p.label} onClick={() => update(p.theme)}
                 className={`text-left rounded-lg border p-4 transition-colors ${
-                  active ? 'border-[#059669]/50 bg-[#059669]/5' : 'border-[#1e1e1e] hover:border-[#2a2a2a]'
+                  active ? 'border-[var(--accent-line)] bg-[var(--accent-soft)]' : 'border-[var(--line)] hover:border-[var(--line-strong)]'
                 }`}>
                 <div className="flex gap-1.5 mb-3">
-                  <span className="w-6 h-6 rounded border border-white/10" style={{ background: p.theme.primary_color }} />
-                  <span className="w-6 h-6 rounded border border-white/10" style={{ background: p.theme.bg_color }} />
+                  <span className="w-6 h-6 rounded border border-[var(--line)]" style={{ background: p.theme.primary_color }} />
+                  <span className="w-6 h-6 rounded border border-[var(--line)]" style={{ background: p.theme.bg_color }} />
                 </div>
-                <p className="text-[#ccc] text-sm">{p.label}</p>
-                <p className="text-[#555] text-xs mt-0.5">{p.note}</p>
-                <p className={`text-xs mt-1.5 ${wcagVerdict(r).pass ? 'text-emerald-400/80' : 'text-amber-500/80'}`}>
+                <p className="text-[var(--fg)] text-sm">{p.label}</p>
+                <p className="text-[var(--fg-muted)] text-xs mt-0.5">{p.note}</p>
+                <p className={`text-xs mt-1.5 ${wcagVerdict(r).pass ? 'text-[var(--fg-muted)]' : 'text-[var(--fg-muted)]'}`}>
                   {r.toFixed(2)}:1 · {wcagVerdict(r).label}
                 </p>
               </button>
@@ -171,7 +171,7 @@ export default function AdminAppearance() {
 
       {/* Colours */}
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Colours</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Colours</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ColorField label="Main colour" value={theme.primary_color}
             onChange={v => update({ primary_color: v })} />
@@ -180,12 +180,12 @@ export default function AdminAppearance() {
         </div>
 
         <div className={`rounded-lg border p-3 ${
-          verdict.pass ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'
+          verdict.pass ? 'border-[var(--line-strong)] bg-[var(--surface-3)]' : 'border-[var(--line-strong)] bg-[var(--surface-3)]'
         }`}>
-          <p className={`text-sm ${verdict.pass ? 'text-emerald-300' : 'text-amber-300'}`}>
+          <p className={`text-sm ${verdict.pass ? 'text-[var(--fg-muted)]' : 'text-[var(--fg-muted)]'}`}>
             Contrast {ratio.toFixed(2)}:1 — {verdict.label}
           </p>
-          <p className="text-[#666] text-xs mt-1">
+          <p className="text-[var(--fg-muted)] text-xs mt-1">
             {verdict.pass
               ? 'Comfortable to read at normal text sizes.'
               : 'Small text in this colour will be hard to read. Aim for at least 4.5:1 — try a lighter main colour or a darker background.'}
@@ -193,7 +193,7 @@ export default function AdminAppearance() {
         </div>
 
         {/* Live preview using the real tokens */}
-        <div className="rounded-lg border border-[#1e1e1e] overflow-hidden">
+        <div className="rounded-lg border border-[var(--line)] overflow-hidden">
           <div className="p-6 space-y-4" style={{ background: theme.bg_color, fontFamily: fontStack(theme.font) }}>
             <p className="text-3xl font-black uppercase tracking-tighter" style={{ color: theme.primary_color }}>
               The Circle
@@ -217,23 +217,23 @@ export default function AdminAppearance() {
 
       {/* Typeface */}
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Typeface</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Typeface</p>
         <div className="space-y-2">
           {SITE_FONTS.map(f => (
             <button key={f.id} onClick={() => update({ font: f.id })}
               className={`w-full text-left rounded-lg border p-4 transition-colors ${
-                theme.font === f.id ? 'border-[#059669]/50 bg-[#059669]/5' : 'border-[#1e1e1e] hover:border-[#2a2a2a]'
+                theme.font === f.id ? 'border-[var(--accent-line)] bg-[var(--accent-soft)]' : 'border-[var(--line)] hover:border-[var(--line-strong)]'
               }`}>
-              <p className="text-2xl text-white uppercase tracking-tight" style={{ fontFamily: f.stack, fontWeight: 900 }}>
+              <p className="text-2xl text-[var(--fg)] uppercase tracking-tight" style={{ fontFamily: f.stack, fontWeight: 900 }}>
                 The Circle
               </p>
-              <p className="text-[#ccc] text-sm mt-1">{f.label}</p>
-              <p className="text-[#555] text-xs mt-0.5">{f.note}</p>
+              <p className="text-[var(--fg)] text-sm mt-1">{f.label}</p>
+              <p className="text-[var(--fg-muted)] text-xs mt-0.5">{f.note}</p>
             </button>
           ))}
         </div>
 
-        <div className="pt-2 border-t border-[#1a1a1a]">
+        <div className="pt-2 border-t border-[var(--line)]">
           <Slider
             label="Overall text size"
             hint="Typefaces disagree about how big a size looks. After changing font, nudge this until it feels right — everything scales together, so the layout keeps its proportions."
@@ -242,7 +242,7 @@ export default function AdminAppearance() {
             format={v => `${Math.round(v * 100)}%`}
             onChange={v => update({ type_scale: v })}
           />
-          <div className="mt-4 rounded-lg border border-[#1e1e1e] p-5" style={{ background: theme.bg_color }}>
+          <div className="mt-4 rounded-lg border border-[var(--line)] p-5" style={{ background: theme.bg_color }}>
             <p className="font-black uppercase tracking-tighter leading-none"
                style={{ color: theme.primary_color, fontFamily: fontStack(theme.font),
                         fontSize: `${2.25 * (theme.type_scale ?? 1)}rem` }}>
@@ -260,8 +260,8 @@ export default function AdminAppearance() {
       {/* Animated background */}
       <section className={SECTION}>
         <div>
-          <p className="text-white text-sm font-medium">Animated background</p>
-          <p className="text-[#555] text-xs mt-1">
+          <p className="text-[var(--fg)] text-sm font-medium">Animated background</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-1">
             The moving grid behind the home page and the application form. It follows your main colour.
           </p>
         </div>
@@ -271,7 +271,7 @@ export default function AdminAppearance() {
             <button key={v}
               onClick={() => update({ background: { ...bg, style: v } })}
               className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                bg.style === v ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]' : 'text-[#555] hover:text-[#888] border border-transparent'
+                bg.style === v ? 'bg-[var(--surface-3)] text-[var(--fg)] border border-[var(--line-strong)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)] border border-transparent'
               }`}>
               {label}
             </button>
@@ -296,7 +296,7 @@ export default function AdminAppearance() {
           </div>
         )}
 
-        <p className="text-[#444] text-xs">
+        <p className="text-[var(--fg-faint)] text-xs">
           The background reacts to the pointer, so it only really shows itself on the live site —
           open it in another tab after saving.
         </p>
@@ -304,7 +304,7 @@ export default function AdminAppearance() {
 
       <div className="flex justify-end sticky bottom-4 z-20">
         <button onClick={save} disabled={saving || !dirty}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors shadow-lg">
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors shadow-lg">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? 'Save appearance' : 'Saved'}
         </button>
@@ -314,8 +314,8 @@ export default function AdminAppearance() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}

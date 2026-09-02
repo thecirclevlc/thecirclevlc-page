@@ -27,10 +27,10 @@ import { listForms, type FormListItem } from '../lib/formSchema';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const TEXTAREA = INPUT + ' min-h-[120px] resize-y';
-const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
-const LABEL = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
+const SECTION = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4';
+const LABEL = 'block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5';
 
 export const BLOCK_TYPES: { type: PageBlockType; label: string; hint: string; icon: React.ElementType }[] = [
   { type: 'text',    label: 'Text',    hint: 'Paragraphs, bullets, bold',   icon: Type },
@@ -85,10 +85,10 @@ export function BlockEditor({
   };
 
   return (
-    <div className={`bg-[#0d0d0d] border rounded-lg p-4 space-y-3 transition-colors ${
+    <div className={`bg-[var(--surface-2)] border rounded-lg p-4 space-y-3 transition-colors ${
       block.hidden ? 'opacity-50' : ''
     } ${dragState?.dragging ? 'opacity-30' : ''} ${
-      dragState?.over ? 'border-[#059669]' : 'border-[#1a1a1a]'
+      dragState?.over ? 'border-[var(--accent-line)]' : 'border-[var(--line)]'
     }`}>
       <div className="flex items-center gap-2">
         {dragHandleProps && (
@@ -96,47 +96,47 @@ export function BlockEditor({
             {...dragHandleProps}
             title="Drag to move this block"
             aria-label="Drag to move this block"
-            className="-ml-1 w-6 h-8 flex items-center justify-center rounded text-[#444] hover:text-white hover:bg-[#1a1a1a] transition-colors cursor-grab active:cursor-grabbing"
+            className="-ml-1 w-6 h-8 flex items-center justify-center rounded text-[var(--fg-faint)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors cursor-grab active:cursor-grabbing"
           >
             <GripVertical size={14} />
           </span>
         )}
-        <Icon size={14} className="text-[#666] flex-shrink-0" />
-        <span className="text-[#888] text-xs tracking-[0.12em] uppercase">{meta?.label}</span>
+        <Icon size={14} className="text-[var(--fg-muted)] flex-shrink-0" />
+        <span className="text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase">{meta?.label}</span>
         {/* What she needs to see at a glance is which blocks share a row —
             that is the whole difference between a stack and a layout. */}
         {span !== 'full' && (
-          <span className="text-[#059669] text-[10px] uppercase tracking-widest">
+          <span className="text-[var(--tc-brand-ink)] text-[10px] uppercase tracking-widest">
             {SPAN_OPTIONS.find(o => o.value === span)?.label}
           </span>
         )}
-        {block.hidden && <span className="text-amber-500/70 text-[10px] uppercase tracking-widest">hidden</span>}
+        {block.hidden && <span className="text-[var(--fg-muted)] text-[10px] uppercase tracking-widest">hidden</span>}
         <div className="ml-auto flex gap-1">
           <button onClick={() => setLayoutOpen(o => !o)}
             className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-              layoutOpen ? 'bg-[#1a1a1a] text-white' : 'text-[#666] hover:text-white hover:bg-[#1a1a1a]'
+              layoutOpen ? 'bg-[var(--surface-3)] text-[var(--fg)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)]'
             }`}
             aria-expanded={layoutOpen}
             title="Layout — how much of the row it takes, and its air"><SlidersHorizontal size={13} /></button>
           <button onClick={() => patch({ hidden: !block.hidden } as Partial<PageBlock>)}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors"
             title={block.hidden ? 'Show on the page' : 'Hide without deleting'}>
             {block.hidden ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
           <button onClick={onMoveUp} disabled={!canUp}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
             aria-label="Move up"><ArrowUp size={13} /></button>
           <button onClick={onMoveDown} disabled={!canDown}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
             aria-label="Move down"><ArrowDown size={13} /></button>
           <button onClick={onDelete}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
             aria-label="Delete"><Trash2 size={13} /></button>
         </div>
       </div>
 
       {layoutOpen && (
-        <div className="rounded-lg border border-[#1e1e1e] bg-[#0a0a0a] p-4">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--canvas)] p-4">
           <BlockLayoutControls
             style={block.style}
             onStyle={s => patch({ style: s } as Partial<PageBlock>)}
@@ -164,17 +164,17 @@ export function BlockEditor({
       {block.type === 'image' && (
         <div className="space-y-3">
           {block.url && (
-            <img src={block.url} alt="" className="max-h-48 rounded border border-[#1e1e1e]" />
+            <img src={block.url} alt="" className="max-h-48 rounded border border-[var(--line)]" />
           )}
           <div className="flex flex-wrap gap-2 items-center">
-            <label className="px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] cursor-pointer transition-colors">
+            <label className="px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] cursor-pointer transition-colors">
               {uploading ? 'Uploading…' : block.url ? 'Replace photo' : 'Upload photo'}
               <input type="file" accept="image/*" className="hidden"
                 onChange={e => doUpload(e.target.files, urls => patch({ url: urls[0] } as Partial<PageBlock>))} />
             </label>
             {block.url && (
               <button onClick={() => patch({ url: '' } as Partial<PageBlock>)}
-                className="px-3 py-2 text-xs text-[#666] hover:text-red-400 transition-colors">Remove</button>
+                className="px-3 py-2 text-xs text-[var(--fg-muted)] hover:text-[var(--danger)] transition-colors">Remove</button>
             )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -203,7 +203,7 @@ export function BlockEditor({
               placeholder="/artists or https://instagram.com/…" />
             {/* Described by the same function the page renders with, so this
                 can never promise something the photo does not do. */}
-            <p className="text-[#444] text-xs mt-1">{describeLinkTarget(block.href ?? '')}</p>
+            <p className="text-[var(--fg-faint)] text-xs mt-1">{describeLinkTarget(block.href ?? '')}</p>
           </div>
 
           {/* How the photo sits in its frame. Without this, an upload either
@@ -235,13 +235,13 @@ export function BlockEditor({
             </div>
           </div>
           {(block.display?.ratio ?? 'auto') === 'auto' ? (
-            <p className="text-[#666] text-xs">
+            <p className="text-[var(--fg-muted)] text-xs">
               The last two are greyed out because "Original shape" shows the photo
               exactly as uploaded — there is no frame to crop it into. Pick a
               frame shape to switch them on.
             </p>
           ) : block.display?.fit === 'contain' ? (
-            <p className="text-[#666] text-xs">
+            <p className="text-[var(--fg-muted)] text-xs">
               "Keep in view" is greyed out because the whole photo is already
               showing — nothing is being cropped out.
             </p>
@@ -249,7 +249,7 @@ export function BlockEditor({
 
           {/* Preview at the chosen settings, so she is not guessing. */}
           {block.url && (block.display?.ratio ?? 'auto') !== 'auto' && (
-            <div className={`max-w-xs overflow-hidden bg-black border border-[#1e1e1e] ${ratioClass(block.display?.ratio)}`}>
+            <div className={`max-w-xs overflow-hidden bg-[var(--scrim)] border border-[var(--line)] ${ratioClass(block.display?.ratio)}`}>
               <img src={block.url} alt=""
                 className={`w-full h-full ${block.display?.fit === 'contain' ? 'object-contain' : 'object-cover'}`}
                 style={{ objectPosition: block.display?.focus ?? 'center' }} />
@@ -264,8 +264,8 @@ export function BlockEditor({
             <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
               {block.images.map((url, i) => (
                 <div key={`${url}-${i}`} className="relative group">
-                  <img src={url} alt="" className="w-full aspect-square object-cover rounded border border-[#1e1e1e]" />
-                  <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity rounded">
+                  <img src={url} alt="" className="w-full aspect-square object-cover rounded border border-[var(--line)]" />
+                  <div className="absolute inset-0 flex items-center justify-center gap-1 bg-[var(--scrim)] opacity-0 group-hover:opacity-100 transition-opacity rounded">
                     <button onClick={() => {
                         const arr = block.images.slice();
                         if (i === 0) return;
@@ -273,7 +273,7 @@ export function BlockEditor({
                         patch({ images: arr } as Partial<PageBlock>);
                       }}
                       disabled={i === 0}
-                      className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1a1a] text-white disabled:opacity-30"
+                      className="w-7 h-7 flex items-center justify-center rounded bg-[var(--surface-3)] text-[var(--fg)] disabled:opacity-30"
                       aria-label="Move left"><ArrowUp size={12} className="-rotate-90" /></button>
                     <button onClick={() => {
                         const arr = block.images.slice();
@@ -282,18 +282,18 @@ export function BlockEditor({
                         patch({ images: arr } as Partial<PageBlock>);
                       }}
                       disabled={i === block.images.length - 1}
-                      className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1a1a] text-white disabled:opacity-30"
+                      className="w-7 h-7 flex items-center justify-center rounded bg-[var(--surface-3)] text-[var(--fg)] disabled:opacity-30"
                       aria-label="Move right"><ArrowDown size={12} className="-rotate-90" /></button>
                     <button onClick={() => patch({ images: block.images.filter((_, j) => j !== i) } as Partial<PageBlock>)}
-                      className="w-7 h-7 flex items-center justify-center rounded bg-red-950/70 text-red-300"
+                      className="w-7 h-7 flex items-center justify-center rounded bg-[var(--surface-3)] text-[var(--danger)]"
                       aria-label="Remove"><Trash2 size={12} /></button>
                   </div>
-                  <span className="absolute top-1 left-1 text-[10px] font-mono bg-black/70 text-white px-1.5 rounded">{i + 1}</span>
+                  <span className="absolute top-1 left-1 text-[10px] font-mono bg-[var(--scrim)] text-[var(--on-accent)] px-1.5 rounded">{i + 1}</span>
                 </div>
               ))}
             </div>
           )}
-          <label className="inline-block px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] cursor-pointer transition-colors">
+          <label className="inline-block px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] cursor-pointer transition-colors">
             {uploading ? 'Uploading…' : 'Add photos'}
             <input type="file" accept="image/*" multiple className="hidden"
               onChange={e => doUpload(e.target.files, urls => patch({ images: [...block.images, ...urls] } as Partial<PageBlock>))} />
@@ -308,11 +308,11 @@ export function BlockEditor({
             <input className={INPUT} value={block.url}
               onChange={e => patch({ url: e.target.value } as Partial<PageBlock>)}
               placeholder="https://www.youtube.com/watch?v=…" />
-            <p className="text-[#444] text-xs mt-1">
+            <p className="text-[var(--fg-faint)] text-xs mt-1">
               Paste the address straight from the browser bar. YouTube, Vimeo, SoundCloud and Mixcloud all work.
             </p>
             {block.url && !embedUrl(block.url) && (
-              <p className="text-amber-500/80 text-xs mt-1">
+              <p className="text-[var(--fg-muted)] text-xs mt-1">
                 That link cannot be embedded — it will show as a plain link instead.
               </p>
             )}
@@ -341,22 +341,22 @@ export function BlockEditor({
                   onChange={e => patch({ items: block.items.map(x => x.id === b.id ? { ...x, url: e.target.value } : x) } as Partial<PageBlock>)}
                   placeholder="https://paypal.me/… or /form" />
               </div>
-              <label className="flex items-center gap-2 text-xs text-[#ccc] py-2.5 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-[var(--fg)] py-2.5 cursor-pointer">
                 <input type="checkbox" checked={b.primary ?? false}
                   onChange={e => patch({ items: block.items.map(x => x.id === b.id ? { ...x, primary: e.target.checked } : x) } as Partial<PageBlock>)}
-                  className="w-4 h-4 accent-[#059669]" />
+                  className="w-4 h-4 accent-[var(--tc-brand)]" />
                 Loud
               </label>
               <button onClick={() => patch({ items: block.items.filter(x => x.id !== b.id) } as Partial<PageBlock>)}
-                className="w-9 h-9 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
                 aria-label="Remove button"><Trash2 size={13} /></button>
             </div>
           ))}
           <button onClick={() => patch({ items: [...block.items, { id: uuid(), label: '', url: '' } as PageButton] } as Partial<PageBlock>)}
-            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
             <Plus size={12} /> Add button
           </button>
-          <p className="text-[#444] text-xs">
+          <p className="text-[var(--fg-faint)] text-xs">
             For donations, paste your PayPal.me, Ko-fi or Stripe payment link here.
             An address with a dot in it opens in a new tab; anything else is treated
             as a page on your own site.
@@ -464,13 +464,13 @@ export default function AdminPageForm() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-16"><Loader2 size={20} className="text-[#444] animate-spin" /></div>;
+    return <div className="flex items-center justify-center py-16"><Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" /></div>;
   }
   if (!page) {
     return (
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-12 text-center">
-        <p className="text-[#999] text-sm">That page no longer exists.</p>
-        <button onClick={() => navigate('/admin/pages')} className="mt-4 text-[#059669] text-sm hover:underline">Back to Pages</button>
+      <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-12 text-center">
+        <p className="text-[var(--fg-muted)] text-sm">That page no longer exists.</p>
+        <button onClick={() => navigate('/admin/pages')} className="mt-4 text-[var(--tc-brand-ink)] text-sm hover:underline">Back to Pages</button>
       </div>
     );
   }
@@ -480,19 +480,19 @@ export default function AdminPageForm() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-3">
           <button onClick={() => navigate('/admin/pages')}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors mt-0.5"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors mt-0.5"
             aria-label="Back"><ArrowLeft size={16} /></button>
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">{page.title || 'Untitled page'}</h1>
-            <p className="text-[#555] text-sm mt-1 font-mono">/{page.slug}</p>
+            <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">{page.title || 'Untitled page'}</h1>
+            <p className="text-[var(--fg-muted)] text-sm mt-1 font-mono">/{page.slug}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setHistoryOpen(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors"
             title="Change history"><Clock size={15} /></button>
           <a href={`/${page.slug}`} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
             <ExternalLink size={13} /> View
           </a>
         </div>
@@ -508,28 +508,28 @@ export default function AdminPageForm() {
           <div>
             <label className={LABEL}>Web address</label>
             <div className="flex items-center gap-1">
-              <span className="text-[#555] text-sm font-mono">/</span>
+              <span className="text-[var(--fg-muted)] text-sm font-mono">/</span>
               <input className={INPUT + ' font-mono'} value={page.slug}
                 onChange={e => update({ slug: slugify(e.target.value) })}
                 onBlur={() => { if (!page.slug) update({ slug: slugify(page.title) }); }} />
             </div>
             {slugProblem
-              ? <p className="text-red-400 text-xs mt-1">{slugProblem}</p>
-              : <p className="text-[#444] text-xs mt-1">The page will live at thecirclevlc.com/{page.slug}</p>}
+              ? <p className="text-[var(--danger)] text-xs mt-1">{slugProblem}</p>
+              : <p className="text-[var(--fg-faint)] text-xs mt-1">The page will live at thecirclevlc.com/{page.slug}</p>}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-6 pt-1">
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--fg)]">
             <input type="checkbox" checked={page.status === 'published'}
               onChange={e => update({ status: e.target.checked ? 'published' : 'draft' })}
-              className="w-4 h-4 accent-[#059669]" />
+              className="w-4 h-4 accent-[var(--tc-brand)]" />
             Published — visible to everyone
           </label>
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--fg)]">
             <input type="checkbox" checked={page.show_in_nav}
               onChange={e => update({ show_in_nav: e.target.checked })}
-              className="w-4 h-4 accent-[#059669]" />
+              className="w-4 h-4 accent-[var(--tc-brand)]" />
             Show in the menu
           </label>
         </div>
@@ -537,9 +537,9 @@ export default function AdminPageForm() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-white text-sm font-medium">Content ({(page.blocks ?? []).length})</p>
-          <p className="text-[#555] text-xs">
-            Drag by the handle onto the <strong className="text-[#888] font-normal">side</strong> of
+          <p className="text-[var(--fg)] text-sm font-medium">Content ({(page.blocks ?? []).length})</p>
+          <p className="text-[var(--fg-muted)] text-xs">
+            Drag by the handle onto the <strong className="text-[var(--fg-muted)] font-normal">side</strong> of
             another block to put the two side by side · onto the middle to just reorder
           </p>
         </div>
@@ -561,12 +561,12 @@ export default function AdminPageForm() {
               key={row[0].id}
               className={shares || spare > 0 ? 'relative pl-4 border-l-2 space-y-3' : 'space-y-3'}
               style={shares || spare > 0
-                ? { borderColor: spare > 0 ? 'rgba(245,158,11,0.4)' : 'rgba(5,150,105,0.4)' }
+                ? { borderColor: spare > 0 ? 'var(--line-strong)' : 'var(--accent-line)' }
                 : undefined}
             >
               {(shares || spare > 0) && (
                 <p className={`text-[10px] uppercase tracking-[0.14em] ${
-                  spare > 0 ? 'text-amber-500/80' : 'text-[#059669]/80'
+                  spare > 0 ? 'text-[var(--fg-muted)]' : 'text-[var(--tc-brand-ink)]'
                 }`}>
                   {shares ? `Side by side — ${row.length} blocks on one row` : 'Alone on its row'}
                   {spare > 0 && ` · ${spare}/12 of the width left empty`}
@@ -595,7 +595,7 @@ export default function AdminPageForm() {
           );
         })}
 
-        <div className="bg-[#0d0d0d] border border-dashed border-[#222] rounded-lg p-4">
+        <div className="bg-[var(--surface-2)] border border-dashed border-[var(--line-strong)] rounded-lg p-4">
           <p className={LABEL}>Add content</p>
           {/* Arrangements, not parts. "Photo + text" drops in both blocks
               already side by side, so getting the layout she pictured never
@@ -606,14 +606,14 @@ export default function AdminPageForm() {
               const pairs = p.build().length > 1;
               return (
                 <button key={p.id} onClick={() => addPreset(p.build())}
-                  className="flex items-start gap-2 px-3 py-2.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-left transition-colors">
-                  <Icon size={14} className="text-[#666] mt-0.5 flex-shrink-0" />
+                  className="flex items-start gap-2 px-3 py-2.5 bg-[var(--surface-1)] hover:bg-[var(--surface-3)] border border-[var(--line)] rounded-lg text-left transition-colors">
+                  <Icon size={14} className="text-[var(--fg-muted)] mt-0.5 flex-shrink-0" />
                   <span className="min-w-0">
-                    <span className="block text-[#ccc] text-sm">
+                    <span className="block text-[var(--fg)] text-sm">
                       {p.label}
-                      {pairs && <span className="text-[#059669] text-[10px] ml-1.5 uppercase tracking-widest">row</span>}
+                      {pairs && <span className="text-[var(--tc-brand-ink)] text-[10px] ml-1.5 uppercase tracking-widest">row</span>}
                     </span>
-                    <span className="block text-[#555] text-xs">{p.hint}</span>
+                    <span className="block text-[var(--fg-muted)] text-xs">{p.hint}</span>
                   </span>
                 </button>
               );
@@ -623,7 +623,7 @@ export default function AdminPageForm() {
       </section>
 
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Google &amp; sharing</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Google &amp; sharing</p>
         <div>
           <label className={LABEL}>Title in search results</label>
           <input className={INPUT} value={page.seo_title ?? ''}
@@ -640,7 +640,7 @@ export default function AdminPageForm() {
 
       <div className="flex justify-end sticky bottom-4 z-20">
         <button onClick={save} disabled={saving || !dirty || !!slugProblem}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors shadow-lg">
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors shadow-lg">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? 'Save page' : 'Saved'}
         </button>
@@ -658,8 +658,8 @@ export default function AdminPageForm() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}

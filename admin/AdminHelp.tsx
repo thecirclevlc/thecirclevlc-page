@@ -14,17 +14,17 @@ import {
  * control sat three tabs deep, and no PDF was ever going to fix that.
  */
 
-const CARD = 'bg-[#111] border border-[#1a1a1a] rounded-xl';
+const CARD = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl';
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <li className="flex gap-4">
-      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] text-[#888] text-xs flex items-center justify-center mt-0.5 tabular-nums">
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)] text-xs flex items-center justify-center mt-0.5 tabular-nums">
         {n}
       </span>
       <div className="min-w-0">
-        <p className="text-white text-sm font-medium">{title}</p>
-        <div className="text-[#777] text-sm mt-1 leading-relaxed">{children}</div>
+        <p className="text-[var(--fg)] text-sm font-medium">{title}</p>
+        <div className="text-[var(--fg-muted)] text-sm mt-1 leading-relaxed">{children}</div>
       </div>
     </li>
   );
@@ -42,47 +42,47 @@ function Recipe({ title, blurb, steps, defaultOpen = false }: {
         className="w-full flex items-start gap-3 text-left p-5 cursor-pointer"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-white text-sm font-medium">{title}</p>
-          <p className="text-[#666] text-xs mt-0.5">{blurb}</p>
+          <p className="text-[var(--fg)] text-sm font-medium">{title}</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-0.5">{blurb}</p>
         </div>
         <ChevronDown
           size={16}
-          className={`text-[#555] flex-shrink-0 mt-0.5 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-[var(--fg-muted)] flex-shrink-0 mt-0.5 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
-      {open && <ol className="px-5 pb-5 space-y-4 border-t border-[#1a1a1a] pt-5">{steps}</ol>}
+      {open && <ol className="px-5 pb-5 space-y-4 border-t border-[var(--line)] pt-5">{steps}</ol>}
     </div>
   );
 }
 
 const L = ({ to, children }: { to: string; children: React.ReactNode }) => (
-  <Link to={to} className="text-[#059669] hover:underline underline-offset-2">{children}</Link>
+  <Link to={to} className="text-[var(--tc-brand-ink)] hover:underline underline-offset-2">{children}</Link>
 );
 
 export default function AdminHelp() {
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">How everything works</h1>
-        <p className="text-[#555] text-sm mt-1">
+        <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">How everything works</h1>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Nothing here can break the site permanently — every change is recorded and can be put back.
         </p>
       </div>
 
       {/* The one idea that unlocks everything else */}
-      <section className={`${CARD} p-6 border-[#059669]/25 bg-[#059669]/[0.04]`}>
+      <section className={`${CARD} p-6 border-[var(--accent-line)] bg-[var(--tc-brand)]/[0.04]`}>
         <div className="flex items-start gap-3">
-          <MousePointerClick size={18} className="text-[#059669] flex-shrink-0 mt-0.5" />
+          <MousePointerClick size={18} className="text-[var(--tc-brand-ink)] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-white font-medium">There are two ways to change things</p>
-            <p className="text-[#999] text-sm mt-2 leading-relaxed">
-              <strong className="text-white">On the site itself.</strong> Open any page while logged in and
+            <p className="text-[var(--fg)] font-medium">There are two ways to change things</p>
+            <p className="text-[var(--fg-muted)] text-sm mt-2 leading-relaxed">
+              <strong className="text-[var(--fg)]">On the site itself.</strong> Open any page while logged in and
               use the floating button at the bottom right to turn on edit mode. Every text you can change
               gets a dotted outline — click it, type, save. This is the fastest way to fix a word, a
               heading or a paragraph, and it works on pages you build too.
             </p>
-            <p className="text-[#999] text-sm mt-3 leading-relaxed">
-              <strong className="text-white">From this panel.</strong> For anything with structure — an
+            <p className="text-[var(--fg-muted)] text-sm mt-3 leading-relaxed">
+              <strong className="text-[var(--fg)]">From this panel.</strong> For anything with structure — an
               event, a DJ, a form, a whole new page.
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function AdminHelp() {
 
       {/* Where things live */}
       <section className="space-y-3">
-        <h2 className="text-white text-sm font-medium">Where things live</h2>
+        <h2 className="text-[var(--fg)] text-sm font-medium">Where things live</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { icon: LayoutDashboard, title: 'Content',
@@ -105,10 +105,10 @@ export default function AdminHelp() {
           ].map(g => (
             <div key={g.title} className={`${CARD} p-5`}>
               <div className="flex items-center gap-2.5 mb-2">
-                <g.icon size={15} className="text-[#666]" />
-                <p className="text-white text-sm font-medium">{g.title}</p>
+                <g.icon size={15} className="text-[var(--fg-muted)]" />
+                <p className="text-[var(--fg)] text-sm font-medium">{g.title}</p>
               </div>
-              <p className="text-[#777] text-sm leading-relaxed">{g.body}</p>
+              <p className="text-[var(--fg-muted)] text-sm leading-relaxed">{g.body}</p>
             </div>
           ))}
         </div>
@@ -116,7 +116,7 @@ export default function AdminHelp() {
 
       {/* Recipes */}
       <section className="space-y-3">
-        <h2 className="text-white text-sm font-medium">How to do the usual things</h2>
+        <h2 className="text-[var(--fg)] text-sm font-medium">How to do the usual things</h2>
 
         <Recipe
           defaultOpen
@@ -124,7 +124,7 @@ export default function AdminHelp() {
           blurb="Text, photos, video, buttons — and you can keep editing it live afterwards"
           steps={<>
             <Step n={1} title="Create it">
-              <L to="/admin/pages">Pages</L> → <strong className="text-[#aaa]">New page</strong>. Give it a
+              <L to="/admin/pages">Pages</L> → <strong className="text-[var(--fg)]">New page</strong>. Give it a
               name; the web address is filled in for you.
             </Step>
             <Step n={2} title="Add content">
@@ -136,21 +136,21 @@ export default function AdminHelp() {
               is shown whole. "Keep in view" moves the crop, so a face near the top is not cut off.
             </Step>
             <Step n={4} title="Publish it">
-              Tick <strong className="text-[#aaa]">Published</strong>, then{' '}
-              <strong className="text-[#aaa]">Show in the menu</strong>. Until you publish it, only you
+              Tick <strong className="text-[var(--fg)]">Published</strong>, then{' '}
+              <strong className="text-[var(--fg)]">Show in the menu</strong>. Until you publish it, only you
               can see it — that is your preview, no special link needed.
             </Step>
             <Step n={5} title="Compose it live from then on">
               Open the page on the site and turn on edit mode. Hover any section and a small toolbar
               appears: move it, duplicate it, hide it, delete it, or open{' '}
-              <strong className="text-[#aaa]">Layout</strong> to set its width, alignment, breathing room,
+              <strong className="text-[var(--fg)]">Layout</strong> to set its width, alignment, breathing room,
               surface and how it arrives when you scroll to it. Every change saves as you make it. The
               thin line between sections adds a new one.
             </Step>
             <Step n={6} title="A note on entrances">
-              <strong className="text-[#aaa]">Rise up</strong> is the site's default and always safe.{' '}
-              <strong className="text-[#aaa]">Word by word</strong> looks best on short headings.{' '}
-              <strong className="text-[#aaa]">Wipe across</strong> is loud — one per page at most, or it
+              <strong className="text-[var(--fg)]">Rise up</strong> is the site's default and always safe.{' '}
+              <strong className="text-[var(--fg)]">Word by word</strong> looks best on short headings.{' '}
+              <strong className="text-[var(--fg)]">Wipe across</strong> is loud — one per page at most, or it
               stops feeling special.
             </Step>
           </>}
@@ -161,16 +161,16 @@ export default function AdminHelp() {
           blurb="And point a page's button at it"
           steps={<>
             <Step n={1} title="Pick or create the form">
-              <L to="/admin/form-builder">Forms</L> → choose <strong className="text-[#aaa]">Artists application</strong>,
-              or <strong className="text-[#aaa]">New form</strong> for something else.
+              <L to="/admin/form-builder">Forms</L> → choose <strong className="text-[var(--fg)]">Artists application</strong>,
+              or <strong className="text-[var(--fg)]">New form</strong> for something else.
             </Step>
             <Step n={2} title="Write the questions">
-              <strong className="text-[#aaa]">Add question</strong> and choose a type. Use{' '}
-              <strong className="text-[#aaa]">Yes / No</strong> for things like “I agree to receive
+              <strong className="text-[var(--fg)]">Add question</strong> and choose a type. Use{' '}
+              <strong className="text-[var(--fg)]">Yes / No</strong> for things like “I agree to receive
               emails” — what was agreed and when is stored with the answer.
             </Step>
             <Step n={3} title="Say where it appears">
-              In <strong className="text-[#aaa]">Appears in</strong>, tick a page. That page's button now
+              In <strong className="text-[var(--fg)]">Appears in</strong>, tick a page. That page's button now
               opens this form instead of the general one.
             </Step>
             <Step n={4} title="Read the answers">
@@ -186,11 +186,11 @@ export default function AdminHelp() {
           steps={<>
             <Step n={1} title="Copy the address from Mailchimp">
               In Mailchimp: <em>Audience → Signup forms → Embedded form</em>. Copy the address inside{' '}
-              <code className="text-amber-400/80 text-xs">form action="…"</code>.
+              <code className="text-[var(--fg-muted)] text-xs">form action="…"</code>.
             </Step>
             <Step n={2} title="Paste it here">
               <L to="/admin/form-builder">Forms</L> → the form →{' '}
-              <strong className="text-[#aaa]">Send to your mailing list</strong>.
+              <strong className="text-[var(--fg)]">Send to your mailing list</strong>.
             </Step>
             <Step n={3} title="That is it">
               Every answer is saved here first, so nothing is lost if the address is wrong or Mailchimp is
@@ -248,7 +248,7 @@ export default function AdminHelp() {
           blurb="No payment setup needed"
           steps={<>
             <Step n={1} title="Add a Buttons block">
-              Inside any page, add a <strong className="text-[#aaa]">Buttons</strong> block.
+              Inside any page, add a <strong className="text-[var(--fg)]">Buttons</strong> block.
             </Step>
             <Step n={2} title="Paste your link">
               Your PayPal.me, Ko-fi or Stripe payment link. Tick "Loud" to make it the big filled button.
@@ -269,20 +269,20 @@ export default function AdminHelp() {
         ].map(c => (
           <div key={c.title} className={`${CARD} p-5`}>
             <div className="flex items-center gap-2.5 mb-2">
-              <c.icon size={15} className="text-[#666]" />
-              <p className="text-white text-sm font-medium">{c.title}</p>
+              <c.icon size={15} className="text-[var(--fg-muted)]" />
+              <p className="text-[var(--fg)] text-sm font-medium">{c.title}</p>
             </div>
-            <p className="text-[#777] text-sm leading-relaxed">{c.body}</p>
+            <p className="text-[var(--fg-muted)] text-sm leading-relaxed">{c.body}</p>
           </div>
         ))}
       </section>
 
       <section className={`${CARD} p-5`}>
         <div className="flex items-start gap-3">
-          <Ban size={16} className="text-[#555] flex-shrink-0 mt-0.5" />
+          <Ban size={16} className="text-[var(--fg-muted)] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-white text-sm font-medium">What you cannot change here, on purpose</p>
-            <p className="text-[#777] text-sm mt-1.5 leading-relaxed">
+            <p className="text-[var(--fg)] text-sm font-medium">What you cannot change here, on purpose</p>
+            <p className="text-[var(--fg-muted)] text-sm mt-1.5 leading-relaxed">
               The rotating logo, the animation timings, the grain texture, the 404 drawing and the
               “By Alia Studio” credit. These are not oversights — a panel with a control for every single
               thing becomes impossible to use. If you want one of them changed, just ask.

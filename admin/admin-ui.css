@@ -1,0 +1,1517 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * THE CIRCLE · CMS — capa visual
+ *
+ * Un único sitio para el color, la profundidad, el radio y el tiempo del
+ * panel. Los componentes no llevan color escrito: leen de aquí.
+ *
+ * Por qué un archivo aparte y no `index.css`: el sitio público deja que la
+ * clienta cambie `--color-primary` desde Apariencia. El panel NO debe seguir
+ * esa elección — el día que ella ponga verde lima, el CMS seguiría siendo
+ * legible y reconocible. Por eso el acento del panel es `--tc-brand`, fijo,
+ * y nunca `var(--color-primary)`.
+ *
+ * Se importa desde AdminLayout.tsx, así que no pesa en el sitio público.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* El reflejo sigue al cursor a través de estas dos. Registradas para que el
+ * navegador las trate como porcentajes y no re-parsee la cadena en cada
+ * frame del pointermove. */
+@property --mx { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --my { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 1 · TOKENS COMPARTIDOS  (no dependen del tema)
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-admin {
+  /* Marca — el único acento. Fijo a propósito, ver cabecera.
+   *
+   * `--tc-brand` es el relleno sólido (el CTA), y funciona en los dos temas.
+   * `--tc-brand-ink` es el acento cuando es TEXTO, y ese sí cambia de tema:
+   * sobre oscuro hay que aclararlo y sobre claro hay que oscurecerlo. Un
+   * único rojo para las dos cosas deja el chip del acento en 3,3:1 en tema
+   * claro — medido, no estimado. Se define abajo, en cada tema.
+   *
+   * Escritos absolutos y no como `oklch(from var(--tc-brand) …)`: en una
+   * custom property, la sintaxis relativa que el navegador no entienda no
+   * cae a la declaración anterior, cae a "sin valor" allí donde se use, y se
+   * lleva por delante el color del CTA. Un literal en tokens no es deuda. */
+  --tc-brand: #C42121;
+
+  /* Datos — UN tono, tinta apenas templada.
+   *
+   * Había cuatro hues (rojo, violeta, azul, verde) y era la decisión
+   * equivocada para esta marca: la web es negra y roja, y un panel con
+   * cuatro colores no parecía del mismo sitio. El color del panel es ahora
+   * tinta neutra, y el rojo aparece en tres lugares contados — la tarjeta
+   * que pide acción, el botón primario y el contador de sin-leer. Con menos
+   * sitios donde aparece, el rojo pesa más en cada uno.
+   *
+   * Los cuatro nombres siguen existiendo porque los componentes los usan por
+   * lo que significan, no por el color que tienen hoy. Si el color vuelve,
+   * vuelve aquí y en ningún otro archivo. */
+  --data-ink:    oklch(var(--data-l) var(--data-c) 30);
+  --data-events: var(--data-ink);   /* eventos     */
+  --data-talent: var(--data-ink);   /* talento     */
+  --data-inbox:  var(--data-ink);   /* submissions */
+  --data-live:   var(--data-ink);   /* publicado   */
+
+  /* Texto encima de un relleno de acento. NO cambia con el tema: el botón
+   * es rojo en claro y en oscuro, así que su etiqueta es clara en los dos.
+   * Usar --fg aquí deja letras oscuras sobre rojo en cuanto se pasa a claro,
+   * que es exactamente lo que hizo el barrido antes de esta línea. */
+  --on-accent: oklch(.99 .002 60);
+
+  /* Radios */
+  --r-card: 20px;
+  --r-ctrl: 14px;
+  --r-pill: 999px;
+
+  /* Tipografía */
+  --font-display: 'League Spartan', system-ui, sans-serif; /* cifras y títulos */
+  --font-ui:      'Poppins', system-ui, sans-serif;        /* todo lo demás    */
+
+  --track-caps: .06em;   /* mayúsculas: .18em era ilegible a 10px */
+
+  /* Movimiento */
+  --ease:    cubic-bezier(.2, .8, .2, 1);
+  --t-micro: 120ms;   /* estados de un mismo elemento  */
+  --t-comp:  220ms;   /* un componente entrando/saliendo */
+  --t-view:  380ms;   /* cambio de pantalla            */
+
+  /* Desenfoque por capa. Variables y no literales porque hay que poder
+   * bajarlas de golpe: ver `prefers-reduced-transparency` al final. */
+  --blur-1: 24px;  /* sidebar, topbar   */
+  --blur-2: 16px;  /* tarjetas          */
+  --blur-3: 32px;  /* menús, toasts     */
+  --sat:    160%;
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 2 · TEMA OSCURO  (por defecto)
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-admin,
+.tc-admin[data-theme='dark'] {
+  color-scheme: dark;
+
+  --tc-brand-ink: oklch(.66 .17 30);   /* 6,9:1 sobre glass-2 oscuro */
+  --data-l: .80;
+  --data-c: .012;
+
+  /* Lienzo — la web pública es #050000: negro con una gota de rojo. El panel
+   * vive en esa familia. Nunca #000 puro (el cristal necesita algo debajo
+   * que refractar), pero tampoco el gris azulado de antes, que hacía que el
+   * admin pareciera de otro producto.
+   *
+   * Y dos manchas, no tres: una de marca y un levantado neutro. La tercera
+   * sólo añadía un hue más a un sitio que pedía menos. */
+  --canvas:        oklch(.152 .008 25);
+  --canvas-blob-a: oklch(.38 .115 28 / .34);
+  --canvas-blob-b: oklch(.30 .010 25 / .50);
+  --canvas-blob-c: transparent;
+  --grain: .04;
+
+  /* Cristal — tres niveles, cada uno un poco más opaco que el de debajo */
+  --glass-1: oklch(.215 .007 25 / .58);
+  --glass-2: oklch(.245 .007 25 / .54);
+  --glass-3: oklch(.255 .008 25 / .80);
+
+  /* Las tres capas del canto del vidrio */
+  --edge:        oklch(1 0 0 / .10);    /* a) borde exterior            */
+  --inset-top:   oklch(1 0 0 / .14);    /* b) brillo especular superior */
+  --inset-bot:   oklch(0 0 0 / .34);    /*    y su sombra inferior      */
+  --sheen:       oklch(1 0 0 / .08);    /* c) reflejo diagonal          */
+  --sheen-far:   transparent;           /*    su caída, ver tema claro  */
+  --spec:        oklch(1 0 0 / .11);    /*    brillo bajo el cursor     */
+  --rim:         oklch(1 0 0 / .30);    /*    canto superior encendido  */
+
+  /* Sombras en dos partes: contacto corta y densa + ambiental larga */
+  --shadow-2:
+     0 1px 2px oklch(0 0 0 / .55),
+     0 14px 34px -12px oklch(0 0 0 / .62);
+  --shadow-3:
+     0 2px 4px oklch(0 0 0 / .55),
+     0 28px 64px -20px oklch(0 0 0 / .78);
+
+  /* Texto */
+  --fg:        oklch(.97 .003 40);
+  --fg-muted:  oklch(.97 .003 40 / .66);   /* etiquetas: .66, no .25 */
+  --fg-faint:  oklch(.97 .003 40 / .52);   /* .42 dejaba los placeholders ilegibles */
+  --hairline:  oklch(1 0 0 / .07);
+
+  /* Superficies SÓLIDAS — las 21 pantallas que no son el dashboard.
+   *
+   * No son de cristal, y es deliberado: veinte backdrop-filter en un
+   * formulario matan el scroll. El cristal se queda donde se nota (barras,
+   * tarjetas del panel, flotantes) y el resto usa estos, que salen del mismo
+   * lienzo, así que pertenecen aunque no desenfoquen.
+   *
+   * Cada nivel es MÁS CLARO que el que lo contiene. El diseño anterior lo
+   * hacía al revés — paneles #111 con filas #0d0d0d dentro — y por eso el
+   * contenido de Forms parecía un agujero. Sobre fondo oscuro, lo que está
+   * más cerca recibe más luz. */
+  --surface-1: oklch(.205 .008 30);   /* sección / tarjeta      */
+  --surface-2: oklch(.245 .008 30);   /* fila o campo dentro    */
+  --surface-3: oklch(.295 .009 30);   /* hover, relleno activo  */
+
+  --line:        oklch(1 0 0 / .10);
+  --line-strong: oklch(1 0 0 / .19);
+
+  /* El acento diluido, con el alfa ya dentro. Así el componente escribe
+   * `bg-[var(--accent-soft)]` y no depende de que Tailwind sepa calcular
+   * opacidad sobre una var(). */
+  --accent-soft:  color-mix(in oklab, var(--tc-brand) 16%, transparent);
+  --accent-line:  color-mix(in oklab, var(--tc-brand) 42%, transparent);
+  --accent-hover: oklch(.44 .175 28);
+
+  /* Peligro. Es rojo, como la marca, pero más claro y más caliente — y nunca
+   * relleno en un botón, para que no se confunda con la acción primaria.
+   * El verde de "guardado", el ámbar de aviso y el azul de información se
+   * fueron: la confirmación se dice con una palabra y un icono, no con un
+   * tercer color. */
+  --danger:      oklch(.72 .165 22);
+  --danger-soft: color-mix(in oklab, var(--danger) 15%, transparent);
+  --danger-line: color-mix(in oklab, var(--danger) 40%, transparent);
+
+  /* La tinta ENCIMA de un relleno --danger sólido, y por qué no vale
+   * --on-accent.
+   *
+   * --danger sí cambia de tema, y mucho: aquí es un salmón claro (L .72) y en
+   * claro es un rojo oscuro (L .48). Una tinta fija no puede servir a los dos
+   * — el blanco de --on-accent da 2,59:1 sobre este salmón, por debajo incluso
+   * del 3:1 que pide un icono. Así que la tinta del rojo se invierte con él:
+   * oscura sobre el salmón, clara sobre el rojo. 6,81:1 aquí, 6,94:1 en claro.
+   * Medido, no estimado. */
+  --on-danger:   oklch(.20 .02 25);
+
+  /* El velo de un modal y la sombra sobre una foto. La segunda es oscura en
+   * los dos temas: una foto no cambia de tema. */
+  --scrim:     oklch(0 0 0 / .62);
+  --img-shade: oklch(0 0 0 / .60);
+
+  --focus-gap: var(--canvas);
+  --skeleton:  oklch(1 0 0 / .06);
+  --shimmer:   oklch(1 0 0 / .12);
+
+  /* Halo del CTA. Sobre oscuro puede permitirse; ver el tema claro. */
+  --cta-glow:       0 6px 16px -6px color-mix(in oklab, var(--tc-brand) 70%, transparent);
+  --cta-glow-hover: 0 10px 24px -8px color-mix(in oklab, var(--tc-brand) 85%, transparent);
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 3 · TEMA CLARO
+ *
+ * No es el oscuro invertido. En claro la luz viene de arriba y golpea una
+ * superficie clara: el canto superior interior es una sombra suave, no un
+ * brillo blanco, y el inferior es el que recoge la luz. Las sombras llevan
+ * el tinte del acento — un gris neutro sobre un lienzo cálido se ve sucio.
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-admin[data-theme='light'] {
+  color-scheme: light;
+
+  --tc-brand-ink: oklch(.47 .19 28);   /* 6,3:1 sobre cristal claro */
+
+  --data-l: .42;
+  --data-c: .014;
+
+  /* Arena, no blanco. A .965 y croma .006 esto era papel de impresora con un
+   * suspiro de calor; el panel se veía clínico y no tenía nada que ver con la
+   * web. Bajar la luz y subir el croma lo lleva a un crema con cuerpo, y de
+   * paso las tarjetas se despegan del fondo sin necesitar bordes duros. */
+  --canvas:        oklch(.942 .018 80);
+  --canvas-blob-a: oklch(.85 .055 28 / .40);
+  --canvas-blob-b: oklch(.915 .022 80 / .60);
+  --canvas-blob-c: transparent;
+  --grain: .034;
+
+  /* Más bajos de lo que pide el instinto. A .60 la tarjeta tapa la malla y
+   * se queda en un rectángulo blanco con sombra; a .50 el color del lienzo
+   * la atraviesa y una tarjeta sobre el blob granate sale templada y otra
+   * sobre el índigo sale fría. Eso es lo que la hace parecer vidrio.
+   * Blanco sobre un lienzo claro ACLARA, así que el contraste del texto
+   * sube al bajar esto, no baja. */
+  /* El cristal tampoco es blanco puro: lleva el mismo calor que el lienzo,
+   * si no las barras se ven azuladas sobre la arena. */
+  --glass-1: oklch(.995 .006 80 / .58);
+  --glass-2: oklch(.995 .006 80 / .52);
+  --glass-3: oklch(.998 .004 80 / .80);
+
+  --edge:        oklch(.42 .02 70 / .13);
+  --inset-top:   oklch(.42 .03 70 / .07);   /* invertido: sombra arriba  */
+  --inset-bot:   oklch(1 0 0 / .70);        /*            luz abajo      */
+  /* Blanco sobre blanco no es un reflejo, es nada. En claro el reflejo se
+   * lee por el otro extremo: la esquina cercana a la luz se levanta apenas y
+   * la lejana se apaga con una sombra cálida. Sin esto la tarjeta es un
+   * rectángulo blanco plano por muy bien puesta que esté la sombra. */
+  --sheen:       oklch(1 0 0 / .55);
+  --sheen-far:   oklch(.42 .03 70 / .055);
+  --spec:        oklch(1 0 0 / .60);
+  --rim:         oklch(.42 .04 40 / .18);
+
+  --shadow-2:
+     0 1px 2px oklch(.45 .10 30 / .10),
+     0 14px 32px -12px oklch(.45 .09 30 / .20);
+  --shadow-3:
+     0 2px 6px oklch(.45 .10 30 / .12),
+     0 28px 60px -20px oklch(.45 .09 30 / .26);
+
+  --fg:        oklch(.235 .020 62);
+  --fg-muted:  oklch(.235 .020 62 / .74);   /* .68 daba 4,2:1 — no llegaba */
+  /* .58 se quedaba en 3,87:1 sobre surface-3 y 4,05 sobre el lienzo: por
+   * debajo de AA, y son 162 sitios — etiquetas, ayudas y TODOS los
+   * placeholders de las 21 pantallas. Era el único token de este bloque sin
+   * medir, justo debajo de uno que sí lo estaba. A .66 da 4,91–5,32 en las
+   * tres superficies y sigue leyéndose por debajo de --fg-muted, que es su
+   * trabajo. Medido, no estimado. */
+  --fg-faint:  oklch(.235 .020 62 / .66);
+  --hairline:  oklch(.38 .025 72 / .13);
+
+  /* Aquí el anidado también aclara, pero sin llegar al blanco: el tope es
+   * .988, no 1. */
+  --surface-1: oklch(.972 .012 80);
+  --surface-2: oklch(.988 .008 80);
+  --surface-3: oklch(.925 .022 80);
+
+  --line:        oklch(.38 .025 72 / .16);
+  --line-strong: oklch(.38 .025 72 / .30);
+
+  --accent-soft:  color-mix(in oklab, var(--tc-brand) 12%, transparent);
+  --accent-line:  color-mix(in oklab, var(--tc-brand) 38%, transparent);
+  --accent-hover: oklch(.42 .19 28);
+
+  --danger:      oklch(.48 .20 25);
+  --danger-soft: color-mix(in oklab, var(--danger) 11%, transparent);
+  --danger-line: color-mix(in oklab, var(--danger) 34%, transparent);
+
+  /* Aquí el rojo es oscuro, así que su tinta es la clara. Ver la nota del
+   * bloque oscuro: este token existe porque --danger invierte. */
+  --on-danger:   var(--on-accent);
+
+  /* El velo tapa FOTOS de la clienta, y una foto no sabe de temas: si aquí se
+   * aclara, deja de tapar. A .45 sobre L.30 la X de borrar caía a 2,52:1 sobre
+   * una foto blanca — el control desaparecía justo encima de la imagen que se
+   * quería borrar. Igualado a la densidad del tema oscuro: peor caso 4,94:1. */
+  --scrim:     oklch(.20 .02 60 / .62);
+  --img-shade: oklch(0 0 0 / .55);
+
+  --focus-gap: oklch(1 0 0 / .9);
+  --skeleton:  oklch(.42 .02 70 / .08);
+  --shimmer:   oklch(1 0 0 / .75);
+
+  /* Sobre blanco, el halo del oscuro es una mancha roja. Aquí sólo insinúa
+   * que el botón está por delante del plano. */
+  --cta-glow:       0 4px 12px -6px color-mix(in oklab, var(--tc-brand) 45%, transparent);
+  --cta-glow-hover: 0 8px 20px -8px color-mix(in oklab, var(--tc-brand) 58%, transparent);
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 4 · LIENZO
+ *
+ * Dos pseudo-elementos fijos: la malla de color y el grano. Fijos y no
+ * scrolleables, así que el navegador los pinta una vez y no los vuelve a
+ * tocar mientras se recorre la página.
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-admin {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+
+  /* El toggle de tema no debe dar un flash: todos los tokens de color
+   * viajan juntos. Sólo color y background — nada que provoque layout. */
+  transition:
+    background-color var(--t-view) var(--ease),
+    color            var(--t-view) var(--ease);
+}
+
+.tc-admin::before,
+.tc-admin::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Malla: tres blobs radiales. Un radial-gradient grande ya nace desenfocado,
+ * así que no hace falta filter: blur() — que sí costaría. */
+.tc-admin::before {
+  background:
+    radial-gradient(58vw 46vw at 8% -6%,   var(--canvas-blob-a), transparent 62%),
+    radial-gradient(52vw 44vw at 96% 4%,   var(--canvas-blob-b), transparent 60%),
+    radial-gradient(70vw 40vw at 46% 112%, var(--canvas-blob-c), transparent 66%);
+  transition: opacity var(--t-view) var(--ease);
+}
+
+/* Grano: SVG en línea. Rompe el banding de los gradientes y quita el
+ * plástico del cristal. */
+.tc-admin::after {
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 5 · SUPERFICIE DE CRISTAL
+ *
+ * `.tc-glass` es la receta; `--glass` y `--blur` eligen el nivel.
+ * Tres capas de canto, no un border de 1px:
+ *   a) borde exterior            → border
+ *   b) especular arriba + sombra → inset del box-shadow
+ *   c) reflejo diagonal          → ::before
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-glass {
+  --glass: var(--glass-2);
+  --blur:  var(--blur-2);
+
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--r-card);
+  border: 1px solid var(--edge);
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  box-shadow:
+    inset 0  1px 0 var(--inset-top),
+    inset 0 -1px 0 var(--inset-bot),
+    var(--shadow-2);
+}
+
+.tc-glass--1 { --glass: var(--glass-1); --blur: var(--blur-1); }
+.tc-glass--3 { --glass: var(--glass-3); --blur: var(--blur-3); box-shadow:
+    inset 0  1px 0 var(--inset-top),
+    inset 0 -1px 0 var(--inset-bot),
+    var(--shadow-3); }
+
+/* c) el reflejo diagonal. Se desplaza con el cursor a través de --mx. */
+.tc-glass::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    128deg,
+    var(--sheen)     0%,
+    transparent      42%,
+    var(--sheen-far) 100%
+  );
+  transform: translate3d(calc((var(--mx) - 50%) * .14), 0, 0);
+  transition: transform var(--t-comp) var(--ease);
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 6 · TARJETA
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 18px 16px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition:
+    transform   var(--t-comp) var(--ease),
+    box-shadow  var(--t-comp) var(--ease),
+    border-color var(--t-comp) var(--ease),
+    background-color var(--t-view) var(--ease);
+}
+
+/* d) brillo bajo el cursor + canto superior encendido.
+ * Los dos en el mismo pseudo y en la misma propiedad animada (opacity),
+ * para que el hover cueste una sola composición. */
+.tc-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    340px circle at var(--mx) var(--my),
+    var(--spec),
+    transparent 68%
+  );
+  box-shadow: inset 0 1px 0 var(--rim);
+  transition: opacity var(--t-comp) var(--ease);
+}
+
+.tc-card[data-interactive]        { cursor: pointer; }
+.tc-card[data-interactive]:hover  { transform: translateY(-2px); will-change: transform; }
+.tc-card[data-interactive]:hover::after { opacity: 1; }
+.tc-card[data-interactive]:active { transform: translateY(-2px) scale(.985); transition-duration: var(--t-micro); }
+
+.tc-card:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0  1px 0 var(--inset-top),
+    inset 0 -1px 0 var(--inset-bot),
+    0 0 0 2px var(--focus-gap),
+    0 0 0 4px var(--tc-brand),
+    var(--shadow-2);
+}
+
+/* Deshabilitada: además de apagarse, se posa. Sólo bajar la opacidad deja
+ * una tarjeta flotando con la misma sombra que las vivas y en tema claro no
+ * se distingue de una normal — la profundidad es la señal, no el gris. */
+.tc-card[aria-disabled='true'] {
+  opacity: .5;
+  pointer-events: none;
+  filter: saturate(.35);
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+
+/* ── Tarjeta de métrica ──────────────────────────────────────────────── */
+.tc-metric {
+  /* Reserva de altura: la tarjeta ocupa lo mismo cargando que cargada,
+   * así que no hay salto (CLS) cuando llega el dato. */
+  min-height: 168px;
+  --tone: var(--fg-muted);
+}
+
+.tc-metric__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tc-metric__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--r-ctrl);
+  color: var(--tone);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 22%, transparent);
+}
+
+.tc-metric__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.tc-metric__value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: .95;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--fg);
+  margin-top: auto;   /* el número se ancla abajo: la fila queda alineada
+                         aunque una etiqueta ocupe dos líneas */
+}
+
+.tc-metric__foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Delta contra el periodo anterior — pie de foto de la sparkline.
+ *
+ * Sin pastilla. Una pastilla rellena y con borde es cromo de ESTADO
+ * (publicado / borrador). Puesta sobre una medición hace que el pie de la
+ * tarjeta pese lo mismo que el dato, y repite el tono por tercera vez en la
+ * misma tarjeta — icono, chip y sparkline. Ese exceso es la marca de la
+ * casa de los paneles de plantilla. Aquí el delta anota la sparkline que
+ * tiene al lado, y se comporta como una anotación.
+ *
+ * Y sin verde-sube / rojo-baja. La valencia sólo es correcta cuando la
+ * métrica tiene una dirección inequívocamente buena, y aquí no la tiene
+ * ninguna: "sin revisar +48%" es bueno para el negocio y malo para su
+ * bandeja, "artistas -12%" no es una alarma. Pintar valencia donde no
+ * existe es decorar. La urgencia de verdad vive en la tarjeta entera
+ * (.tc-metric--lead), que es donde se puede actuar sobre ella.
+ *
+ * Queda un solo presupuesto de color por tarjeta: la pastilla del icono
+ * (suave) y la sparkline (saturada). Nada más. */
+.tc-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+  color: var(--fg-muted);
+}
+.tc-delta svg { flex-shrink: 0; }
+
+/* La sparkline se dibuja con currentColor, así que hereda el tono de la
+ * tarjeta sin que el color se escriba dos veces. */
+.tc-spark { display: block; overflow: visible; color: var(--tone); }
+
+
+/* ── Variante accionable ─────────────────────────────────────────────
+ * Una sola tarjeta de la fila pide acción. Pesa más por tres vías a la
+ * vez — tinte de marca en el cristal, canto encendido en reposo y un CTA —
+ * y ninguna de ellas es "hacer el número más grande y ya". */
+.tc-metric--lead {
+  --tone: var(--tc-brand-ink);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--tc-brand) 16%, transparent),
+      color-mix(in oklab, var(--tc-brand)  4%, transparent) 42%),
+    var(--glass);
+  border-color: color-mix(in oklab, var(--tc-brand) 38%, var(--edge));
+}
+.tc-metric--lead::after { opacity: .55; }
+.tc-metric--lead[data-interactive]:hover::after { opacity: 1; }
+.tc-metric--lead .tc-metric__value { font-size: 46px; }
+.tc-metric--lead .tc-metric__label { color: var(--fg); }
+
+.tc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--on-accent);
+  background: var(--tc-brand);
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / .22),
+    0 1px 2px  oklch(0 0 0 / .3),
+    var(--cta-glow);
+  transition:
+    transform  var(--t-micro) var(--ease),
+    filter     var(--t-micro) var(--ease),
+    box-shadow var(--t-comp)  var(--ease);
+}
+.tc-cta:hover  { filter: brightness(1.1); box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / .22),
+    0 1px 2px oklch(0 0 0 / .3),
+    var(--cta-glow-hover); }
+.tc-cta:active { transform: scale(.985); }
+.tc-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand);
+}
+
+
+/* ── Estado: cargando ────────────────────────────────────────────────
+ * Esqueleto de cristal con brillo que recorre. Nunca un spinner centrado:
+ * un spinner no dice cuánto ocupa lo que viene, un esqueleto sí. */
+.tc-skel {
+  border-radius: 7px;
+  background: var(--skeleton);
+  position: relative;
+  overflow: hidden;
+}
+.tc-skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
+  animation: tc-shimmer 1.4s var(--ease) infinite;
+}
+@keyframes tc-shimmer { to { transform: translateX(100%); } }
+
+
+/* ── Estado: vacío / error ───────────────────────────────────────────── */
+.tc-metric__note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--fg-muted);
+  margin-top: auto;
+}
+.tc-metric__note[data-kind='error'] { color: var(--data-events); }
+.tc-metric__note svg { flex-shrink: 0; }
+
+.tc-linkbtn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--tc-brand-ink);
+  cursor: pointer;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+  transition: text-decoration-color var(--t-micro) var(--ease);
+}
+.tc-linkbtn:hover { text-decoration-color: currentColor; }
+.tc-linkbtn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand); }
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 7 · ENTRADA ESCALONADA
+ * Sólo en la primera carga de la sesión — quien vuelve al dashboard veinte
+ * veces al día no quiere ver la animación veinte veces.
+ * ─────────────────────────────────────────────────────────────────────── */
+.tc-enter {
+  animation: tc-in var(--t-view) var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes tc-in {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 8 · PREFERENCIAS DEL SISTEMA
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* Menos movimiento: se van los transforms y el escalonado, no sólo las
+ * opacidades. Un fade que sigue moviendo la tarjeta no cumple nada. */
+@media (prefers-reduced-motion: reduce) {
+  .tc-admin *,
+  .tc-admin *::before,
+  .tc-admin *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .tc-card[data-interactive]:hover,
+  .tc-card[data-interactive]:active,
+  .tc-cta:active { transform: none; }
+  .tc-glass::before { transform: none; }
+}
+
+/* Menos transparencia: fuera el desenfoque (que es el coste real) y cristal
+ * casi opaco. La jerarquía se sostiene con el borde y la sombra, que siguen
+ * ahí. Es también la vía de escape si el blur pesa en una máquina lenta. */
+@media (prefers-reduced-transparency: reduce) {
+  .tc-admin { --blur-1: 0px; --blur-2: 0px; --blur-3: 0px; }
+  .tc-admin::before { opacity: .45; }
+
+  .tc-admin,
+  .tc-admin[data-theme='dark'] {
+    --glass-1: oklch(.21 .012 275 / .96);
+    --glass-2: oklch(.24 .012 275 / .96);
+    --glass-3: oklch(.26 .014 275 / .99);
+  }
+  .tc-admin[data-theme='light'] {
+    --glass-1: oklch(.995 .002 70 / .96);
+    --glass-2: oklch(1    0    0  / .96);
+    --glass-3: oklch(1    0    0  / .99);
+  }
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────
+ * 9 · UTILIDADES
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* Enlace estirado: el destino real está en el título, pero su área de clic
+ * llega a los bordes de la tarjeta. Un único elemento en el orden de
+ * tabulación, y el CTA puede seguir siendo un botón de verdad porque vive
+ * por encima de esta capa. */
+.tc-stretch {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.tc-stretch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: var(--r-card);
+}
+.tc-stretch:focus-visible { outline: none; }
+
+/* El foco se pinta en la tarjeta, no en las tres palabras del título:
+ * el área clicable es la tarjeta, y el anillo debe decir eso. */
+.tc-card:has(.tc-stretch:focus-visible) {
+  box-shadow:
+    inset 0  1px 0 var(--inset-top),
+    inset 0 -1px 0 var(--inset-bot),
+    0 0 0 2px var(--focus-gap),
+    0 0 0 4px var(--tc-brand),
+    var(--shadow-2);
+}
+.tc-card:has(.tc-stretch:focus-visible)::after { opacity: 1; }
+
+/* Por encima del enlace estirado. */
+.tc-cta,
+.tc-linkbtn { position: relative; z-index: 3; text-decoration: none; }
+
+.tc-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 10 · ARMAZÓN — barra lateral, barra superior, página
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.tc-shell {
+  --side: 260px;
+  display: grid;
+  grid-template-columns: var(--side) 1fr;
+  min-height: 100vh;
+}
+
+/* El ancho NO se anima, ni aquí ni en .tc-side.
+ *
+ * Animar `grid-template-columns` obliga a recalcular la maquetación de toda
+ * la página en cada frame, y con siete superficies de backdrop-filter en
+ * pantalla cada una de esas veces reconstruye su fondo desenfocado. Sale
+ * carísimo, y en un control que ella va a pulsar todos los días.
+ *
+ * El plegado salta, y lo que se acompaña es lo gratis: las etiquetas se
+ * desvanecen con opacity, que va por compositor. El resultado se siente
+ * inmediato en vez de lento, que para un control de la barra es lo correcto.
+ * Es además la propia regla del encargo: transform y opacity, nada más. */
+.tc-shell[data-collapsed='true'] { --side: 72px; }
+
+
+/* ── Barra lateral ───────────────────────────────────────────────────── */
+.tc-side {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: var(--side);
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border-width: 0 1px 0 0;
+}
+.tc-side::before { border-radius: 0; }
+
+.tc-side__brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 64px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--hairline);
+  overflow: hidden;
+}
+.tc-side__brand svg { flex-shrink: 0; }
+.tc-side__name {
+  min-width: 0;
+  white-space: nowrap;
+  transition: opacity var(--t-comp) var(--ease);
+}
+.tc-side__name b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--fg);
+}
+.tc-side__name span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+[data-collapsed='true'] .tc-side__name { opacity: 0; pointer-events: none; }
+
+.tc-side__nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge) transparent;
+}
+.tc-side__foot {
+  flex-shrink: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--hairline);
+}
+
+/* Separador fino en lugar de un título en mayúsculas grises. Los tres
+ * rótulos ("Content", "People writing in", "Look & navigation") ocupaban
+ * tres líneas para decir algo que la agrupación ya dice sola. */
+.tc-side__sep {
+  height: 1px;
+  margin: 9px 12px;
+  background: var(--hairline);
+  flex-shrink: 0;
+}
+
+
+/* ── Ítem de navegación ──────────────────────────────────────────────── */
+.tc-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 40px;
+  padding: 0 11px;
+  flex-shrink: 0;
+  border-radius: var(--r-ctrl);
+  font-size: 13.5px;
+  font-weight: 450;
+  letter-spacing: .005em;
+  color: var(--fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--t-micro) var(--ease),
+    background-color var(--t-micro) var(--ease);
+}
+.tc-nav svg { flex-shrink: 0; }
+.tc-nav__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity var(--t-comp) var(--ease);
+}
+[data-collapsed='true'] .tc-nav__text { opacity: 0; }
+
+.tc-nav:hover  { color: var(--fg); background: color-mix(in oklab, var(--fg) 7%, transparent); }
+.tc-nav:active { transform: scale(.985); transition-duration: var(--t-micro); }
+
+/* Activo: sólo la pastilla de cristal, el texto en blanco y el icono en el
+ * acento. Nada más.
+ *
+ * Fuera la barra de 3 px de la izquierda y fuera el halo rojo: entre los dos
+ * metían tres señales para decir una cosa, y la pastilla ya se ve sola. Una
+ * marca extra pegada al canto no se lee como precisión, se lee como ruido. */
+.tc-nav[aria-current='page'] {
+  color: var(--fg);
+  font-weight: 500;
+  background: var(--glass-2);
+  box-shadow:
+    inset 0  1px 0 var(--inset-top),
+    inset 0 -1px 0 var(--inset-bot),
+    0 1px 2px oklch(0 0 0 / .25);
+}
+.tc-nav[aria-current='page'] svg { color: var(--tc-brand-ink); }
+
+.tc-nav:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand);
+}
+
+/* Contador de sin-leer. */
+.tc-badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  background: var(--tc-brand);
+  color: var(--on-accent);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  transition: opacity var(--t-comp) var(--ease);
+}
+[data-collapsed='true'] .tc-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  margin: 0;
+  min-width: 8px; height: 8px;
+  padding: 0;
+  font-size: 0;          /* plegado sólo cabe el punto, no la cifra */
+  line-height: 0;
+}
+
+/* Tooltip cuando la barra está plegada. */
+.tc-nav__tip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--edge);
+  background: var(--glass-3);
+  backdrop-filter: blur(var(--blur-3)) saturate(var(--sat));
+  -webkit-backdrop-filter: blur(var(--blur-3)) saturate(var(--sat));
+  box-shadow: var(--shadow-3);
+  color: var(--fg);
+  font-size: 12.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-micro) var(--ease), transform var(--t-micro) var(--ease);
+  z-index: 60;
+}
+[data-collapsed='true'] .tc-nav:hover .tc-nav__tip,
+[data-collapsed='true'] .tc-nav:focus-visible .tc-nav__tip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+[data-collapsed='false'] .tc-nav__tip { display: none; }
+
+
+/* ── Barra superior ──────────────────────────────────────────────────── */
+.tc-top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 20px;
+  border-radius: 0;
+  border-width: 0 0 1px;
+}
+.tc-top::before { border-radius: 0; }
+
+.tc-crumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.tc-crumb a { color: inherit; text-decoration: none; border-radius: 5px; }
+.tc-crumb a:hover { color: var(--fg); }
+.tc-crumb a:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand); }
+.tc-crumb b { color: var(--fg); font-weight: 500; }
+.tc-crumb i { color: var(--fg-faint); font-style: normal; }
+
+.tc-spacer { flex: 1 }
+
+/* Buscador */
+.tc-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px 0 11px;
+  min-width: 200px;
+  border-radius: var(--r-ctrl);
+  border: 1px solid var(--edge);
+  background: color-mix(in oklab, var(--fg) 5%, transparent);
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color var(--t-micro) var(--ease), background-color var(--t-micro) var(--ease);
+}
+.tc-search:hover { color: var(--fg); background: color-mix(in oklab, var(--fg) 9%, transparent); }
+.tc-search:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand); }
+.tc-search span { flex: 1; text-align: left }
+.tc-kbd {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: 7px;
+  color: var(--fg-faint);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+/* Botón de icono — plegar, tema, cajón móvil */
+.tc-iconbtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-ctrl);
+  background: color-mix(in oklab, var(--fg) 5%, transparent);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition:
+    color var(--t-micro) var(--ease),
+    background-color var(--t-micro) var(--ease),
+    transform var(--t-micro) var(--ease);
+}
+.tc-iconbtn:hover  { color: var(--fg); background: color-mix(in oklab, var(--fg) 10%, transparent); }
+.tc-iconbtn:active { transform: scale(.94); }
+.tc-iconbtn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand); }
+
+.tc-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--edge);
+  background: linear-gradient(140deg,
+    color-mix(in oklab, var(--tc-brand) 34%, transparent),
+    color-mix(in oklab, var(--data-talent) 30%, transparent));
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  box-shadow: inset 0 1px 0 var(--inset-top);
+}
+
+
+/* ── Página ──────────────────────────────────────────────────────────── */
+.tc-main {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tc-page {
+  padding: 24px 20px 64px;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.tc-page__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.tc-page__head h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  line-height: 1.1;
+  color: var(--fg);
+  margin: 0;
+}
+.tc-page__head p {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--fg-muted);
+}
+
+/* Toda repetición con grid + gap, nunca márgenes sueltos. */
+.tc-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.tc-grid-8-4 {
+  display: grid;
+  grid-template-columns: 8fr 4fr;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+.tc-stack { display: flex; flex-direction: column; gap: 14px; }
+
+
+/* ── Cajón móvil ─────────────────────────────────────────────────────── */
+.tc-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: oklch(0 0 0 / .55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: tc-fade var(--t-comp) var(--ease);
+}
+@keyframes tc-fade { from { opacity: 0 } to { opacity: 1 } }
+
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .tc-shell { grid-template-columns: 1fr; }
+  .tc-main  { grid-column: 1; }
+  .tc-side {
+    transform: translateX(-100%);
+    transition: transform var(--t-view) var(--ease);
+    box-shadow: none;
+  }
+  .tc-shell[data-drawer='true'] .tc-side { transform: none; box-shadow: var(--shadow-3); }
+  .tc-metrics { grid-template-columns: repeat(3, 1fr); }
+  .tc-grid-8-4 { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .tc-metrics { grid-template-columns: repeat(2, 1fr); }
+  .tc-page { padding: 18px 14px 56px; }
+  .tc-top { padding: 0 14px; }
+  .tc-search { min-width: 0; }
+  .tc-search span, .tc-kbd { display: none; }
+}
+
+
+/* ── El ítem de menú también se usa como <button> (cerrar sesión) ─────── */
+button.tc-nav {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Mostrar según el ancho, sin duplicar markup. */
+.tc-only-mobile  { display: none; }
+@media (max-width: 1024px) {
+  .tc-only-mobile  { display: grid; }
+  .tc-only-desktop { display: none; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 11 · PALETA DE COMANDOS  (⌘K)
+ * ═══════════════════════════════════════════════════════════════════════ */
+.tc-palette__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 20px 20px;
+  background: oklch(0 0 0 / .45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: tc-fade var(--t-comp) var(--ease);
+}
+
+.tc-palette {
+  width: 100%;
+  max-width: 520px;
+  padding: 8px;
+  animation: tc-pop var(--t-comp) var(--ease);
+}
+@keyframes tc-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.tc-palette__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--hairline);
+}
+.tc-palette__field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--fg);
+}
+.tc-palette__field input::placeholder { color: var(--fg-faint); }
+
+.tc-palette__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tc-palette__row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-ctrl);
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--fg-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--t-micro) var(--ease), background-color var(--t-micro) var(--ease);
+}
+/* Un solo resaltado, movido por teclado o por ratón indistintamente: con
+ * :hover y una fila "seleccionada" a la vez se ven dos y no se sabe cuál
+ * responde al Enter. */
+.tc-palette__row[data-on] {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 10%, transparent);
+  box-shadow: inset 0 1px 0 var(--inset-top);
+}
+.tc-palette__row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand);
+}
+
+.tc-palette__empty {
+  margin: 0;
+  padding: 22px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 12 · PANELES DE CONTENIDO — listas, filas, toast
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.tc-eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.tc-panel { gap: 0; padding: 0; min-height: 260px; }
+.tc-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+.tc-panel__head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  color: var(--fg);
+}
+
+.tc-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Fila clicable — mismo lenguaje que la tarjeta: elevación no, pero press sí */
+.tc-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 9px 10px;
+  border-radius: var(--r-ctrl);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--t-micro) var(--ease), transform var(--t-micro) var(--ease);
+}
+.tc-row:hover  { background: color-mix(in oklab, var(--fg) 6%, transparent); }
+.tc-row:active { transform: scale(.99); }
+.tc-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand);
+}
+
+.tc-row__body { min-width: 0; flex: 1; }
+.tc-row__title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-row__sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fecha en bloque, con la cifra en la display y tabular */
+.tc-date {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: var(--r-ctrl);
+  background: color-mix(in oklab, var(--data-events) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--data-events) 20%, transparent);
+  line-height: 1;
+}
+.tc-date b {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+.tc-date span {
+  margin-top: 2px;
+  font-size: 9.5px;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+/* Estado publicado / borrador */
+.tc-chip {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .01em;
+  color: var(--fg-muted);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+/* Publicado pesa más que borrador por luz, no por color. */
+.tc-chip[data-on] {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fg) 24%, transparent);
+}
+
+/* Cartel en avatares apilados */
+.tc-avatars { display: flex; align-items: center; flex-shrink: 0; min-width: 22px; }
+.tc-avatars__i {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  margin-left: calc(var(--k) * -8px);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg);
+  background: color-mix(in oklab, var(--data-talent) 26%, var(--glass-2));
+  box-shadow: 0 0 0 2px var(--canvas), inset 0 1px 0 var(--inset-top);
+}
+.tc-avatars__n {
+  margin-left: 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+}
+
+/* Solicitud con acciones en línea */
+.tc-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-ctrl);
+  transition: background-color var(--t-micro) var(--ease);
+}
+.tc-sub:hover { background: color-mix(in oklab, var(--fg) 6%, transparent); }
+.tc-sub__acts { display: flex; gap: 6px; flex-shrink: 0; }
+
+.tc-mini {
+  padding: 5px 10px;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition:
+    color var(--t-micro) var(--ease),
+    background-color var(--t-micro) var(--ease),
+    transform var(--t-micro) var(--ease);
+}
+.tc-mini:hover  { color: var(--fg); background: color-mix(in oklab, var(--fg) 12%, transparent); }
+.tc-mini:active { transform: scale(.96); }
+.tc-mini:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-gap), 0 0 0 4px var(--tc-brand); }
+.tc-mini[data-kind='yes'] {
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--fg) 26%, transparent);
+  background: color-mix(in oklab, var(--fg) 13%, transparent);
+}
+.tc-mini[data-kind='yes']:hover { background: color-mix(in oklab, var(--fg) 21%, transparent); }
+
+/* Estado vacío del panel */
+.tc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  min-height: 190px;
+  text-align: center;
+  color: var(--fg-faint);
+}
+.tc-empty p { margin: 0; font-size: 13px; color: var(--fg-muted); max-width: 34ch; }
+
+
+/* ── Toast ───────────────────────────────────────────────────────────
+ * Entra desde abajo con un punto de rebote. Es la confirmación de una
+ * acción optimista: la fila ya cambió, esto sólo lo cuenta. */
+.tc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 90;
+  padding: 12px 18px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  color: var(--fg);
+  white-space: nowrap;
+  /* Sobrepasa un 8 %, no un 16 %. El encargo pedía "spring" y el spring se
+   * queda — pero sobre 22 px de recorrido, un 16 % son casi cuatro píxeles
+   * de rebote y eso ya se lee como un muelle de juguete. Al 8 % el toast
+   * asienta en vez de botar, que es lo que hace un objeto con masa. */
+  animation: tc-rise 380ms cubic-bezier(.22, 1.08, .36, 1) both;
+}
+@keyframes tc-rise {
+  from { opacity: 0; transform: translate(-50%, 22px) scale(.96); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-toast { transform: translateX(-50%); animation: none; }
+}

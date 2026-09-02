@@ -1,67 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import './admin-ui.css';
+import { Logo } from './ui/Logo';
+import { useAdminTheme } from './ui/useAdminTheme';
 import {
-  LayoutDashboard, Calendar, Music2, Users, Search, History, Tags, Image,
-  LogOut, Menu, X, ExternalLink, Paintbrush, Link2, FileText, FormInput, Inbox, Files,
-  PanelBottom, Share2, HelpCircle, Home, BellRing,
-} from 'lucide-react';
+  IconArtists, IconBell, IconClose, IconCollapse, IconDoc, IconEvent, IconExternal,
+  IconFooter, IconForm, IconGrid, IconHelp, IconHistory, IconHome, IconImage, IconInbox,
+  IconLink, IconMenu, IconPages, IconSearch, IconShare, IconSignOut, IconTag, IconTalent,
+  IconTheme, type IconProps,
+} from './ui/icons';
 
 /**
- * Grouped, and named for what each screen contains.
+ * El armazón del panel.
  *
- * There are more entries than before, not fewer, and that is the point: the
- * client asked for Instagram in the footer while it sat in the third tab of a
- * screen called "Navigation". Tabs are addressable by URL, so each one gets to
- * be its own destination instead of hiding behind a sibling.
+ * Las rutas y los grupos son los mismos que había — esto es una capa visual,
+ * no una reorganización. Lo que cambia:
+ *
+ *  · Los tres rótulos en mayúsculas grises ("Content", "People writing in",
+ *    "Look & navigation") pasan a ser separadores finos. Ocupaban tres líneas
+ *    para decir algo que la propia agrupación ya dice.
+ *  · El ítem activo era texto rojo, invisible a media pantalla de distancia.
+ *    Ahora es una pastilla de cristal con un indicador de 3 px en el acento.
+ *  · La barra se pliega a iconos. En una pantalla de portátil, 260 px de menú
+ *    permanente es mucho para quien pasa el día dentro de un formulario.
  */
-const NAV_GROUPS: { title: string; items: { label: string; to: string; icon: React.ElementType; end?: boolean }[] }[] = [
-  {
-    title: 'Content',
-    items: [
-      { label: 'Dashboard',    to: '/admin',          icon: LayoutDashboard, end: true },
-      { label: 'How it works', to: '/admin/help',     icon: HelpCircle },
-      { label: 'Events',       to: '/admin/events',   icon: Calendar },
-      { label: 'DJs',          to: '/admin/djs',      icon: Music2 },
-      { label: 'Artists',      to: '/admin/artists',  icon: Users },
-      { label: 'Home page',    to: '/admin/home',     icon: Home },
-      { label: 'Pages',        to: '/admin/pages',    icon: Files },
-    ],
-  },
-  {
-    title: 'People writing in',
-    items: [
-      { label: 'Submissions',  to: '/admin/submissions',  icon: Inbox },
-      { label: 'Forms',        to: '/admin/form-builder', icon: FormInput },
-      { label: 'Email alerts', to: '/admin/notifications', icon: BellRing },
-    ],
-  },
-  {
-    title: 'Look & navigation',
-    items: [
-      { label: 'Appearance',     to: '/admin/appearance',               icon: Paintbrush },
-      { label: 'Menu',           to: '/admin/navigation',               icon: Link2 },
-      { label: 'Footer',         to: '/admin/navigation?tab=footer',    icon: PanelBottom },
-      { label: 'Social links',   to: '/admin/navigation?tab=social',    icon: Share2 },
-      { label: 'Page backgrounds', to: '/admin/settings',               icon: Image },
-    ],
-  },
-  {
-    title: 'Settings',
-    items: [
-      { label: 'Google & sharing',  to: '/admin/settings?tab=seo',        icon: Search },
-      { label: 'Artist categories', to: '/admin/settings?tab=categories', icon: Tags },
-      { label: 'Legal pages',       to: '/admin/legal',                   icon: FileText },
-      { label: 'Change history',    to: '/admin/history',                 icon: History },
-    ],
-  },
+
+type NavItem = { label: string; to: string; icon: React.ComponentType<IconProps>; end?: boolean };
+
+/** `null` = separador. Sustituye a los títulos de grupo. */
+const NAV: (NavItem | null)[] = [
+  { label: 'Dashboard',    to: '/admin',              icon: IconGrid, end: true },
+  { label: 'How it works', to: '/admin/help',         icon: IconHelp },
+  { label: 'Events',       to: '/admin/events',       icon: IconEvent },
+  { label: 'DJs',          to: '/admin/djs',          icon: IconTalent },
+  { label: 'Artists',      to: '/admin/artists',      icon: IconArtists },
+  { label: 'Home page',    to: '/admin/home',         icon: IconHome },
+  { label: 'Pages',        to: '/admin/pages',        icon: IconPages },
+  null,
+  { label: 'Submissions',  to: '/admin/submissions',  icon: IconInbox },
+  { label: 'Forms',        to: '/admin/form-builder', icon: IconForm },
+  { label: 'Email alerts', to: '/admin/notifications', icon: IconBell },
+  null,
+  { label: 'Appearance',       to: '/admin/appearance',            icon: IconTheme },
+  { label: 'Menu',             to: '/admin/navigation',            icon: IconLink },
+  { label: 'Footer',           to: '/admin/navigation?tab=footer', icon: IconFooter },
+  { label: 'Social links',     to: '/admin/navigation?tab=social', icon: IconShare },
+  { label: 'Page backgrounds', to: '/admin/settings',              icon: IconImage },
+  null,
+  { label: 'Google & sharing',  to: '/admin/settings?tab=seo',        icon: IconSearch },
+  { label: 'Artist categories', to: '/admin/settings?tab=categories', icon: IconTag },
+  { label: 'Legal pages',       to: '/admin/legal',                   icon: IconDoc },
+  { label: 'Change history',    to: '/admin/history',                 icon: IconHistory },
 ];
 
+const ITEMS = NAV.filter((n): n is NavItem => n !== null);
+
 /**
- * The public site scales its text from the root font size, so the admin would
- * scale with it. Pin it back to 1 here: her panel should not shrink because
- * she made the website's headings smaller.
+ * El sitio público escala su texto desde el tamaño raíz, y el panel escalaría
+ * con él. Se fija a 1: su panel no debe encoger porque ella haya hecho más
+ * pequeños los titulares de la web.
  */
 function useUnscaledAdmin() {
   useEffect(() => {
@@ -75,177 +74,270 @@ function useUnscaledAdmin() {
   }, []);
 }
 
-function SidebarContent({ onNav }: { onNav?: () => void }) {
-  const location    = useLocation();
-  const { signOut } = useAuth();
-  const navigate    = useNavigate();
+/**
+ * ¿Es este ítem el de la pantalla actual? Incluye el `?tab=` en la cuenta.
+ *
+ * Y por eso los enlaces son `Link` y no `NavLink`. NavLink escribe su propio
+ * `aria-current="page"` con SU criterio, y lo escribe después de esparcir las
+ * props, así que gana al que le pases tú. Su criterio es prefijo de ruta e
+ * ignora la query — con lo cual en /admin/navigation se encendían Menu,
+ * Footer y Social links a la vez, y "Dashboard" (/admin) se encendía en todas
+ * las pantallas del panel. Cuatro entradas de menú marcadas y ninguna cierta.
+ */
+function isActive(item: NavItem, pathname: string, search: string) {
+  const [path, query] = item.to.split('?');
+  const wanted = new URLSearchParams(query ?? '').get('tab');
+  if (item.end) return pathname === path;
+  return pathname.startsWith(path)
+    && (new URLSearchParams(search).get('tab') ?? null) === wanted;
+}
 
-  // Unread applications, on the menu entry that leads to them.
-  //
-  // Nothing tells her an application has arrived: the count existed on the
-  // dashboard, but only if she went looking, and the form has been collecting
-  // answers she never saw. This is the version that works with no email
-  // provider, no key and nothing to configure — it is true the moment she
-  // logs in. An actual email still needs a sending service.
-  const [unread, setUnread] = useState<number>(0);
+/* ── Paleta de comandos ──────────────────────────────────────────────
+ * Un buscador que no busca nada es peor que no tenerlo, así que ⌘K salta
+ * entre las 21 pantallas del menú. No indexa contenido todavía; cuando lo
+ * haga, se añade aquí y el atajo ya está en los dedos de la clienta. */
+function Palette({ onClose }: { onClose: () => void }) {
+  const [q, setQ] = useState('');
+  const [i, setI] = useState(0);
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const read = () => {
-      supabase
-        .from('form_submissions')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'new')
-        .then(({ count }) => { if (!cancelled) setUnread(count ?? 0); }, () => {});
-    };
-    read();
-    // Re-read on navigation so the badge clears once she works through them.
-    return () => { cancelled = true; };
-  }, [location.pathname]);
+  const hits = useMemo(() => {
+    const n = q.trim().toLowerCase();
+    return (n ? ITEMS.filter(x => x.label.toLowerCase().includes(n)) : ITEMS).slice(0, 8);
+  }, [q]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/admin/login');
-  };
+  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => { setI(0); }, [q]);
+
+  const go = (item?: NavItem) => { if (item) { navigate(item.to); onClose(); } };
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0d0d] border-r border-[#1a1a1a]">
-
-      {/* Brand */}
-      <div className="px-6 py-5 border-b border-[#1a1a1a]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border border-[#C42121] rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-[#C42121] font-bold text-xs tracking-widest">TC</span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-bold tracking-[0.15em] uppercase truncate">The Circle</p>
-            <p className="text-[#3a3a3a] text-xs tracking-widest uppercase">CMS</p>
-          </div>
+    <div className="tc-palette__scrim" onClick={onClose} role="presentation">
+      <div
+        className="tc-glass tc-glass--3 tc-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Buscar una pantalla"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="tc-palette__field">
+          <IconSearch size={17} stroke={2} />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Ir a…"
+            aria-label="Buscar una pantalla"
+            onKeyDown={e => {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setI(v => Math.min(v + 1, hits.length - 1)); }
+              if (e.key === 'ArrowUp')   { e.preventDefault(); setI(v => Math.max(v - 1, 0)); }
+              if (e.key === 'Enter')     { e.preventDefault(); go(hits[i]); }
+              if (e.key === 'Escape')    { e.preventDefault(); onClose(); }
+            }}
+          />
+          <kbd className="tc-kbd">esc</kbd>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {NAV_GROUPS.map(group => (
-          <div key={group.title} className="mb-5 last:mb-0">
-            <p className="px-3 mb-1.5 text-[10px] tracking-[0.18em] uppercase text-[#3a3a3a]">
-              {group.title}
-            </p>
-            {group.items.map(item => {
-              const [path, query] = item.to.split('?');
-              const wantedTab = new URLSearchParams(query ?? '').get('tab');
-              const active = item.end
-                ? location.pathname === path
-                : location.pathname.startsWith(path)
-                  && (new URLSearchParams(location.search).get('tab') ?? null) === wantedTab;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={onNav}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                    active
-                      ? 'bg-[#C42121]/10 text-[#C42121] border border-[#C42121]/15 font-medium'
-                      : 'text-[#666] hover:text-[#ccc] hover:bg-[#161616] border border-transparent'
-                  }`}
-                >
-                  <item.icon size={15} strokeWidth={1.8} />
-                  <span className="tracking-wide">{item.label}</span>
-                  {item.to === '/admin/submissions' && unread > 0 && (
-                    <span
-                      title={`${unread} application${unread === 1 ? '' : 's'} you have not opened yet`}
-                      className="ml-auto min-w-[20px] px-1.5 py-0.5 rounded-full bg-[#C42121] text-white
-                                 text-[10px] font-bold leading-none text-center"
-                    >
-                      {unread > 99 ? '99+' : unread}
-                    </span>
-                  )}
-                </NavLink>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer */}
-      <div className="p-3 border-t border-[#1a1a1a] space-y-0.5">
-        <a
-          href="/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#444] hover:text-[#888] hover:bg-[#161616] transition-all border border-transparent"
-        >
-          <ExternalLink size={15} strokeWidth={1.8} />
-          <span className="tracking-wide">View Site</span>
-        </a>
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#444] hover:text-red-400 hover:bg-red-950/20 transition-all border border-transparent"
-        >
-          <LogOut size={15} strokeWidth={1.8} />
-          <span className="tracking-wide">Sign Out</span>
-        </button>
+        {hits.length === 0
+          ? <p className="tc-palette__empty">Nada con ese nombre.</p>
+          : (
+            <ul className="tc-palette__list">
+              {hits.map((item, k) => (
+                <li key={item.to}>
+                  <button
+                    type="button"
+                    className="tc-palette__row"
+                    data-on={k === i || undefined}
+                    onMouseEnter={() => setI(k)}
+                    onClick={() => go(item)}
+                  >
+                    <item.icon size={17} stroke={2} />
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
       </div>
     </div>
   );
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  useUnscaledAdmin();
-  const [mobileOpen, setMobileOpen] = useState(false);
+/* ── Barra lateral ───────────────────────────────────────────────────── */
+function Sidebar({ unread, onNav }: { unread: number; onNav?: () => void }) {
+  const { pathname, search } = useLocation();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const link = (item: NavItem, active: boolean) => (
+    <Link
+      key={item.to}
+      to={item.to}
+      onClick={onNav}
+      className="tc-nav"
+      aria-current={active ? 'page' : undefined}
+    >
+      <item.icon size={19} />
+      <span className="tc-nav__text">{item.label}</span>
+      {item.to === '/admin/submissions' && unread > 0 && (
+        <span
+          className="tc-badge"
+          title={`${unread} solicitud${unread === 1 ? '' : 'es'} sin abrir`}
+        >
+          {unread > 99 ? '99+' : unread}
+        </span>
+      )}
+      <span className="tc-nav__tip">{item.label}</span>
+    </Link>
+  );
 
   return (
-    <div
-      className="min-h-screen bg-[#0a0a0a] text-white flex"
-      style={{ fontFamily: 'Poppins, sans-serif' }}
-    >
-      {/* Desktop sidebar — fixed */}
-      <aside className="hidden lg:flex w-56 flex-shrink-0 fixed inset-y-0 left-0 z-30 flex-col">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile backdrop */}
-      {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-30"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Mobile sidebar — slide in */}
-      <aside
-        className={`lg:hidden fixed inset-y-0 left-0 w-56 z-40 flex flex-col transform transition-transform duration-300 ease-out ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <SidebarContent onNav={() => setMobileOpen(false)} />
-      </aside>
-
-      {/* Main content */}
-      <div className="flex-1 lg:ml-56 flex flex-col min-h-screen">
-
-        {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#1a1a1a] bg-[#0d0d0d]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 border border-[#C42121] rounded-full flex items-center justify-center">
-              <span className="text-[#C42121] font-bold text-xs">TC</span>
-            </div>
-            <span className="text-white text-sm font-bold tracking-[0.15em] uppercase">The Circle</span>
-          </div>
-          <button
-            onClick={() => setMobileOpen(v => !v)}
-            className="text-[#666] hover:text-white transition-colors p-1"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </header>
-
-        {/* Page */}
-        <main className="flex-1 p-5 sm:p-7 lg:p-8 max-w-5xl w-full mx-auto">
-          {children}
-        </main>
+    <aside className="tc-glass tc-glass--1 tc-side">
+      <div className="tc-side__brand">
+        <Logo size={30} />
+        <div className="tc-side__name">
+          <b>The Circle</b>
+          <span>CMS</span>
+        </div>
       </div>
+
+      <nav className="tc-side__nav">
+        {NAV.map((item, k) =>
+          item === null
+            ? <div key={`sep-${k}`} className="tc-side__sep" />
+            : link(item, isActive(item, pathname, search)),
+        )}
+      </nav>
+
+      <div className="tc-side__foot">
+        <a className="tc-nav" href="/" target="_blank" rel="noopener noreferrer">
+          <IconExternal size={19} />
+          <span className="tc-nav__text">Ver la web</span>
+          <span className="tc-nav__tip">Ver la web</span>
+        </a>
+        <button
+          type="button"
+          className="tc-nav"
+          onClick={async () => { await signOut(); navigate('/admin/login'); }}
+        >
+          <IconSignOut size={19} />
+          <span className="tc-nav__text">Cerrar sesión</span>
+          <span className="tc-nav__tip">Cerrar sesión</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  useUnscaledAdmin();
+  const { pathname, search } = useLocation();
+  const { theme, toggle } = useAdminTheme();
+
+  const [drawer, setDrawer]     = useState(false);
+  const [palette, setPalette]   = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('tc.admin.collapsed') === '1'; } catch { return false; }
+  });
+  const [unread, setUnread] = useState(0);
+
+  // Solicitudes sin abrir, en la entrada de menú que lleva a ellas.
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('form_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'new')
+      .then(({ count }) => { if (!cancelled) setUnread(count ?? 0); }, () => {});
+    return () => { cancelled = true; };
+  }, [pathname]);
+
+  // El cajón se cierra al navegar; si no, tapa la pantalla a la que acaba de ir.
+  useEffect(() => { setDrawer(false); }, [pathname, search]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPalette(v => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const setFold = (v: boolean) => {
+    setCollapsed(v);
+    try { localStorage.setItem('tc.admin.collapsed', v ? '1' : '0'); } catch { /* da igual */ }
+  };
+
+  const current = ITEMS.find(x => isActive(x, pathname, search));
+
+  return (
+    <div className="tc-admin" data-theme={theme}>
+      <div className="tc-shell" data-collapsed={collapsed} data-drawer={drawer}>
+
+        <Sidebar unread={unread} onNav={() => setDrawer(false)} />
+        {drawer && <div className="tc-scrim" onClick={() => setDrawer(false)} role="presentation" />}
+
+        <div className="tc-main">
+          <header className="tc-glass tc-glass--1 tc-top">
+            <button
+              type="button"
+              className="tc-iconbtn tc-only-mobile"
+              onClick={() => setDrawer(v => !v)}
+              aria-label={drawer ? 'Cerrar el menú' : 'Abrir el menú'}
+            >
+              {drawer ? <IconClose size={18} /> : <IconMenu size={18} />}
+            </button>
+
+            <button
+              type="button"
+              className="tc-iconbtn tc-only-desktop"
+              onClick={() => setFold(!collapsed)}
+              aria-label={collapsed ? 'Desplegar el menú' : 'Plegar el menú'}
+              aria-pressed={collapsed}
+            >
+              <IconCollapse size={18} />
+            </button>
+
+            <nav className="tc-crumb" aria-label="Migas de pan">
+              <Link to="/admin">Panel</Link>
+              {current && current.to !== '/admin' && (
+                <>
+                  <i aria-hidden="true">/</i>
+                  <b>{current.label}</b>
+                </>
+              )}
+            </nav>
+
+            <div className="tc-spacer" />
+
+            <button type="button" className="tc-search" onClick={() => setPalette(true)}>
+              <IconSearch size={16} stroke={2} />
+              <span>Buscar</span>
+              <kbd className="tc-kbd">⌘K</kbd>
+            </button>
+
+            <button
+              type="button"
+              className="tc-iconbtn"
+              onClick={toggle}
+              aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+            >
+              <IconTheme size={18} />
+            </button>
+
+            <span className="tc-avatar" aria-hidden="true">TC</span>
+          </header>
+
+          <main className="tc-page">{children}</main>
+        </div>
+      </div>
+
+      {palette && <Palette onClose={() => setPalette(false)} />}
     </div>
   );
 }

@@ -17,7 +17,6 @@ interface EntitySelectorProps {
   /** Display label for the section */
   label: string;
   /** Accent color class for chips — defaults to red */
-  accentColor?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────
@@ -28,7 +27,6 @@ export default function EntitySelector({
   onChange,
   createLink,
   label,
-  accentColor = '#C42121',
 }: EntitySelectorProps) {
   const [allItems, setAllItems]     = useState<EntityOption[]>([]);
   const [query, setQuery]           = useState('');
@@ -108,10 +106,10 @@ export default function EntitySelector({
             <div
               key={item.id}
               className="flex items-center gap-2 rounded-full border pl-1 pr-2 py-1 text-sm"
-              style={{ borderColor: `${accentColor}30`, backgroundColor: `${accentColor}10` }}
+              style={{ borderColor: 'var(--accent-line)', backgroundColor: 'var(--accent-soft)' }}
             >
               {/* Mini avatar */}
-              <div className="w-6 h-6 rounded-full overflow-hidden bg-[#1a1a1a] flex-shrink-0">
+              <div className="w-6 h-6 rounded-full overflow-hidden bg-[var(--surface-3)] flex-shrink-0">
                 {item.photo_url ? (
                   <img
                     src={item.photo_url}
@@ -120,13 +118,11 @@ export default function EntitySelector({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <UserCircle2 size={14} className="text-[#444]" />
+                    <UserCircle2 size={14} className="text-[var(--fg-faint)]" />
                   </div>
                 )}
               </div>
-              <span style={{ color: accentColor === '#C42121' ? '#f87171' : '#6ee7b7' }}>
-                {item.name}
-              </span>
+              <span className="text-[var(--fg)]">{item.name}</span>
               <span className="flex items-center ml-0.5">
                 <button
                   type="button"
@@ -134,7 +130,7 @@ export default function EntitySelector({
                   disabled={idx === 0}
                   aria-label={`Move ${item.name} earlier`}
                   title="Move earlier"
-                  className="text-[#555] hover:text-white disabled:opacity-25 disabled:hover:text-[#555] transition-colors"
+                  className="text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-25 disabled:hover:text-[var(--fg-muted)] transition-colors"
                 >
                   <ChevronLeft size={13} />
                 </button>
@@ -144,7 +140,7 @@ export default function EntitySelector({
                   disabled={idx === selected.length - 1}
                   aria-label={`Move ${item.name} later`}
                   title="Move later"
-                  className="text-[#555] hover:text-white disabled:opacity-25 disabled:hover:text-[#555] transition-colors"
+                  className="text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-25 disabled:hover:text-[var(--fg-muted)] transition-colors"
                 >
                   <ChevronRight size={13} />
                 </button>
@@ -153,7 +149,7 @@ export default function EntitySelector({
                   onClick={() => handleRemove(item.id)}
                   aria-label={`Remove ${item.name}`}
                   title="Remove"
-                  className="text-[#555] hover:text-red-400 transition-colors ml-1"
+                  className="text-[var(--fg-muted)] hover:text-[var(--danger)] transition-colors ml-1"
                 >
                   <X size={11} />
                 </button>
@@ -165,11 +161,11 @@ export default function EntitySelector({
 
       {/* Search input + dropdown */}
       <div ref={dropdownRef} className="relative">
-        <div className="flex items-center gap-2 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2.5 focus-within:border-[#C42121]/40 transition-colors">
+        <div className="flex items-center gap-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2.5 focus-within:border-[var(--accent-line)] transition-colors">
           {loading ? (
-            <Loader2 size={14} className="text-[#444] animate-spin flex-shrink-0" />
+            <Loader2 size={14} className="text-[var(--fg-faint)] animate-spin flex-shrink-0" />
           ) : (
-            <Search size={14} className="text-[#444] flex-shrink-0" />
+            <Search size={14} className="text-[var(--fg-faint)] flex-shrink-0" />
           )}
           <input
             ref={inputRef}
@@ -178,13 +174,13 @@ export default function EntitySelector({
             onChange={e => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             placeholder={`Search ${label}…`}
-            className="flex-1 bg-transparent text-white text-sm placeholder-[#333] focus:outline-none"
+            className="flex-1 bg-transparent text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none"
           />
           {query && (
             <button
               type="button"
               onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-              className="text-[#444] hover:text-white transition-colors"
+              className="text-[var(--fg-faint)] hover:text-[var(--fg)] transition-colors"
             >
               <X size={13} />
             </button>
@@ -193,11 +189,11 @@ export default function EntitySelector({
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#111] border border-[#1e1e1e] rounded-lg shadow-2xl overflow-hidden max-h-56 flex flex-col">
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--surface-1)] border border-[var(--line)] rounded-lg shadow-2xl overflow-hidden max-h-56 flex flex-col">
             {/* Results list */}
             <div className="overflow-y-auto flex-1">
               {filtered.length === 0 ? (
-                <div className="px-4 py-3 text-[#444] text-sm text-center">
+                <div className="px-4 py-3 text-[var(--fg-faint)] text-sm text-center">
                   {query ? `No ${label} found for "${query}"` : `All ${label} already added`}
                 </div>
               ) : (
@@ -206,10 +202,10 @@ export default function EntitySelector({
                     key={item.id}
                     type="button"
                     onClick={() => handleSelect(item)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--surface-3)] transition-colors text-left"
                   >
                     {/* Avatar */}
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1a1a1a] border border-[#2a2a2a] flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--surface-3)] border border-[var(--line-strong)] flex-shrink-0">
                       {item.photo_url ? (
                         <img
                           src={item.photo_url}
@@ -218,23 +214,23 @@ export default function EntitySelector({
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <UserCircle2 size={16} className="text-[#444]" />
+                          <UserCircle2 size={16} className="text-[var(--fg-faint)]" />
                         </div>
                       )}
                     </div>
-                    <span className="text-white text-sm">{item.name}</span>
+                    <span className="text-[var(--fg)] text-sm">{item.name}</span>
                   </button>
                 ))
               )}
             </div>
 
             {/* Create new link */}
-            <div className="border-t border-[#1a1a1a] px-3 py-2.5">
+            <div className="border-t border-[var(--line)] px-3 py-2.5">
               <a
                 href={createLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-[#C42121] hover:text-[#ff5555] transition-colors"
+                className="flex items-center gap-2 text-xs text-[var(--tc-brand-ink)] hover:text-[var(--danger)] transition-colors"
               >
                 <ExternalLink size={12} />
                 Create new {entityLabel} →
@@ -246,7 +242,7 @@ export default function EntitySelector({
 
       {/* Count hint */}
       {selected.length > 0 && (
-        <p className="text-[#333] text-xs font-mono">
+        <p className="text-[var(--fg-faint)] text-xs font-mono">
           {selected.length} {entityLabel}{selected.length !== 1 ? 's' : ''} selected
           {selected.length > 1 && ' · arrows set the running order shown on the event page'}
         </p>

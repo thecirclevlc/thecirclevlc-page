@@ -119,25 +119,25 @@ function PageSection({ config, onToast }: PageSectionProps) {
 
   if (loading) {
     return (
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 flex items-center gap-3">
-        <Loader2 size={16} className="animate-spin text-[#444]" />
-        <span className="text-[#444] text-sm">Loading {config.label}…</span>
+      <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-6 flex items-center gap-3">
+        <Loader2 size={16} className="animate-spin text-[var(--fg-faint)]" />
+        <span className="text-[var(--fg-faint)] text-sm">Loading {config.label}…</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center justify-between">
+    <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[var(--line)] flex items-center justify-between">
         <div>
-          <h3 className="text-white font-semibold text-sm tracking-wide">{config.label}</h3>
-          <p className="text-[#444] text-xs mt-0.5">{config.desc}</p>
+          <h3 className="text-[var(--fg)] font-semibold text-sm tracking-wide">{config.label}</h3>
+          <p className="text-[var(--fg-faint)] text-xs mt-0.5">{config.desc}</p>
         </div>
         {bg.bg_type !== 'none' && (
           <span className={`text-[10px] font-mono px-2 py-1 rounded border uppercase tracking-widest ${
             bg.bg_type === 'video'
-              ? 'border-purple-500/30 text-purple-400 bg-purple-500/10'
-              : 'border-blue-500/30 text-blue-400 bg-blue-500/10'
+              ? 'border-[var(--line-strong)] text-[var(--fg-muted)] bg-[var(--surface-3)]'
+              : 'border-[var(--line-strong)] text-[var(--fg-muted)] bg-[var(--surface-3)]'
           }`}>
             {bg.bg_type}
           </span>
@@ -146,26 +146,26 @@ function PageSection({ config, onToast }: PageSectionProps) {
 
       <div className="p-6 space-y-5">
         {bg.bg_url && bg.bg_type !== 'none' ? (
-          <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
+          <div className="relative rounded-lg overflow-hidden bg-[var(--scrim)] aspect-video">
             {bg.bg_type === 'video' ? (
               <video src={bg.bg_url} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-80" />
             ) : (
               <img src={bg.bg_url} alt="Background preview" className="w-full h-full object-cover opacity-80" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--img-shade)] to-transparent" />
             <button
               onClick={handleRemove}
               disabled={saving || uploading}
-              className="absolute top-3 right-3 p-1.5 bg-red-600 hover:bg-red-500 rounded-lg transition-colors disabled:opacity-50"
+              className="absolute top-3 right-3 p-1.5 bg-[var(--danger)] hover:opacity-90 rounded-lg transition-colors disabled:opacity-50"
             >
-              <Trash2 size={14} className="text-white" />
+              <Trash2 size={14} className="text-[var(--on-danger)]" />
             </button>
           </div>
         ) : (
-          <div className="rounded-lg border-2 border-dashed border-[#222] aspect-video flex items-center justify-center">
+          <div className="rounded-lg border-2 border-dashed border-[var(--line-strong)] aspect-video flex items-center justify-center">
             <div className="text-center">
-              <Ban size={28} className="mx-auto text-[#333] mb-2" />
-              <p className="text-[#444] text-xs font-mono">NO BACKGROUND SET</p>
+              <Ban size={28} className="mx-auto text-[var(--fg-faint)] mb-2" />
+              <p className="text-[var(--fg-faint)] text-xs font-mono">NO BACKGROUND SET</p>
             </div>
           </div>
         )}
@@ -174,7 +174,7 @@ function PageSection({ config, onToast }: PageSectionProps) {
           <button
             onClick={() => imgRef.current?.click()}
             disabled={uploading || saving}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] hover:border-[#C42121]/30 rounded-lg text-sm text-[#888] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] hover:border-[var(--accent-line)] rounded-lg text-sm text-[var(--fg-muted)] hover:text-[var(--fg)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Image size={14} />}
             <span>Image</span>
@@ -182,7 +182,7 @@ function PageSection({ config, onToast }: PageSectionProps) {
           <button
             onClick={() => videoRef.current?.click()}
             disabled={uploading || saving}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] hover:border-purple-500/30 rounded-lg text-sm text-[#888] hover:text-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] hover:border-[var(--line-strong)] rounded-lg text-sm text-[var(--fg-muted)] hover:text-[var(--fg-muted)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Film size={14} />}
             <span>Video</span>
@@ -191,13 +191,13 @@ function PageSection({ config, onToast }: PageSectionProps) {
             <button
               onClick={handleRemove}
               disabled={uploading || saving}
-              className="px-4 py-2.5 bg-[#1a1a1a] hover:bg-red-950/30 border border-[#2a2a2a] hover:border-red-500/30 rounded-lg text-[#666] hover:text-red-400 transition-all disabled:opacity-50"
+              className="px-4 py-2.5 bg-[var(--surface-3)] hover:bg-[var(--danger-soft)] border border-[var(--line-strong)] hover:border-[var(--danger-line)] rounded-lg text-[var(--fg-muted)] hover:text-[var(--danger)] transition-all disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
             </button>
           )}
         </div>
-        <p className="text-[#333] text-xs font-mono">
+        <p className="text-[var(--fg-faint)] text-xs font-mono">
           Image: JPG, PNG, WebP · Video: MP4, WebM · Images auto-converted to WebP
         </p>
       </div>
@@ -230,8 +230,8 @@ function CategoryRow({ cat, onSave, onDelete }: CategoryRowProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-[#1a1a1a] last:border-0 group">
-      <GripVertical size={14} className="text-[#333] flex-shrink-0" />
+    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--line)] last:border-0 group">
+      <GripVertical size={14} className="text-[var(--fg-faint)] flex-shrink-0" />
 
       {editing ? (
         <input
@@ -242,13 +242,13 @@ function CategoryRow({ cat, onSave, onDelete }: CategoryRowProps) {
             if (e.key === 'Enter') commitEdit();
             if (e.key === 'Escape') { setEditing(false); setName(cat.name); }
           }}
-          className="flex-1 bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#059669]/40"
+          className="flex-1 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-lg px-3 py-1.5 text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent-line)]"
         />
       ) : (
-        <span className="flex-1 text-white text-sm">{cat.name}</span>
+        <span className="flex-1 text-[var(--fg)] text-sm">{cat.name}</span>
       )}
 
-      <span className="text-[#333] text-xs font-mono hidden sm:block">{cat.slug}</span>
+      <span className="text-[var(--fg-faint)] text-xs font-mono hidden sm:block">{cat.slug}</span>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {editing ? (
@@ -256,13 +256,13 @@ function CategoryRow({ cat, onSave, onDelete }: CategoryRowProps) {
             <button
               onClick={commitEdit}
               disabled={saving}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#059669] hover:bg-[#059669]/10 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-[var(--tc-brand-ink)] hover:bg-[var(--accent-soft)] transition-colors"
             >
               {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
             </button>
             <button
               onClick={() => { setEditing(false); setName(cat.name); }}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#444] hover:text-white transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-[var(--fg-faint)] hover:text-[var(--fg)] transition-colors"
             >
               <X size={12} />
             </button>
@@ -271,13 +271,13 @@ function CategoryRow({ cat, onSave, onDelete }: CategoryRowProps) {
           <>
             <button
               onClick={() => setEditing(true)}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#444] hover:text-white transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-[var(--fg-faint)] hover:text-[var(--fg)] transition-colors"
             >
               <Pencil size={12} />
             </button>
             <button
               onClick={() => onDelete(cat.id)}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#444] hover:text-red-400 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-[var(--fg-faint)] hover:text-[var(--danger)] transition-colors"
             >
               <Trash2 size={12} />
             </button>
@@ -359,8 +359,8 @@ function ArtistCategoriesTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   if (loading) {
     return (
       <div className="flex items-center gap-3 py-12 justify-center">
-        <Loader2 size={18} className="animate-spin text-[#444]" />
-        <span className="text-[#444] text-sm">Loading categories…</span>
+        <Loader2 size={18} className="animate-spin text-[var(--fg-faint)]" />
+        <span className="text-[var(--fg-faint)] text-sm">Loading categories…</span>
       </div>
     );
   }
@@ -368,24 +368,24 @@ function ArtistCategoriesTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-white text-lg font-semibold">Artist Categories</h2>
-        <p className="text-[#555] text-sm mt-1">
+        <h2 className="text-[var(--fg)] text-lg font-semibold">Artist Categories</h2>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Define discipline groups for the public Artists page (e.g. Painters, Photographers, Graphic Designers).
         </p>
       </div>
 
       {/* Categories list */}
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#1a1a1a] flex items-center justify-between">
-          <span className="text-[#333] text-xs tracking-[0.2em] uppercase">Categories</span>
-          <span className="text-[#333] text-xs font-mono">{categories.length} total</span>
+      <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-[var(--line)] flex items-center justify-between">
+          <span className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Categories</span>
+          <span className="text-[var(--fg-faint)] text-xs font-mono">{categories.length} total</span>
         </div>
 
         <div className="px-5">
           {categories.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-[#444] text-sm">No categories yet.</p>
-              <p className="text-[#333] text-xs mt-1">Add your first category below.</p>
+              <p className="text-[var(--fg-faint)] text-sm">No categories yet.</p>
+              <p className="text-[var(--fg-faint)] text-xs mt-1">Add your first category below.</p>
             </div>
           ) : (
             categories.map(cat => (
@@ -400,7 +400,7 @@ function ArtistCategoriesTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
         </div>
 
         {/* Add new */}
-        <div className="px-5 py-4 border-t border-[#1a1a1a]">
+        <div className="px-5 py-4 border-t border-[var(--line)]">
           <div className="flex gap-2">
             <input
               type="text"
@@ -408,18 +408,18 @@ function ArtistCategoriesTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }}}
               placeholder="New category name…"
-              className="flex-1 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors"
+              className="flex-1 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors"
             />
             <button
               onClick={handleAdd}
               disabled={adding || !newName.trim()}
-              className="flex items-center gap-2 px-4 py-2 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
             >
               {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
               Add
             </button>
           </div>
-          <p className="text-[#333] text-xs mt-2 font-mono">
+          <p className="text-[var(--fg-faint)] text-xs mt-2 font-mono">
             Slug is auto-generated from the name. Click the pencil icon to edit existing categories.
           </p>
         </div>
@@ -495,9 +495,9 @@ function SeoSection({ onToast }: SeoSectionProps) {
 
   if (loading) {
     return (
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 flex items-center gap-3">
-        <Loader2 size={16} className="animate-spin text-[#444]" />
-        <span className="text-[#444] text-sm">Loading SEO settings…</span>
+      <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-6 flex items-center gap-3">
+        <Loader2 size={16} className="animate-spin text-[var(--fg-faint)]" />
+        <span className="text-[var(--fg-faint)] text-sm">Loading SEO settings…</span>
       </div>
     );
   }
@@ -514,48 +514,48 @@ function SeoSection({ onToast }: SeoSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-white text-lg font-semibold">SEO / Link Preview</h2>
-        <p className="text-[#555] text-sm mt-1">
+        <h2 className="text-[var(--fg)] text-lg font-semibold">SEO / Link Preview</h2>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Text shown when someone shares thecirclevlc.com on WhatsApp, Facebook, Twitter, or search engines.
         </p>
       </div>
 
-      <div className="bg-amber-950/20 border border-amber-500/20 rounded-xl px-5 py-4 flex gap-3">
-        <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+      <div className="bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-xl px-5 py-4 flex gap-3">
+        <AlertCircle size={16} className="text-[var(--fg-muted)] flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-amber-400 text-sm font-medium">WhatsApp caches link previews</p>
-          <p className="text-amber-500/70 text-xs mt-0.5 font-mono">
+          <p className="text-[var(--fg-muted)] text-sm font-medium">WhatsApp caches link previews</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-0.5 font-mono">
             After saving, new previews will show updated text — but WhatsApp may keep showing the old preview for messages already sent. Use a fresh URL or the Facebook Sharing Debugger to force a refresh.
           </p>
         </div>
       </div>
 
       {/* Live preview card */}
-      <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl p-6">
+      <div className="bg-[var(--surface-2)] border border-[var(--line)] rounded-xl p-6">
         <div className="flex items-center gap-2 mb-3">
-          <Eye size={14} className="text-[#555]" />
-          <span className="text-[#555] text-xs tracking-[0.2em] uppercase">Preview</span>
+          <Eye size={14} className="text-[var(--fg-muted)]" />
+          <span className="text-[var(--fg-muted)] text-xs tracking-[0.2em] uppercase">Preview</span>
         </div>
-        <div className="max-w-md bg-[#1f1f1f] rounded-lg overflow-hidden border border-[#2a2a2a]">
-          <div className="aspect-[1200/630] bg-gradient-to-br from-[#C42121]/20 to-black flex items-center justify-center overflow-hidden">
+        <div className="max-w-md bg-[var(--surface-1)] rounded-lg overflow-hidden border border-[var(--line-strong)]">
+          <div className="aspect-[1200/630] bg-gradient-to-br from-[var(--accent-soft)] to-[var(--surface-3)] flex items-center justify-center overflow-hidden">
             {values.og_image
               ? <img src={values.og_image} alt="" className="w-full h-full object-cover" />
-              : <span className="text-[#C42121] font-bold text-2xl tracking-widest">THECIRCLE</span>}
+              : <span className="text-[var(--tc-brand-ink)] font-bold text-2xl tracking-widest">THECIRCLE</span>}
           </div>
           <div className="p-4 space-y-1">
-            <p className="text-white font-semibold text-sm leading-tight">
+            <p className="text-[var(--fg)] font-semibold text-sm leading-tight">
               {values.og_title || '\u2014'}
             </p>
-            <p className="text-[#888] text-xs leading-snug">
+            <p className="text-[var(--fg-muted)] text-xs leading-snug">
               {values.og_description || '\u2014'}
             </p>
-            <p className="text-[#555] text-[11px] mt-2">thecirclevlc.com</p>
+            <p className="text-[var(--fg-muted)] text-[11px] mt-2">thecirclevlc.com</p>
           </div>
         </div>
       </div>
 
       {/* Pictures */}
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 space-y-5">
+      <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {([
             { key: 'og_image',    label: 'Share picture',
@@ -566,15 +566,15 @@ function SeoSection({ onToast }: SeoSectionProps) {
               box: 'w-16 h-16' },
           ] as const).map(f => (
             <div key={f.key}>
-              <label className="block text-white text-xs font-medium tracking-wide mb-1.5">{f.label}</label>
+              <label className="block text-[var(--fg)] text-xs font-medium tracking-wide mb-1.5">{f.label}</label>
               <div className="flex items-start gap-3">
-                <div className={`${f.box} flex-shrink-0 rounded-lg border border-[#1e1e1e] bg-[#0d0d0d] overflow-hidden flex items-center justify-center`}>
+                <div className={`${f.box} flex-shrink-0 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] overflow-hidden flex items-center justify-center`}>
                   {values[f.key]
                     ? <img src={values[f.key]} alt="" className="w-full h-full object-cover" />
-                    : <ImageIcon size={16} className="text-[#333]" />}
+                    : <ImageIcon size={16} className="text-[var(--fg-faint)]" />}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#222] text-white text-xs cursor-pointer transition-colors w-fit">
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface-3)] hover:bg-[var(--surface-3)] text-[var(--fg)] text-xs cursor-pointer transition-colors w-fit">
                     {busy === f.key ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                     {values[f.key] ? 'Replace' : 'Upload'}
                     <input type="file" accept="image/*" className="hidden"
@@ -582,40 +582,40 @@ function SeoSection({ onToast }: SeoSectionProps) {
                   </label>
                   {values[f.key] && (
                     <button onClick={() => update(f.key, '')}
-                      className="text-[#555] hover:text-red-400 text-xs text-left transition-colors">
+                      className="text-[var(--fg-muted)] hover:text-[var(--danger)] text-xs text-left transition-colors">
                       Remove
                     </button>
                   )}
                 </div>
               </div>
-              <p className="text-[#333] text-xs mt-2 font-mono leading-relaxed">{f.hint}</p>
+              <p className="text-[var(--fg-faint)] text-xs mt-2 font-mono leading-relaxed">{f.hint}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Form */}
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 space-y-5">
+      <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-6 space-y-5">
         {fields.map(f => (
           <div key={f.key}>
-            <label className="block text-white text-xs font-medium tracking-wide mb-1.5">
+            <label className="block text-[var(--fg)] text-xs font-medium tracking-wide mb-1.5">
               {f.label}
             </label>
             <input
               type="text"
               value={values[f.key]}
               onChange={e => update(f.key, e.target.value)}
-              className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors"
+              className="w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors"
             />
-            <p className="text-[#333] text-xs mt-1 font-mono">{f.hint}</p>
+            <p className="text-[var(--fg-faint)] text-xs mt-1 font-mono">{f.hint}</p>
           </div>
         ))}
 
-        <div className="flex justify-end pt-2 border-t border-[#1a1a1a]">
+        <div className="flex justify-end pt-2 border-t border-[var(--line)]">
           <button
             onClick={save}
             disabled={saving || !dirty}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {saving ? 'Saving\u2026' : dirty ? 'Save changes' : 'Saved'}
@@ -654,22 +654,22 @@ export default function AdminSiteSettings() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Site Settings</h1>
-        <p className="text-[#555] text-sm mt-1">
+        <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Site Settings</h1>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Configure hero backgrounds, artist categories, and global site options.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg p-1 w-fit">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === tab.id
-                ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
-                : 'text-[#555] hover:text-[#888]'
+                ? 'bg-[var(--surface-3)] text-[var(--fg)] border border-[var(--line-strong)]'
+                : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)]'
             }`}
           >
             {tab.label}
@@ -705,8 +705,8 @@ export default function AdminSiteSettings() {
             key={t.id}
             className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium transition-all ${
               t.type === 'success'
-                ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-                : 'bg-red-900 border border-red-500/30 text-red-300'
+                ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+                : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
             }`}
           >
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}

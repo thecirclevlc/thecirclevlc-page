@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && mv dist/index.html dist/_app.html",
+    "build": "node scripts/check-admin-tokens.mjs && vite build && mv dist/index.html dist/_app.html",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "check:tokens": "node scripts/check-admin-tokens.mjs"
   },
   "engines": {
     "node": ">=18.0.0",

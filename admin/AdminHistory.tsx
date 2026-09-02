@@ -117,29 +117,29 @@ export default function AdminHistory({ tableName, rowId, open, onClose, onRestor
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+        className="fixed inset-0 bg-[var(--scrim)] backdrop-blur-sm z-40"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <aside className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-50 bg-[#0d0d0d] border-l border-[#1a1a1a] flex flex-col">
+      <aside className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-50 bg-[var(--surface-2)] border-l border-[var(--line)] flex flex-col">
 
         {/* Header */}
-        <header className="flex items-center justify-between px-5 py-4 border-b border-[#1a1a1a]">
+        <header className="flex items-center justify-between px-5 py-4 border-b border-[var(--line)]">
           <div className="flex items-center gap-2.5">
-            <Clock size={16} className="text-[#C42121]" />
-            <h2 className="text-white text-sm font-medium tracking-wide">History</h2>
-            <span className="text-[#444] text-xs font-mono">{rows.length} {rows.length === 1 ? 'version' : 'versions'}</span>
+            <Clock size={16} className="text-[var(--tc-brand-ink)]" />
+            <h2 className="text-[var(--fg)] text-sm font-medium tracking-wide">History</h2>
+            <span className="text-[var(--fg-faint)] text-xs font-mono">{rows.length} {rows.length === 1 ? 'version' : 'versions'}</span>
           </div>
-          <button onClick={onClose} className="text-[#666] hover:text-white transition-colors">
+          <button onClick={onClose} className="text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors">
             <X size={18} />
           </button>
         </header>
 
         {/* Warning banner */}
-        <div className="px-5 py-3 bg-yellow-950/30 border-b border-yellow-900/30 flex items-start gap-2.5">
-          <AlertTriangle size={14} className="text-yellow-500 flex-shrink-0 mt-0.5" />
-          <p className="text-yellow-200 text-xs leading-relaxed">
+        <div className="px-5 py-3 bg-[var(--surface-3)] border-b border-[var(--line-strong)] flex items-start gap-2.5">
+          <AlertTriangle size={14} className="text-[var(--fg-muted)] flex-shrink-0 mt-0.5" />
+          <p className="text-[var(--fg-muted)] text-xs leading-relaxed">
             Restoring overwrites the current values. Lineup associations (DJs/Artists) are stored separately and are not affected by event restore.
           </p>
         </div>
@@ -149,18 +149,18 @@ export default function AdminHistory({ tableName, rowId, open, onClose, onRestor
           {loading ? (
             <div className="p-5 space-y-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-[#161616] rounded-lg animate-pulse" />
+                <div key={i} className="h-16 bg-[var(--surface-1)] rounded-lg animate-pulse" />
               ))}
             </div>
           ) : rows.length === 0 ? (
             <div className="px-5 py-12 text-center">
-              <p className="text-[#666] text-sm">No previous versions yet.</p>
-              <p className="text-[#444] text-xs mt-2">
+              <p className="text-[var(--fg-muted)] text-sm">No previous versions yet.</p>
+              <p className="text-[var(--fg-faint)] text-xs mt-2">
                 Every save from now on creates a recoverable snapshot.
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-[#161616]">
+            <ul className="divide-y divide-[var(--line)]">
               {rows.map(entry => {
                 const isOpen  = expanded === entry.id;
                 const changed = diffKeys(entry.old_data, entry.new_data);
@@ -171,18 +171,18 @@ export default function AdminHistory({ tableName, rowId, open, onClose, onRestor
                       className="w-full flex items-start gap-2.5 text-left"
                     >
                       {isOpen
-                        ? <ChevronDown size={14} className="text-[#666] mt-1 flex-shrink-0" />
-                        : <ChevronRight size={14} className="text-[#666] mt-1 flex-shrink-0" />}
+                        ? <ChevronDown size={14} className="text-[var(--fg-muted)] mt-1 flex-shrink-0" />
+                        : <ChevronRight size={14} className="text-[var(--fg-muted)] mt-1 flex-shrink-0" />}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-white text-sm">{formatWhen(entry.changed_at)}</span>
+                          <span className="text-[var(--fg)] text-sm">{formatWhen(entry.changed_at)}</span>
                           <span className={`text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ${
                             entry.operation === 'DELETE'
-                              ? 'bg-red-950 text-red-400 border border-red-900/50'
-                              : 'bg-[#161616] text-[#888] border border-[#222]'
+                              ? 'bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger-line)]'
+                              : 'bg-[var(--surface-1)] text-[var(--fg-muted)] border border-[var(--line-strong)]'
                           }`}>{entry.operation}</span>
                         </div>
-                        <p className="text-[#666] text-xs mt-1 truncate">
+                        <p className="text-[var(--fg-muted)] text-xs mt-1 truncate">
                           {changed.length === 0
                             ? 'no field-level changes'
                             : `${changed.length} change${changed.length === 1 ? '' : 's'}: ${changed.join(', ')}`}
@@ -196,16 +196,16 @@ export default function AdminHistory({ tableName, rowId, open, onClose, onRestor
                         {changed.length > 0 && (
                           <div className="space-y-2">
                             {changed.map(k => (
-                              <div key={k} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2.5">
-                                <p className="text-[#888] text-[10px] tracking-[0.1em] uppercase font-mono mb-1.5">{k}</p>
+                              <div key={k} className="bg-[var(--canvas)] border border-[var(--line)] rounded-lg p-2.5">
+                                <p className="text-[var(--fg-muted)] text-[10px] tracking-[0.1em] uppercase font-mono mb-1.5">{k}</p>
                                 <div className="space-y-1 text-xs font-mono">
                                   <div className="flex gap-2">
-                                    <span className="text-red-500 flex-shrink-0">−</span>
-                                    <span className="text-red-300/80 break-all">{formatValue(entry.old_data[k])}</span>
+                                    <span className="text-[var(--danger)] flex-shrink-0">−</span>
+                                    <span className="text-[var(--danger)] break-all">{formatValue(entry.old_data[k])}</span>
                                   </div>
                                   <div className="flex gap-2">
-                                    <span className="text-green-500 flex-shrink-0">+</span>
-                                    <span className="text-green-300/80 break-all">
+                                    <span className="text-[var(--fg-muted)] flex-shrink-0">+</span>
+                                    <span className="text-[var(--fg-muted)] break-all">
                                       {formatValue(entry.new_data ? entry.new_data[k] : undefined)}
                                     </span>
                                   </div>
@@ -219,7 +219,7 @@ export default function AdminHistory({ tableName, rowId, open, onClose, onRestor
                         <button
                           onClick={() => restore(entry)}
                           disabled={restoring === entry.id}
-                          className="flex items-center gap-2 bg-[#C42121] hover:bg-[#a81c1c] disabled:opacity-40 text-white px-3.5 py-2 rounded-lg text-xs font-medium transition-colors"
+                          className="flex items-center gap-2 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] px-3.5 py-2 rounded-lg text-xs font-medium transition-colors"
                         >
                           {restoring === entry.id
                             ? <Loader2 size={12} className="animate-spin" />
@@ -240,8 +240,8 @@ export default function AdminHistory({ tableName, rowId, open, onClose, onRestor
       {toast && (
         <div className={`fixed top-5 right-5 z-[60] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-2xl text-sm font-medium transition-all ${
           toast.type === 'ok'
-            ? 'bg-green-950 border border-green-800 text-green-400'
-            : 'bg-red-950 border border-red-800 text-red-400'
+            ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+            : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
         }`}>
           {toast.type === 'ok' ? <Check size={15} /> : <X size={15} />}
           {toast.msg}

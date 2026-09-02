@@ -12,6 +12,19 @@ import {
  * meant the admin panel — the screen you go to when you want to build a page
  * rather than touch up a word — could not change a block's layout at all. Same
  * controls, same wording, two hosts.
+ *
+ * Y esos dos hosts es lo que obliga a la forma rara del color de aquí:
+ * `var(--token, <literal de siempre>)`.
+ *
+ *   · Dentro del panel (AdminPageForm) esto vive bajo `.tc-admin`, el token
+ *     resuelve y los controles siguen al tema. Sin esto, el panel de Layout
+ *     entero se pintaba en blanco sobre crema en tema claro — invisible.
+ *   · Flotando sobre la web pública (BlockToolbar) NO hay `.tc-admin`, el
+ *     token no existe y cae al literal: exactamente lo de hoy, píxel a píxel.
+ *
+ * Por eso este archivo queda fuera del guardián de tokens y por eso los
+ * literales que ves no son deuda: son la rama pública del fallback. Cambiar
+ * uno cambia cómo se ve la barra flotante encima de la web de la clienta.
  */
 
 const CHIP = 'px-2.5 py-1.5 rounded text-[11px] leading-none transition-colors cursor-pointer';
@@ -27,7 +40,7 @@ export function Choice<T extends string>({ label, value, options, onChange, note
   const active = options.find(o => o.value === value);
   return (
     <div>
-      <p className="text-[#666] text-[10px] tracking-[0.14em] uppercase mb-1.5">{label}</p>
+      <p className="text-[var(--fg-muted,#666)] text-[10px] tracking-[0.14em] uppercase mb-1.5">{label}</p>
       <div className="flex flex-wrap gap-1">
         {options.map(o => (
           <button
@@ -36,8 +49,8 @@ export function Choice<T extends string>({ label, value, options, onChange, note
             title={o.hint}
             className={`${CHIP} ${
               o.value === value
-                ? 'bg-white text-black font-medium'
-                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                ? 'bg-[var(--fg,#fff)] text-[var(--canvas,#000)] font-medium'
+                : 'bg-[var(--surface-3,#ffffff0d)] text-[var(--fg-muted,#ffffff99)] hover:bg-[var(--surface-2,#ffffff1a)] hover:text-[var(--fg,#fff)]'
             }`}
           >
             {o.label}
@@ -45,7 +58,7 @@ export function Choice<T extends string>({ label, value, options, onChange, note
         ))}
       </div>
       {(note ?? active?.hint) && (
-        <p className="text-[#555] text-[10px] mt-1.5 leading-relaxed">{note ?? active?.hint}</p>
+        <p className="text-[var(--fg-faint,#555)] text-[10px] mt-1.5 leading-relaxed">{note ?? active?.hint}</p>
       )}
     </div>
   );
@@ -59,7 +72,7 @@ const SPAN_BARS: Record<BlockSpan, number[]> = {
 function SpanPicker({ value, onChange }: { value: BlockSpan; onChange: (v: BlockSpan) => void }) {
   return (
     <div>
-      <p className="text-[#666] text-[10px] tracking-[0.14em] uppercase mb-1.5">Room on the row</p>
+      <p className="text-[var(--fg-muted,#666)] text-[10px] tracking-[0.14em] uppercase mb-1.5">Room on the row</p>
       <div className="grid grid-cols-4 gap-1">
         {SPAN_OPTIONS.map(o => (
           <button
@@ -69,8 +82,8 @@ function SpanPicker({ value, onChange }: { value: BlockSpan; onChange: (v: Block
             aria-pressed={o.value === value}
             className={`p-1.5 rounded border transition-colors cursor-pointer ${
               o.value === value
-                ? 'border-white/70 bg-white/10'
-                : 'border-white/10 bg-white/[0.03] hover:border-white/30'
+                ? 'border-[var(--fg-muted,#ffffffb3)] bg-[var(--surface-3,#ffffff1a)]'
+                : 'border-[var(--line,#ffffff1a)] bg-[var(--surface-1,#ffffff08)] hover:border-[var(--line-strong,#ffffff4d)]'
             }`}
           >
             <span className="flex gap-0.5 h-3 items-stretch">
@@ -79,16 +92,16 @@ function SpanPicker({ value, onChange }: { value: BlockSpan; onChange: (v: Block
                   key={i}
                   style={{ flexGrow: twelfths }}
                   className={i === 0
-                    ? o.value === value ? 'bg-white rounded-sm' : 'bg-white/50 rounded-sm'
-                    : 'bg-white/12 rounded-sm'}
+                    ? o.value === value ? 'bg-[var(--fg,#fff)] rounded-sm' : 'bg-[var(--fg-muted,#ffffff80)] rounded-sm'
+                    : 'bg-[var(--line-strong,#ffffff1f)] rounded-sm'}
                 />
               ))}
             </span>
-            <span className="block text-[9px] mt-1 text-white/50 leading-none truncate">{o.label}</span>
+            <span className="block text-[9px] mt-1 text-[var(--fg-muted,#ffffff80)] leading-none truncate">{o.label}</span>
           </button>
         ))}
       </div>
-      <p className="text-[#555] text-[10px] mt-1.5 leading-relaxed">
+      <p className="text-[var(--fg-faint,#555)] text-[10px] mt-1.5 leading-relaxed">
         {SPAN_OPTIONS.find(o => o.value === value)?.hint}
       </p>
     </div>

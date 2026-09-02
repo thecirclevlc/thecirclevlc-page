@@ -75,8 +75,8 @@ export default function AdminHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Change history</h1>
-        <p className="text-[#555] text-sm mt-1">
+        <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Change history</h1>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Every edit and deletion, newest first. Open an event, DJ, artist or page and use the clock
           icon there to put an older version back.
         </p>
@@ -87,7 +87,7 @@ export default function AdminHistoryPage() {
           <button
             onClick={() => setTable('all')}
             className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
-              table === 'all' ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]' : 'text-[#555] hover:text-[#888]'
+              table === 'all' ? 'bg-[var(--surface-3)] text-[var(--fg)] border border-[var(--line-strong)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)]'
             }`}
           >
             Everything
@@ -97,7 +97,7 @@ export default function AdminHistoryPage() {
               key={t}
               onClick={() => setTable(t)}
               className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                table === t ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]' : 'text-[#555] hover:text-[#888]'
+                table === t ? 'bg-[var(--surface-3)] text-[var(--fg)] border border-[var(--line-strong)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)]'
               }`}
             >
               {TABLE_LABEL[t] ?? t}
@@ -108,16 +108,16 @@ export default function AdminHistoryPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={20} className="text-[#444] animate-spin" />
+          <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
         </div>
       ) : shown.length === 0 ? (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-12 text-center">
-          <History size={28} className="mx-auto text-[#333] mb-3" />
-          <p className="text-[#999] text-sm">No changes recorded yet.</p>
-          <p className="text-[#555] text-xs mt-2">Edits you make from now on will appear here.</p>
+        <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-12 text-center">
+          <History size={28} className="mx-auto text-[var(--fg-faint)] mb-3" />
+          <p className="text-[var(--fg-muted)] text-sm">No changes recorded yet.</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-2">Edits you make from now on will appear here.</p>
         </div>
       ) : (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+        <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl overflow-hidden">
           {shown.map(row => {
             const fields = changedFields(row);
             const path   = EDIT_PATH[row.table_name]?.(row.row_id);
@@ -127,33 +127,33 @@ export default function AdminHistoryPage() {
             return (
               <div
                 key={row.id}
-                className="px-5 py-3.5 flex items-start gap-4 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors"
+                className="px-5 py-3.5 flex items-start gap-4 border-b border-[var(--line)] last:border-0 hover:bg-[var(--surface-1)] transition-colors"
               >
-                <span className={`mt-0.5 flex-shrink-0 ${row.operation === 'DELETE' ? 'text-red-400/70' : 'text-[#555]'}`}>
+                <span className={`mt-0.5 flex-shrink-0 ${row.operation === 'DELETE' ? 'text-[var(--danger)]' : 'text-[var(--fg-muted)]'}`}>
                   {row.operation === 'DELETE' ? <Trash2 size={14} /> : <Pencil size={14} />}
                 </span>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">
-                    <span className="text-[#666]">{TABLE_LABEL[row.table_name] ?? row.table_name} · </span>
+                  <p className="text-sm text-[var(--fg)] truncate">
+                    <span className="text-[var(--fg-muted)]">{TABLE_LABEL[row.table_name] ?? row.table_name} · </span>
                     {describe(row)}
                   </p>
                   {fields.length > 0 && (
-                    <p className="text-[#555] text-xs font-mono mt-0.5 truncate">
+                    <p className="text-[var(--fg-muted)] text-xs font-mono mt-0.5 truncate">
                       changed: {fields.join(', ')}
                     </p>
                   )}
                   {row.operation === 'DELETE' && (
-                    <p className="text-red-400/60 text-xs mt-0.5">deleted</p>
+                    <p className="text-[var(--danger)] text-xs mt-0.5">deleted</p>
                   )}
                 </div>
 
-                <span className="text-[#444] text-xs font-mono flex-shrink-0 tabular-nums">{when}</span>
+                <span className="text-[var(--fg-faint)] text-xs font-mono flex-shrink-0 tabular-nums">{when}</span>
 
                 {path && row.operation !== 'DELETE' && (
                   <button
                     onClick={() => navigate(path)}
-                    className="text-[#555] hover:text-white transition-colors flex-shrink-0"
+                    className="text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0"
                     title="Open"
                   >
                     <ExternalLink size={13} />

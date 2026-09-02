@@ -31,8 +31,8 @@ import { insertBlocks } from '../lib/blockStyle';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
-const LABEL   = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
+const SECTION = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4';
+const LABEL   = 'block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5';
 
 const BUILT_IN = new Map(HOME_SECTIONS.map(s => [s.id, s]));
 
@@ -140,7 +140,7 @@ export default function AdminHome() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 size={20} className="text-[#444] animate-spin" />
+        <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
       </div>
     );
   }
@@ -149,8 +149,8 @@ export default function AdminHome() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-white text-lg font-semibold">Home page</h1>
-          <p className="text-[#555] text-sm mt-1">
+          <h1 className="text-[var(--fg)] text-lg font-semibold">Home page</h1>
+          <p className="text-[var(--fg-muted)] text-sm mt-1">
             Drag a section by its handle to move it, switch one off with the eye, and
             add anything else underneath. Nothing here is deleted by hiding it.
           </p>
@@ -159,14 +159,14 @@ export default function AdminHome() {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-shrink-0 flex items-center gap-1.5 text-[#666] hover:text-white text-xs transition-colors"
+          className="flex-shrink-0 flex items-center gap-1.5 text-[var(--fg-muted)] hover:text-[var(--fg)] text-xs transition-colors"
         >
           <ExternalLink size={13} /> View
         </a>
       </div>
 
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Order on the page</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Order on the page</p>
         <div className="space-y-2">
           {order.map((id, idx) => {
             const built = BUILT_IN.get(id);
@@ -181,28 +181,28 @@ export default function AdminHome() {
                 data-drag-item
                 {...drag.targetProps(id)}
                 className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
-                  isHidden ? 'bg-[#0b0b0b] opacity-50' : 'bg-[#0d0d0d]'
+                  isHidden ? 'bg-[var(--surface-2)] opacity-50' : 'bg-[var(--surface-2)]'
                 } ${drag.dragId === id ? 'opacity-30' : ''} ${
-                  drag.overId === id ? 'border-[#059669]'
-                  : isHidden ? 'border-[#141414]' : 'border-[#1e1e1e]'
+                  drag.overId === id ? 'border-[var(--accent-line)]'
+                  : isHidden ? 'border-[var(--line)]' : 'border-[var(--line)]'
                 }`}
               >
                 <span
                   {...drag.handleProps(id)}
                   title="Drag to move this section"
                   aria-label="Drag to move this section"
-                  className="-ml-1 w-5 flex-shrink-0 flex items-center justify-center text-[#3a3a3a] hover:text-white transition-colors cursor-grab active:cursor-grabbing"
+                  className="-ml-1 w-5 flex-shrink-0 flex items-center justify-center text-[var(--fg-faint)] hover:text-[var(--fg)] transition-colors cursor-grab active:cursor-grabbing"
                 >
                   <GripVertical size={14} />
                 </span>
-                <span className="text-[#333] text-xs font-mono w-5 flex-shrink-0">{idx + 1}</span>
+                <span className="text-[var(--fg-faint)] text-xs font-mono w-5 flex-shrink-0">{idx + 1}</span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-[#ddd] text-sm truncate">
+                  <p className="text-[var(--fg)] text-sm truncate">
                     {meta?.label ?? blockMeta?.label ?? 'Block'}
-                    {!meta && <span className="text-[#555]"> · yours</span>}
+                    {!meta && <span className="text-[var(--fg-muted)]"> · yours</span>}
                   </p>
-                  <p className="text-[#555] text-xs truncate">
+                  <p className="text-[var(--fg-muted)] text-xs truncate">
                     {meta?.hint ?? blockMeta?.hint ?? ''}
                   </p>
                   {/* How much empty space sits around this section. The gaps
@@ -213,7 +213,7 @@ export default function AdminHome() {
                       own Spacing control, below. */}
                   {!isHidden && meta && (
                     <div className="flex items-center gap-1 mt-2">
-                      <span className="text-[#3a3a3a] text-[10px] uppercase tracking-[0.14em] mr-1">Space</span>
+                      <span className="text-[var(--fg-faint)] text-[10px] uppercase tracking-[0.14em] mr-1">Space</span>
                       {DENSITY_OPTIONS.map(o => (
                         <button
                           key={o.value}
@@ -221,8 +221,8 @@ export default function AdminHome() {
                           title={o.hint}
                           className={`px-2 py-0.5 rounded text-[10px] leading-none transition-colors ${
                             densityOf(layout, id) === o.value
-                              ? 'bg-white text-black font-medium'
-                              : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                              ? 'bg-[var(--fg)] text-[var(--canvas)] font-medium'
+                              : 'bg-[var(--surface-3)] text-[var(--fg-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--fg)]'
                           }`}
                         >
                           {o.label}
@@ -235,31 +235,31 @@ export default function AdminHome() {
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <button onClick={() => move(idx, -1)} disabled={idx === 0}
                     aria-label="Move up" title="Move up"
-                    className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-25 transition-colors">
+                    className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-25 transition-colors">
                     <ArrowUp size={14} />
                   </button>
                   <button onClick={() => move(idx, 1)} disabled={idx === order.length - 1}
                     aria-label="Move down" title="Move down"
-                    className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-25 transition-colors">
+                    className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-25 transition-colors">
                     <ArrowDown size={14} />
                   </button>
                   <button onClick={() => toggleHidden(id)}
                     aria-label={isHidden ? 'Show on the page' : 'Hide without deleting'}
                     title={isHidden ? 'Hidden — click to show' : 'Visible — click to hide'}
-                    className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors">
+                    className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors">
                     {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                   {meta ? (
                     <span
                       title="Built-in section — hide it instead of deleting"
-                      className="w-8 h-8 flex items-center justify-center text-[#2a2a2a]"
+                      className="w-8 h-8 flex items-center justify-center text-[var(--fg-faint)]"
                     >
                       <Lock size={13} />
                     </span>
                   ) : (
                     <button onClick={() => { if (confirm('Delete this block?')) removeBlock(id); }}
                       aria-label="Delete" title="Delete"
-                      className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors">
+                      className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors">
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -272,7 +272,7 @@ export default function AdminHome() {
 
       {layout.blocks.length > 0 && (
         <section className="space-y-3">
-          <p className="text-white text-sm font-medium">Your blocks</p>
+          <p className="text-[var(--fg)] text-sm font-medium">Your blocks</p>
           {layout.blocks.map((block, idx) => (
             <BlockEditor
               key={block.id}
@@ -297,14 +297,14 @@ export default function AdminHome() {
             const pairs = p.build().length > 1;
             return (
               <button key={p.id} onClick={() => addPreset(p.build())}
-                className="flex items-start gap-2 px-3 py-2.5 bg-[#0d0d0d] hover:bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-left transition-colors">
-                {Icon && <Icon size={14} className="text-[#666] mt-0.5 flex-shrink-0" />}
+                className="flex items-start gap-2 px-3 py-2.5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] border border-[var(--line)] rounded-lg text-left transition-colors">
+                {Icon && <Icon size={14} className="text-[var(--fg-muted)] mt-0.5 flex-shrink-0" />}
                 <span className="min-w-0">
-                  <span className="block text-[#ccc] text-sm">
+                  <span className="block text-[var(--fg)] text-sm">
                     {p.label}
-                    {pairs && <span className="text-[#059669] text-[10px] ml-1.5 uppercase tracking-widest">row</span>}
+                    {pairs && <span className="text-[var(--tc-brand-ink)] text-[10px] ml-1.5 uppercase tracking-widest">row</span>}
                   </span>
-                  <span className="block text-[#555] text-xs">{p.hint}</span>
+                  <span className="block text-[var(--fg-muted)] text-xs">{p.hint}</span>
                 </span>
               </button>
             );
@@ -316,7 +316,7 @@ export default function AdminHome() {
         <button
           onClick={save}
           disabled={saving || !dirty}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
@@ -326,8 +326,8 @@ export default function AdminHome() {
       {toast && (
         <div className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-lg text-sm shadow-2xl ${
           toast.type === 'success'
-            ? 'bg-[#064e3b] text-emerald-100 border border-emerald-500/30'
-            : 'bg-[#4c0519] text-red-100 border border-red-500/30'
+            ? 'bg-[var(--surface-3)] text-[var(--fg-muted)] border border-[var(--line-strong)]'
+            : 'bg-[var(--surface-3)] text-[var(--danger)] border border-[var(--danger-line)]'
         }`}>
           {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
           {toast.text}

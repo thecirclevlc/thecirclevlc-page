@@ -124,59 +124,59 @@ export default function AdminPages() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Pages</h1>
-          <p className="text-[#555] text-sm mt-1">
+          <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Pages</h1>
+          <p className="text-[var(--fg-muted)] text-sm mt-1">
             Build a page from text, photos, videos and buttons. Give it an address, put it in the menu.
           </p>
         </div>
         <button onClick={create}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-lg text-sm font-medium transition-colors">
+          className="flex items-center gap-2 px-4 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors">
           <Plus size={14} /> New page
         </button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={20} className="text-[#444] animate-spin" />
+          <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
         </div>
       ) : pages.length === 0 ? (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-12 text-center">
-          <FileText size={28} className="mx-auto text-[#333] mb-3" />
-          <p className="text-[#999] text-sm">No pages yet.</p>
-          <p className="text-[#555] text-xs mt-2 max-w-sm mx-auto">
+        <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-12 text-center">
+          <FileText size={28} className="mx-auto text-[var(--fg-faint)] mb-3" />
+          <p className="text-[var(--fg-muted)] text-sm">No pages yet.</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-2 max-w-sm mx-auto">
             Create one and it gets its own web address. Add it to the menu when you are happy with it.
           </p>
         </div>
       ) : (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+        <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl overflow-hidden">
           {pages.map((page, idx) => (
             <div key={page.id}
-              className="px-5 py-4 flex items-center gap-4 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors">
+              className="px-5 py-4 flex items-center gap-4 border-b border-[var(--line)] last:border-0 hover:bg-[var(--surface-1)] transition-colors">
 
               <div className="flex flex-col">
                 <button onClick={() => move(idx, -1)} disabled={idx === 0}
-                  className="w-6 h-5 flex items-center justify-center rounded text-[#555] hover:text-white disabled:opacity-20 transition-colors"
+                  className="w-6 h-5 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-20 transition-colors"
                   aria-label="Move up"><ArrowUp size={12} /></button>
                 <button onClick={() => move(idx, 1)} disabled={idx === pages.length - 1}
-                  className="w-6 h-5 flex items-center justify-center rounded text-[#555] hover:text-white disabled:opacity-20 transition-colors"
+                  className="w-6 h-5 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-20 transition-colors"
                   aria-label="Move down"><ArrowDown size={12} /></button>
               </div>
 
               <button onClick={() => navigate(`/admin/pages/${page.id}`)} className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <p className="text-white text-sm font-medium truncate">{page.title}</p>
+                  <p className="text-[var(--fg)] text-sm font-medium truncate">{page.title}</p>
                   <span className={`text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded border ${
                     page.status === 'published'
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      ? 'bg-[var(--surface-3)] text-[var(--fg-muted)] border-[var(--line-strong)]'
+                      : 'bg-[var(--surface-3)] text-[var(--fg-muted)] border-[var(--line-strong)]'
                   }`}>
                     {page.status === 'published' ? 'live' : 'draft'}
                   </span>
                   {page.show_in_nav && (
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#666]">in menu</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--fg-muted)]">in menu</span>
                   )}
                 </div>
-                <p className="text-[#555] text-xs font-mono mt-1">
+                <p className="text-[var(--fg-muted)] text-xs font-mono mt-1">
                   /{page.slug} · {(page.blocks ?? []).length} block{(page.blocks ?? []).length === 1 ? '' : 's'}
                 </p>
               </button>
@@ -184,24 +184,24 @@ export default function AdminPages() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => toggleNav(page)}
                   className={`px-2.5 py-1.5 rounded text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                    page.show_in_nav ? 'text-emerald-400 hover:bg-[#1a1a1a]' : 'text-[#555] hover:text-[#999] hover:bg-[#1a1a1a]'
+                    page.show_in_nav ? 'text-[var(--fg-muted)] hover:bg-[var(--surface-3)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)] hover:bg-[var(--surface-3)]'
                   }`}
                   title={page.show_in_nav ? 'Remove from menu' : 'Add to menu'}>
                   Menu
                 </button>
                 <button onClick={() => togglePublish(page)}
-                  className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors"
                   title={page.status === 'published' ? 'Unpublish' : 'Publish'}>
                   {page.status === 'published' ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
                 <a href={`/${page.slug}`} target="_blank" rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors"
                   title="View page"><ExternalLink size={14} /></a>
                 <button onClick={() => duplicate(page)}
-                  className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors"
                   title="Duplicate"><Copy size={14} /></button>
                 <button onClick={() => remove(page)}
-                  className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
                   title="Delete"><Trash2 size={14} /></button>
               </div>
             </div>
@@ -213,8 +213,8 @@ export default function AdminPages() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}

@@ -1,148 +1,287 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Music2, Users, Plus, TrendingUp, Inbox } from 'lucide-react';
+import MetricCard, { useFirstVisit } from './ui/MetricCard';
+import { pickDisplayName, pickEmail } from './AdminSubmissions';
+import {
+  IconAlert, IconArtists, IconEvent, IconGo, IconInbox, IconLive, IconTalent, IconVoid,
+} from './ui/icons';
 
-interface Stats {
-  totalEvents:     number;
-  publishedEvents: number;
-  totalDJs:        number;
-  totalArtists:    number;
-  newSubmissions:  number;
+/**
+ * El panel de entrada.
+ *
+ * Antes eran cinco cifras sin contexto y dos filas de atajos que repetían el
+ * menú de la izquierda. Ahora las cifras traen su variación y su serie, y el
+ * espacio de abajo lo ocupa trabajo real: lo que viene y lo que está sin
+ * contestar.
+ *
+ * Ninguna cifra está inventada — todas salen de `created_at`, que existe en
+ * las cuatro tablas.
+ */
+
+const DAY = 86_400_000;
+
+interface Series { delta?: number; trend: number[] }
+
+/**
+ * Variación contra el periodo anterior y serie acumulada.
+ *
+ * `delta` es opcional a propósito: si en los 30 días anteriores no hubo nada,
+ * no hay porcentaje que calcular. La costumbre es enseñar "+100 %", que es
+ * mentira — un tanto por ciento sobre cero no existe. Cuando no hay con qué
+ * comparar, la tarjeta no enseña comparación.
+ */
+function series(dates: number[], now: number): Series {
+  const last  = dates.filter(t => t >  now - 30 * DAY).length;
+  const prior = dates.filter(t => t <= now - 30 * DAY && t > now - 60 * DAY).length;
+
+  return {
+    delta: prior === 0 ? undefined : Math.round(((last - prior) / prior) * 100),
+    // Acumulado en 7 cortes sobre los últimos 6 meses: para un total, la
+    // forma que importa es cómo ha crecido, no cuántos entraron cada semana.
+    trend: Array.from({ length: 7 }, (_, i) =>
+      dates.filter(t => t <= now - (6 - i) * 30 * DAY).length),
+  };
 }
 
-function StatCard({
-  label, value, sub, icon: Icon, color, loading,
-}: {
-  label: string; value: number; sub: string;
-  icon: React.ElementType; color: string; loading: boolean;
-}) {
+const ms = (d: string | null) => (d ? new Date(d).getTime() : 0);
+
+interface EventRow {
+  id: string; title: string; date: string | null; venue: string | null;
+  status: string; lineup: string[] | null; created_at: string | null;
+}
+interface SubRow {
+  id: string; data: Record<string, string>; status: string; created_at: string | null;
+}
+
+type Load = 'loading' | 'ready' | 'error';
+
+export default function AdminDashboard() {
+  const [state, setState] = useState<Load>('loading');
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [djs, setDjs]       = useState<number[]>([]);
+  const [artists, setArtists] = useState<number[]>([]);
+  const [subs, setSubs]     = useState<SubRow[]>([]);
+  const [toast, setToast]   = useState<string | null>(null);
+  const [nonce, setNonce]   = useState(0);
+
+  const first = useFirstVisit();
+
+  useEffect(() => {
+    let cancelled = false;
+    setState('loading');
+
+    // ponytail: se traen las filas enteras en vez de contarlas en el servidor.
+    // Con 4 eventos y 33 solicitudes es una query menos y el dato de la
+    // sparkline sale gratis. Si esto pasa de ~2.000 filas, hay que volver a
+    // count({head:true}) y una vista agregada para las series.
+    Promise.all([
+      supabase.from('events').select('id,title,date,venue,status,lineup,created_at'),
+      supabase.from('djs').select('created_at'),
+      supabase.from('artists').select('created_at'),
+      supabase.from('form_submissions').select('id,data,status,created_at').order('created_at', { ascending: false }),
+    ]).then(([ev, dj, ar, fs]) => {
+      if (cancelled) return;
+      if (ev.error || dj.error || ar.error || fs.error) { setState('error'); return; }
+      setEvents((ev.data ?? []) as EventRow[]);
+      setDjs((dj.data ?? []).map(r => ms(r.created_at)));
+      setArtists((ar.data ?? []).map(r => ms(r.created_at)));
+      setSubs((fs.data ?? []) as SubRow[]);
+      setState('ready');
+    }, () => { if (!cancelled) setState('error'); });
+
+    return () => { cancelled = true; };
+  }, [nonce]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const now = Date.now();
+  const published = events.filter(e => e.status === 'published');
+  const pending   = subs.filter(s => s.status === 'new');
+
+  const sEvents = series(events.map(e => ms(e.created_at)), now);
+  const sPub    = series(published.map(e => ms(e.created_at)), now);
+  const sDjs    = series(djs, now);
+  const sArt    = series(artists, now);
+  const sSubs   = series(subs.map(s => ms(s.created_at)), now);
+
+  const upcoming = events
+    .filter(e => e.date && new Date(e.date).getTime() >= now - DAY)
+    .sort((a, b) => ms(a.date) - ms(b.date))
+    .slice(0, 5);
+
+  const cardState = state === 'ready' ? 'ready' : state === 'error' ? 'error' : 'loading';
+
+  /** Aprobar o descartar sin esperar al servidor; si falla, se devuelve. */
+  const decide = async (row: SubRow, next: 'accepted' | 'rejected') => {
+    const before = subs;
+    setSubs(list => list.map(s => (s.id === row.id ? { ...s, status: next } : s)));
+    setToast(next === 'accepted'
+      ? `${pickDisplayName(row.data)} — aceptada`
+      : `${pickDisplayName(row.data)} — descartada`);
+
+    const { error } = await supabase.from('form_submissions').update({ status: next }).eq('id', row.id);
+    if (error) { setSubs(before); setToast('No se pudo guardar. Vuelve a intentarlo.'); }
+  };
+
   return (
-    <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
-      {loading ? (
-        <div className="animate-pulse space-y-3">
-          <div className="h-5 w-5 rounded bg-[#1e1e1e]" />
-          <div className="h-8 w-12 rounded bg-[#1e1e1e]" />
-          <div className="h-3 w-20 rounded bg-[#1e1e1e]" />
+    <>
+      <div className="tc-page__head">
+        <div>
+          <h1>Panel</h1>
+          <p>Lo que hay, lo que viene y lo que está sin contestar.</p>
         </div>
-      ) : (
-        <>
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
-            style={{ backgroundColor: `${color}18` }}
-          >
-            <Icon size={16} style={{ color }} strokeWidth={1.8} />
-          </div>
-          <p className="text-3xl font-bold text-white tabular-nums">{value}</p>
-          <p className="text-[#666] text-xs tracking-widest uppercase mt-1">{label}</p>
-          <p className="text-[#3a3a3a] text-xs mt-0.5">{sub}</p>
-        </>
+        <Link className="tc-cta" to="/admin/events/new">Nuevo evento<IconGo size={14} stroke={2.1} /></Link>
+      </div>
+
+      {/* Comparación dicha una vez, y no repetida en las cinco tarjetas. */}
+      <p className="tc-eyebrow">Últimos 30 días, contra los 30 anteriores</p>
+
+      <div className="tc-metrics">
+        <MetricCard index={0} animate={first} state={cardState} label="Eventos"
+          value={events.length} icon={IconEvent} tone="events" to="/admin/events"
+          delta={sEvents.delta} trend={sEvents.trend} />
+        <MetricCard index={1} animate={first} state={cardState} label="Publicados"
+          value={published.length} icon={IconLive} tone="live" to="/admin/events"
+          delta={sPub.delta} trend={sPub.trend} />
+        <MetricCard index={2} animate={first} state={cardState} label="DJs"
+          value={djs.length} icon={IconTalent} tone="talent" to="/admin/djs"
+          delta={sDjs.delta} trend={sDjs.trend} />
+        <MetricCard index={3} animate={first} state={cardState} label="Artistas"
+          value={artists.length} icon={IconArtists} tone="talent" to="/admin/artists"
+          delta={sArt.delta} trend={sArt.trend} />
+        <MetricCard index={4} animate={first} state={cardState} label="Sin revisar"
+          value={pending.length} icon={IconInbox} lead
+          delta={sSubs.delta}
+          cta={{ label: 'Revisar', to: '/admin/submissions' }} />
+      </div>
+
+      <div className="tc-grid-8-4">
+
+        {/* ── Próximos eventos ─────────────────────────────────────── */}
+        <section className="tc-glass tc-card tc-panel">
+          <header className="tc-panel__head">
+            <h2>Próximos eventos</h2>
+            <Link className="tc-linkbtn" to="/admin/events">Ver todos</Link>
+          </header>
+
+          {state === 'loading' && (
+            <div className="tc-list">
+              {[0, 1, 2].map(i => <div key={i} className="tc-skel" style={{ height: 58 }} />)}
+            </div>
+          )}
+
+          {state === 'ready' && upcoming.length === 0 && (
+            <div className="tc-empty">
+              <IconVoid size={34} stroke={1.5} />
+              <p>No hay ningún evento con fecha futura.</p>
+              <Link className="tc-cta" to="/admin/events/new">Crear el primero<IconGo size={14} stroke={2.1} /></Link>
+            </div>
+          )}
+
+          {state === 'ready' && upcoming.length > 0 && (
+            <ul className="tc-list">
+              {upcoming.map(ev => (
+                <li key={ev.id}>
+                  <Link className="tc-row" to={`/admin/events/${ev.id}`}>
+                    <time className="tc-date" dateTime={ev.date ?? undefined}>
+                      <b>{ev.date ? new Date(ev.date).toLocaleDateString('es-ES', { day: '2-digit' }) : '··'}</b>
+                      <span>{ev.date ? new Date(ev.date).toLocaleDateString('es-ES', { month: 'short' }) : ''}</span>
+                    </time>
+                    <div className="tc-row__body">
+                      <p className="tc-row__title">{ev.title}</p>
+                      <p className="tc-row__sub">{ev.venue || 'Sin sala'}</p>
+                    </div>
+                    <Lineup names={ev.lineup ?? []} />
+                    <span className="tc-chip" data-on={ev.status === 'published' || undefined}>
+                      {ev.status === 'published' ? 'Publicado' : 'Borrador'}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ── Sin revisar ──────────────────────────────────────────── */}
+        <section className="tc-glass tc-card tc-panel">
+          <header className="tc-panel__head">
+            <h2>Sin revisar</h2>
+            <Link className="tc-linkbtn" to="/admin/submissions">Ver todas</Link>
+          </header>
+
+          {state === 'loading' && (
+            <div className="tc-list">
+              {[0, 1, 2].map(i => <div key={i} className="tc-skel" style={{ height: 66 }} />)}
+            </div>
+          )}
+
+          {state === 'error' && (
+            <div className="tc-empty">
+              <IconAlert size={30} stroke={1.6} />
+              <p>No se pudieron leer las solicitudes.</p>
+              <button type="button" className="tc-linkbtn" onClick={() => setNonce(n => n + 1)}>
+                Reintentar
+              </button>
+            </div>
+          )}
+
+          {state === 'ready' && pending.length === 0 && (
+            <div className="tc-empty">
+              <IconVoid size={34} stroke={1.5} />
+              <p>Todo contestado. No queda nada pendiente.</p>
+            </div>
+          )}
+
+          {state === 'ready' && pending.length > 0 && (
+            <ul className="tc-list">
+              {pending.slice(0, 4).map(row => (
+                <li key={row.id} className="tc-sub">
+                  <div className="tc-row__body">
+                    <p className="tc-row__title">{pickDisplayName(row.data)}</p>
+                    <p className="tc-row__sub">{pickEmail(row.data) || 'Sin email'}</p>
+                  </div>
+                  <div className="tc-sub__acts">
+                    <button type="button" className="tc-mini" data-kind="yes"
+                      onClick={() => decide(row, 'accepted')}>Aceptar</button>
+                    <button type="button" className="tc-mini"
+                      onClick={() => decide(row, 'rejected')}>Descartar</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {toast && (
+        <div className="tc-glass tc-glass--3 tc-toast" role="status" aria-live="polite">
+          {toast}
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
-export default function AdminDashboard() {
-  const [stats, setStats]   = useState<Stats>({ totalEvents: 0, publishedEvents: 0, totalDJs: 0, totalArtists: 0, newSubmissions: 0 });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [evTotal, evPub, djTotal, arTotal, subsNew] = await Promise.all([
-          supabase.from('events').select('id',  { count: 'exact', head: true }),
-          supabase.from('events').select('id',  { count: 'exact', head: true }).eq('status', 'published'),
-          supabase.from('djs').select('id',     { count: 'exact', head: true }),
-          supabase.from('artists').select('id', { count: 'exact', head: true }),
-          supabase.from('form_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        ]);
-        setStats({
-          totalEvents:     evTotal.count  ?? 0,
-          publishedEvents: evPub.count    ?? 0,
-          totalDJs:        djTotal.count  ?? 0,
-          totalArtists:    arTotal.count  ?? 0,
-          newSubmissions:  subsNew.count  ?? 0,
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const quickActions = [
-    { label: '+ New Event',  to: '/admin/events/new',   color: '#C42121' },
-    { label: '+ New DJ',     to: '/admin/djs/new',      color: '#7c3aed' },
-    { label: '+ New Artist', to: '/admin/artists/new',  color: '#059669' },
-  ];
-
+/** El cartel en avatares apilados. */
+function Lineup({ names }: { names: string[] }) {
+  if (names.length === 0) return <span className="tc-avatars" />;
+  const shown = names.slice(0, 3);
   return (
-    <div className="space-y-8">
-
-      {/* Header */}
-      <div>
-        <h1 className="text-white text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-[#444] text-sm mt-1">Welcome back. Here's an overview.</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="Total Events"     value={stats.totalEvents}     sub={`${stats.publishedEvents} published`} icon={Calendar}    color="#C42121" loading={loading} />
-        <StatCard label="Published"        value={stats.publishedEvents} sub="visible to public"                     icon={TrendingUp}   color="#f59e0b" loading={loading} />
-        <StatCard label="DJs"              value={stats.totalDJs}        sub="registered"                            icon={Music2}       color="#7c3aed" loading={loading} />
-        <StatCard label="Artists"          value={stats.totalArtists}    sub="registered"                            icon={Users}        color="#059669" loading={loading} />
-        <StatCard label="New Submissions"  value={stats.newSubmissions}  sub="awaiting review"                       icon={Inbox}        color="#3b82f6" loading={loading} />
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <p className="text-[#3a3a3a] text-xs tracking-[0.2em] uppercase mb-3">Quick Actions</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {quickActions.map(a => (
-            <Link
-              key={a.to}
-              to={a.to}
-              className="flex items-center gap-3 bg-[#111] border border-[#1a1a1a] hover:border-[#2a2a2a] rounded-xl p-4 transition-all group"
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${a.color}18` }}
-              >
-                <Plus size={14} style={{ color: a.color }} />
-              </div>
-              <span className="text-[#666] group-hover:text-white text-sm transition-colors tracking-wide">
-                {a.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick nav */}
-      <div>
-        <p className="text-[#3a3a3a] text-xs tracking-[0.2em] uppercase mb-3">Manage</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { label: 'All Events',  to: '/admin/events',  count: stats.totalEvents },
-            { label: 'All DJs',     to: '/admin/djs',     count: stats.totalDJs },
-            { label: 'All Artists', to: '/admin/artists', count: stats.totalArtists },
-          ].map(item => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="flex items-center justify-between bg-[#111] border border-[#1a1a1a] hover:border-[#2a2a2a] rounded-xl p-4 transition-all group"
-            >
-              <span className="text-[#666] group-hover:text-white text-sm transition-colors">{item.label}</span>
-              {!loading && (
-                <span className="text-[#333] text-xs bg-[#1a1a1a] px-2 py-0.5 rounded-full tabular-nums">
-                  {item.count}
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-    </div>
+    <span className="tc-avatars" title={names.join(' · ')}>
+      {shown.map((n, i) => (
+        // `lineup` guarda NOMBRES, no ids de DJ, así que no hay foto que
+        // buscar sin cruzar cadenas — y un cruce por nombre falla con la
+        // primera tilde. Iniciales hasta que el cartel apunte a la tabla djs.
+        <span key={`${n}-${i}`} className="tc-avatars__i" style={{ '--k': i } as React.CSSProperties}>
+          {n.trim().slice(0, 1).toUpperCase() || '·'}
+        </span>
+      ))}
+      {names.length > 3 && <span className="tc-avatars__n">+{names.length - 3}</span>}
+    </span>
   );
 }

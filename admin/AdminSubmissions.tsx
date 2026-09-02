@@ -10,10 +10,10 @@ import { listForms } from '../lib/formSchema';
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
 const STATUS_COLORS: Record<SubmissionStatus, string> = {
-  new:      'bg-amber-500/15  text-amber-400  border-amber-500/30',
-  reviewed: 'bg-blue-500/15   text-blue-400   border-blue-500/30',
-  accepted: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  rejected: 'bg-red-500/15    text-red-400    border-red-500/30',
+  new:      'bg-[var(--surface-3)]  text-[var(--fg-muted)]  border-[var(--line-strong)]',
+  reviewed: 'bg-[var(--surface-3)]   text-[var(--fg-muted)]   border-[var(--line-strong)]',
+  accepted: 'bg-[var(--surface-3)] text-[var(--fg-muted)] border-[var(--line-strong)]',
+  rejected: 'bg-[var(--danger-soft)] text-[var(--danger)]    border-[var(--danger-line)]',
 };
 
 const STATUSES: SubmissionStatus[] = ['new', 'reviewed', 'accepted', 'rejected'];
@@ -26,11 +26,11 @@ function StatusBadge({ status }: { status: SubmissionStatus }) {
   );
 }
 
-function pickDisplayName(data: Record<string, string>): string {
+export function pickDisplayName(data: Record<string, string>): string {
   return data.fullName || data.full_name || data.name || Object.values(data)[0] || '—';
 }
 
-function pickEmail(data: Record<string, string>): string {
+export function pickEmail(data: Record<string, string>): string {
   return data.email || data.e_mail || data.email_address || '';
 }
 
@@ -142,15 +142,15 @@ export default function AdminSubmissions() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Form Submissions</h1>
-          <p className="text-[#555] text-sm mt-1">
+          <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Form Submissions</h1>
+          <p className="text-[var(--fg-muted)] text-sm mt-1">
             Every answer received, from every form.
           </p>
         </div>
         <button
           onClick={() => exportCSV(filtered)}
           disabled={filtered.length === 0}
-          className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors disabled:opacity-40"
+          className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors disabled:opacity-40"
         >
           <Download size={12} /> Export CSV ({filtered.length})
         </button>
@@ -162,31 +162,31 @@ export default function AdminSubmissions() {
           <button
             key={s}
             onClick={() => setFilter(filter === s ? 'all' : s)}
-            className={`bg-[#111] border rounded-xl p-4 text-left transition-all ${
-              filter === s ? 'border-[#2a2a2a]' : 'border-[#1a1a1a] hover:border-[#222]'
+            className={`bg-[var(--surface-1)] border rounded-xl p-4 text-left transition-all ${
+              filter === s ? 'border-[var(--line-strong)]' : 'border-[var(--line)] hover:border-[var(--line-strong)]'
             }`}
           >
-            <p className="text-3xl font-bold text-white tabular-nums">{counts[s]}</p>
-            <p className="text-[#666] text-xs tracking-widest uppercase mt-1">{s}</p>
+            <p className="text-3xl font-bold text-[var(--fg)] tabular-nums">{counts[s]}</p>
+            <p className="text-[var(--fg-muted)] text-xs tracking-widest uppercase mt-1">{s}</p>
           </button>
         ))}
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg px-3 py-2 flex-1 min-w-[200px]">
-          <Search size={14} className="text-[#555]" />
+        <div className="flex items-center gap-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 flex-1 min-w-[200px]">
+          <Search size={14} className="text-[var(--fg-muted)]" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search name or email…"
-            className="bg-transparent text-white text-sm focus:outline-none flex-1 placeholder-[#444]"
+            className="bg-transparent text-[var(--fg)] text-sm focus:outline-none flex-1 placeholder-[var(--fg-faint)]"
           />
         </div>
         <select
           value={filter}
           onChange={e => setFilter(e.target.value as 'all' | SubmissionStatus)}
-          className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40"
+          className="bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent-line)]"
         >
           <option value="all">All statuses</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -195,7 +195,7 @@ export default function AdminSubmissions() {
           <select
             value={formFilter}
             onChange={e => setFormFilter(e.target.value)}
-            className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40"
+            className="bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent-line)]"
           >
             <option value="all">All forms</option>
             {formKeys.map(([key, n]) => (
@@ -208,25 +208,25 @@ export default function AdminSubmissions() {
       {/* Rows */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={20} className="text-[#444] animate-spin" />
+          <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-12 text-center">
-          <Inbox size={28} className="mx-auto text-[#333] mb-3" />
+        <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-12 text-center">
+          <Inbox size={28} className="mx-auto text-[var(--fg-faint)] mb-3" />
           {rows.length === 0 ? (
             <>
-              <p className="text-[#999] text-sm">No applications yet.</p>
-              <p className="text-[#555] text-xs mt-2 max-w-sm mx-auto">
+              <p className="text-[var(--fg-muted)] text-sm">No applications yet.</p>
+              <p className="text-[var(--fg-muted)] text-xs mt-2 max-w-sm mx-auto">
                 They will appear here the moment someone sends the form. Nothing is broken —
                 this page is simply waiting.
               </p>
             </>
           ) : (
-            <p className="text-[#555] text-sm">No submissions match the current filter.</p>
+            <p className="text-[var(--fg-muted)] text-sm">No submissions match the current filter.</p>
           )}
         </div>
       ) : (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+        <div className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl overflow-hidden">
           {filtered.map(row => {
             const name = pickDisplayName(row.data);
             const email = pickEmail(row.data);
@@ -237,16 +237,16 @@ export default function AdminSubmissions() {
               <button
                 key={row.id}
                 onClick={() => setSelected(row)}
-                className="w-full px-5 py-4 flex items-center gap-4 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors text-left"
+                className="w-full px-5 py-4 flex items-center gap-4 border-b border-[var(--line)] last:border-0 hover:bg-[var(--surface-1)] transition-colors text-left"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">
-                    <p className="text-white text-sm font-medium truncate">{name}</p>
+                    <p className="text-[var(--fg)] text-sm font-medium truncate">{name}</p>
                     <StatusBadge status={row.status} />
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    {email && <span className="text-[#666] text-xs font-mono truncate">{email}</span>}
-                    <span className="text-[#444] text-xs font-mono">{date}</span>
+                    {email && <span className="text-[var(--fg-muted)] text-xs font-mono truncate">{email}</span>}
+                    <span className="text-[var(--fg-faint)] text-xs font-mono">{date}</span>
                   </div>
                 </div>
               </button>
@@ -258,16 +258,16 @@ export default function AdminSubmissions() {
       {/* Detail panel (slide-over) */}
       {selected && (
         <>
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={() => setSelected(null)} />
-          <aside className="fixed right-0 top-0 bottom-0 w-full max-w-xl bg-[#0d0d0d] border-l border-[#1a1a1a] z-50 overflow-y-auto">
-            <div className="sticky top-0 bg-[#0d0d0d] border-b border-[#1a1a1a] px-6 py-4 flex items-center justify-between">
+          <div className="fixed inset-0 bg-[var(--scrim)] backdrop-blur-sm z-40" onClick={() => setSelected(null)} />
+          <aside className="fixed right-0 top-0 bottom-0 w-full max-w-xl bg-[var(--surface-2)] border-l border-[var(--line)] z-50 overflow-y-auto">
+            <div className="sticky top-0 bg-[var(--surface-2)] border-b border-[var(--line)] px-6 py-4 flex items-center justify-between">
               <div className="min-w-0">
-                <p className="text-white font-semibold truncate">{pickDisplayName(selected.data)}</p>
-                <p className="text-[#666] text-xs font-mono mt-0.5">
+                <p className="text-[var(--fg)] font-semibold truncate">{pickDisplayName(selected.data)}</p>
+                <p className="text-[var(--fg-muted)] text-xs font-mono mt-0.5">
                   {new Date(selected.created_at).toLocaleString()}
                 </p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-[#666] hover:text-white transition-colors">
+              <button onClick={() => setSelected(null)} className="text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -278,21 +278,21 @@ export default function AdminSubmissions() {
                 <select
                   value={selected.status}
                   onChange={e => updateRow(selected.id, { status: e.target.value as SubmissionStatus })}
-                  className="bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40"
+                  className="bg-[var(--surface-1)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent-line)]"
                 >
                   {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {pickEmail(selected.data) && (
                   <a
                     href={`mailto:${pickEmail(selected.data)}`}
-                    className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors"
                   >
                     <Mail size={12} /> Reply
                   </a>
                 )}
                 <button
                   onClick={() => remove(selected.id)}
-                  className="ml-auto flex items-center gap-2 px-3 py-2 bg-red-950/30 hover:bg-red-950/50 border border-red-500/20 rounded-lg text-xs text-red-400 transition-colors"
+                  className="ml-auto flex items-center gap-2 px-3 py-2 bg-[var(--danger-soft)] hover:bg-[var(--danger-soft)] border border-[var(--danger-line)] rounded-lg text-xs text-[var(--danger)] transition-colors"
                 >
                   <Trash2 size={12} /> Delete
                 </button>
@@ -301,22 +301,22 @@ export default function AdminSubmissions() {
               {/* Fields */}
               <div className="space-y-3">
                 {Object.entries(selected.data).map(([key, value]) => (
-                  <div key={key} className="bg-[#111] border border-[#1a1a1a] rounded-lg p-4">
-                    <p className="text-[#555] text-[10px] tracking-[0.2em] uppercase mb-1.5 font-mono">{key}</p>
-                    <p className="text-white text-sm whitespace-pre-wrap break-words">{value || '—'}</p>
+                  <div key={key} className="bg-[var(--surface-1)] border border-[var(--line)] rounded-lg p-4">
+                    <p className="text-[var(--fg-muted)] text-[10px] tracking-[0.2em] uppercase mb-1.5 font-mono">{key}</p>
+                    <p className="text-[var(--fg)] text-sm whitespace-pre-wrap break-words">{value || '—'}</p>
                   </div>
                 ))}
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Internal Notes</label>
+                <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Internal Notes</label>
                 <textarea
                   value={selected.notes ?? ''}
                   onChange={e => setSelected({ ...selected, notes: e.target.value })}
                   onBlur={e => updateRow(selected.id, { notes: e.target.value })}
                   rows={4}
-                  className="w-full bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#059669]/40 resize-y"
+                  className="w-full bg-[var(--surface-1)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent-line)] resize-y"
                   placeholder="Add private notes about this applicant…"
                 />
               </div>
@@ -330,8 +330,8 @@ export default function AdminSubmissions() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}

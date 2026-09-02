@@ -16,9 +16,9 @@ import {
  * artists as the poor relation of DJs.
  */
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors';
-const LABEL = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
-const CARD  = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors';
+const LABEL = 'block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5';
+const CARD  = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4';
 
 function uuid() {
   return (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.()
@@ -39,13 +39,13 @@ function RowButtons({ onUp, onDown, onDelete, canUp, canDown }: {
   return (
     <div className="flex gap-1 flex-shrink-0">
       <button type="button" onClick={onUp} disabled={!canUp}
-        className="w-9 h-9 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
         aria-label="Move up"><ArrowUp size={13} /></button>
       <button type="button" onClick={onDown} disabled={!canDown}
-        className="w-9 h-9 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
         aria-label="Move down"><ArrowDown size={13} /></button>
       <button type="button" onClick={onDelete}
-        className="w-9 h-9 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
         aria-label="Remove"><Trash2 size={13} /></button>
     </div>
   );
@@ -53,7 +53,7 @@ function RowButtons({ onUp, onDown, onDelete, canUp, canDown }: {
 
 const AddButton = ({ onClick, label }: { onClick: () => void; label: string }) => (
   <button type="button" onClick={onClick}
-    className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+    className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
     <Plus size={12} /> {label}
   </button>
 );
@@ -68,8 +68,8 @@ export function VideosEditor({ videos, onChange }: {
   return (
     <section className={CARD}>
       <div>
-        <p className="text-white text-sm font-medium">Videos</p>
-        <p className="text-[#555] text-xs mt-1">
+        <p className="text-[var(--fg)] text-sm font-medium">Videos</p>
+        <p className="text-[var(--fg-muted)] text-xs mt-1">
           Paste the address from the browser bar. YouTube, Vimeo, SoundCloud and Mixcloud all work.
         </p>
       </div>
@@ -82,7 +82,7 @@ export function VideosEditor({ videos, onChange }: {
               onChange={e => onChange(list.map(x => x.id === v.id ? { ...x, url: e.target.value } : x))}
               placeholder="https://www.youtube.com/watch?v=…" />
             {v.url && !embedUrl(v.url) && (
-              <p className="text-amber-500/80 text-xs mt-1">Cannot be embedded — will show as a plain link.</p>
+              <p className="text-[var(--fg-muted)] text-xs mt-1">Cannot be embedded — will show as a plain link.</p>
             )}
           </div>
           <div className="flex-1 min-w-[140px]">
@@ -114,8 +114,8 @@ export function LinksEditor({ links, onChange }: {
   return (
     <section className={CARD}>
       <div>
-        <p className="text-white text-sm font-medium">Buttons</p>
-        <p className="text-[#555] text-xs mt-1">
+        <p className="text-[var(--fg)] text-sm font-medium">Buttons</p>
+        <p className="text-[var(--fg-muted)] text-xs mt-1">
           Anything you want people to click: book me, buy tickets, donate, download.
         </p>
       </div>
@@ -134,10 +134,10 @@ export function LinksEditor({ links, onChange }: {
               onChange={e => onChange(list.map(x => x.id === l.id ? { ...x, url: e.target.value } : x))}
               placeholder="https://… or /form" />
           </div>
-          <label className="flex items-center gap-2 text-xs text-[#ccc] py-2.5 cursor-pointer">
+          <label className="flex items-center gap-2 text-xs text-[var(--fg)] py-2.5 cursor-pointer">
             <input type="checkbox" checked={l.primary ?? false}
               onChange={e => onChange(list.map(x => x.id === l.id ? { ...x, primary: e.target.checked } : x))}
-              className="w-4 h-4 accent-[#059669]" />
+              className="w-4 h-4 accent-[var(--tc-brand)]" />
             Loud
           </label>
           <RowButtons
@@ -164,8 +164,8 @@ export function FactsEditor({ facts, onChange }: {
   return (
     <section className={CARD}>
       <div>
-        <p className="text-white text-sm font-medium">Extra information</p>
-        <p className="text-[#555] text-xs mt-1">
+        <p className="text-[var(--fg)] text-sm font-medium">Extra information</p>
+        <p className="text-[var(--fg-muted)] text-xs mt-1">
           Add any detail this profile needs — you choose both the label and the value.
           For example "Label" → "Circle Records", or "Available for" → "Club nights, festivals".
         </p>
@@ -208,7 +208,7 @@ export function SocialsEditor({ socials, onChange }: {
   const value = socials ?? {};
   return (
     <section className={CARD}>
-      <p className="text-white text-sm font-medium">Social links</p>
+      <p className="text-[var(--fg)] text-sm font-medium">Social links</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {PROFILE_SOCIAL_KEYS.map(s => (
           <div key={s.key}>
@@ -222,7 +222,7 @@ export function SocialsEditor({ socials, onChange }: {
           </div>
         ))}
       </div>
-      <p className="text-[#444] text-xs">Leave a field empty and it will not appear on the profile.</p>
+      <p className="text-[var(--fg-faint)] text-xs">Leave a field empty and it will not appear on the profile.</p>
     </section>
   );
 }

@@ -18,10 +18,10 @@ import {
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const TEXTAREA = INPUT + ' min-h-[80px] resize-y';
-const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
-const LABEL = 'block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5';
+const SECTION = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4';
+const LABEL = 'block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5';
 
 const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: 'text',     label: 'Text' },
@@ -75,7 +75,7 @@ function FieldEditor({
   const needsOptions = field.type === 'select' || field.type === 'radio';
 
   return (
-    <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4 space-y-3">
+    <div className="bg-[var(--surface-2)] border border-[var(--line)] rounded-lg p-4 space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-start">
         <div className="space-y-3">
           <div>
@@ -107,12 +107,12 @@ function FieldEditor({
               </select>
             </div>
             <div className="flex items-end">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc] py-2.5">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--fg)] py-2.5">
                 <input
                   type="checkbox"
                   checked={field.required}
                   onChange={e => onChange({ ...field, required: e.target.checked })}
-                  className="w-4 h-4 accent-[#059669]"
+                  className="w-4 h-4 accent-[var(--tc-brand)]"
                 />
                 Required
               </label>
@@ -137,7 +137,7 @@ function FieldEditor({
               blocks the send. Fine for "I accept the terms", wrong for any
               real question. */}
           {field.type === 'checkbox' && field.required && (
-            <p className="flex items-start gap-2 text-amber-300/80 text-xs bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2.5">
+            <p className="flex items-start gap-2 text-[var(--fg-muted)] text-xs bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg px-3 py-2.5">
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
               <span>
                 A required tick box can only be answered <strong className="font-medium">yes</strong> —
@@ -181,13 +181,13 @@ function FieldEditor({
                 placeholder={'Option A\nOption B\nOption C'}
               />
               {(field.options ?? []).length === 0 && (
-                <p className="text-amber-500/80 text-xs mt-1">Add at least one option or this question renders empty.</p>
+                <p className="text-[var(--fg-muted)] text-xs mt-1">Add at least one option or this question renders empty.</p>
               )}
             </div>
           )}
 
           <details className="group">
-            <summary className="text-[#444] text-xs cursor-pointer hover:text-[#666] select-none">Advanced</summary>
+            <summary className="text-[var(--fg-faint)] text-xs cursor-pointer hover:text-[var(--fg-muted)] select-none">Advanced</summary>
             <div className="mt-2">
               <label className={LABEL}>Answer key</label>
               <input
@@ -195,14 +195,14 @@ function FieldEditor({
                 value={field.name}
                 onChange={e => onChange({ ...field, name: toKey(e.target.value) })}
               />
-              <p className="text-[#444] text-xs mt-1">
+              <p className="text-[var(--fg-faint)] text-xs mt-1">
                 The column name in your CSV export. Changing it means older answers no longer line up under this question.
               </p>
               {nameClash && (
-                <p className="text-red-400 text-xs mt-1">Another question already uses this key — one will overwrite the other.</p>
+                <p className="text-[var(--danger)] text-xs mt-1">Another question already uses this key — one will overwrite the other.</p>
               )}
               {nameReserved && (
-                <p className="text-red-400 text-xs mt-1">"{field.name}" is reserved. Pick another key.</p>
+                <p className="text-[var(--danger)] text-xs mt-1">"{field.name}" is reserved. Pick another key.</p>
               )}
             </div>
           </details>
@@ -210,13 +210,13 @@ function FieldEditor({
 
         <div className="flex md:flex-col gap-1 items-end md:items-stretch justify-end">
           <button onClick={onMoveUp} disabled={!canUp}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
             aria-label="Move up"><ArrowUp size={14} /></button>
           <button onClick={onMoveDown} disabled={!canDown}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
             aria-label="Move down"><ArrowDown size={14} /></button>
           <button onClick={onDelete}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
             aria-label="Delete"><Trash2 size={14} /></button>
         </div>
       </div>
@@ -390,7 +390,7 @@ export default function AdminFormBuilder() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 size={20} className="text-[#444] animate-spin" />
+        <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
       </div>
     );
   }
@@ -401,8 +401,8 @@ export default function AdminFormBuilder() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Forms</h1>
-          <p className="text-[#555] text-sm mt-1">
+          <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Forms</h1>
+          <p className="text-[var(--fg-muted)] text-sm mt-1">
             Build any number of forms — one for the public, one for artists, one for DJs — and choose where each appears.
           </p>
         </div>
@@ -430,15 +430,15 @@ export default function AdminFormBuilder() {
           </div>
 
           <button onClick={() => createForm()}
-            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
             <FilePlus2 size={13} /> New form
           </button>
           <button onClick={() => createForm(schema)}
-            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
             <Copy size={13} /> Duplicate
           </button>
           <a href={publicPath} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-xs text-[#ccc] transition-colors">
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-xs text-[var(--fg)] transition-colors">
             <ExternalLink size={13} /> View
           </a>
         </div>
@@ -450,7 +450,7 @@ export default function AdminFormBuilder() {
           </div>
           <div>
             <label className={LABEL}>Web address</label>
-            <input className={INPUT + ' font-mono text-[#666]'} value={publicPath} readOnly />
+            <input className={INPUT + ' font-mono text-[var(--fg-muted)]'} value={publicPath} readOnly />
           </div>
         </div>
       </section>
@@ -458,8 +458,8 @@ export default function AdminFormBuilder() {
       {/* Appears in */}
       <section className={SECTION}>
         <div>
-          <p className="text-white text-sm font-medium">Appears in</p>
-          <p className="text-[#555] text-xs mt-1">
+          <p className="text-[var(--fg)] text-sm font-medium">Appears in</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-1">
             Tick a page and its button opens this form instead of the main one.
           </p>
         </div>
@@ -471,15 +471,15 @@ export default function AdminFormBuilder() {
               ? forms.find(f => f.slug === takenBy)?.name ?? takenBy
               : null;
             return (
-              <label key={c.key} className="flex items-center gap-3 cursor-pointer text-sm text-[#ccc] py-1">
+              <label key={c.key} className="flex items-center gap-3 cursor-pointer text-sm text-[var(--fg)] py-1">
                 <input
                   type="checkbox"
                   checked={assigned}
                   onChange={e => toggleCta(c.key, e.target.checked)}
-                  className="w-4 h-4 accent-[#059669]"
+                  className="w-4 h-4 accent-[var(--tc-brand)]"
                 />
                 <span>{c.label}</span>
-                {other && <span className="text-[#555] text-xs">— currently opens "{other}"</span>}
+                {other && <span className="text-[var(--fg-muted)] text-xs">— currently opens "{other}"</span>}
               </label>
             );
           })}
@@ -488,12 +488,12 @@ export default function AdminFormBuilder() {
 
       {/* Page text */}
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Page text</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Page text</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={LABEL}>Title</label>
             <input className={INPUT} value={schema.title} onChange={e => update({ title: e.target.value })} />
-            <p className="text-[#333] text-xs mt-1">Big animated title. Spaces split it into lines.</p>
+            <p className="text-[var(--fg-faint)] text-xs mt-1">Big animated title. Spaces split it into lines.</p>
           </div>
           <div>
             <label className={LABEL}>Subtitle</label>
@@ -509,8 +509,8 @@ export default function AdminFormBuilder() {
       {/* Fields */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-white text-sm font-medium">Questions ({schema.fields.length})</p>
-          <p className="text-[#555] text-xs">Reorder with ↑ ↓</p>
+          <p className="text-[var(--fg)] text-sm font-medium">Questions ({schema.fields.length})</p>
+          <p className="text-[var(--fg-muted)] text-xs">Reorder with ↑ ↓</p>
         </div>
 
         {[...schema.fields].sort((a, b) => a.sort_order - b.sort_order).map((field, idx, arr) => (
@@ -528,7 +528,7 @@ export default function AdminFormBuilder() {
         ))}
 
         <button onClick={addField}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-sm text-[#ccc] transition-colors">
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-sm text-[var(--fg)] transition-colors">
           <Plus size={13} /> Add question
         </button>
       </section>
@@ -536,10 +536,10 @@ export default function AdminFormBuilder() {
       {/* Mailing list */}
       <section className={SECTION}>
         <div>
-          <p className="text-white text-sm font-medium">Send to your mailing list</p>
-          <p className="text-[#555] text-xs mt-1">
-            In Mailchimp open <span className="text-[#888]">Audience → Signup forms → Embedded form</span> and copy the
-            address inside <code className="text-amber-400/80">form action="…"</code>. Paste it here.
+          <p className="text-[var(--fg)] text-sm font-medium">Send to your mailing list</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-1">
+            In Mailchimp open <span className="text-[var(--fg-muted)]">Audience → Signup forms → Embedded form</span> and copy the
+            address inside <code className="text-[var(--fg-muted)]">form action="…"</code>. Paste it here.
             Brevo, MailerLite and ConvertKit work the same way — you can change provider yourself, any time.
           </p>
         </div>
@@ -570,11 +570,11 @@ export default function AdminFormBuilder() {
             onChange={e => update({ crm_tags: e.target.value })}
             placeholder="3313342"
           />
-          <p className="text-[#555] text-xs mt-1.5">
+          <p className="text-[var(--fg-muted)] text-xs mt-1.5">
             Optional. Everyone from this form gets this tag, so you can write to just
-            this group later. In Mailchimp open <span className="text-[#888]">Audience → Tags</span>,
-            create the tag, then <span className="text-[#888]">Signup forms → Embedded form</span> and
-            copy the number in <code className="text-amber-400/80">name="tags"</code>.
+            this group later. In Mailchimp open <span className="text-[var(--fg-muted)]">Audience → Tags</span>,
+            create the tag, then <span className="text-[var(--fg-muted)]">Signup forms → Embedded form</span> and
+            copy the number in <code className="text-[var(--fg-muted)]">name="tags"</code>.
             Separate several with commas.
           </p>
           {/* Verified against her own audience: Mailchimp accepts a signup with
@@ -582,8 +582,8 @@ export default function AdminFormBuilder() {
               anywhere. Nothing in code can catch that, so the only defence is
               telling her the one check that does. */}
           {schema.crm_tags && (
-            <p className="text-[#555] text-xs mt-1.5 border-l border-[#2a2a2a] pl-2.5">
-              It must be the <em className="text-[#777] not-italic">number</em>, not the name. A wrong
+            <p className="text-[var(--fg-muted)] text-xs mt-1.5 border-l border-[var(--line-strong)] pl-2.5">
+              It must be the <em className="text-[var(--fg-muted)] not-italic">number</em>, not the name. A wrong
               number gives no error anywhere — the person is added without the tag. After saving, send
               yourself one test and check it appears under that tag in Mailchimp.
             </p>
@@ -602,7 +602,7 @@ export default function AdminFormBuilder() {
               <option key={f.id} value={f.name}>{f.label}</option>
             ))}
           </select>
-          <p className="text-[#555] text-xs mt-1.5">
+          <p className="text-[var(--fg-muted)] text-xs mt-1.5">
             Filling in a form is not the same as asking for a newsletter. Pick the
             tick-box that asks for it, and only those people go to your mailing list —
             everyone else still arrives in Applications.
@@ -613,7 +613,7 @@ export default function AdminFormBuilder() {
             checkbox is the mistake this catches. It is a legal one, not a
             visual one, so it says what to do rather than just going red. */}
         {schema.crm_post_url && !schema.crm_consent_field && (
-          <p className="flex items-start gap-2 text-amber-300/80 text-xs bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2.5">
+          <p className="flex items-start gap-2 text-[var(--fg-muted)] text-xs bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg px-3 py-2.5">
             <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
             <span>
               Everyone who sends this form is added to your mailing list, whether they
@@ -625,20 +625,20 @@ export default function AdminFormBuilder() {
           </p>
         )}
 
-        <p className="text-[#444] text-xs">
+        <p className="text-[var(--fg-faint)] text-xs">
           Every answer is stored here first, so nothing is lost if the mailing list is down or the address is wrong.
         </p>
       </section>
 
       {/* Terms + captcha */}
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">Terms &amp; anti-spam</p>
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
+        <p className="text-[var(--fg)] text-sm font-medium">Terms &amp; anti-spam</p>
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--fg)]">
           <input
             type="checkbox"
             checked={schema.terms_required}
             onChange={e => update({ terms_required: e.target.checked })}
-            className="w-4 h-4 accent-[#059669]"
+            className="w-4 h-4 accent-[var(--tc-brand)]"
           />
           Ask visitors to accept the terms before sending
         </label>
@@ -650,18 +650,18 @@ export default function AdminFormBuilder() {
               value={schema.terms_text_html}
               onChange={e => update({ terms_text_html: e.target.value })}
             />
-            <p className="text-[#333] text-xs mt-1">
-              Use <code className="text-amber-400">{'{terms_link:LABEL}'}</code> and <code className="text-amber-400">{'{privacy_link:LABEL}'}</code> to insert links.
+            <p className="text-[var(--fg-faint)] text-xs mt-1">
+              Use <code className="text-[var(--fg-muted)]">{'{terms_link:LABEL}'}</code> and <code className="text-[var(--fg-muted)]">{'{privacy_link:LABEL}'}</code> to insert links.
               The exact wording is stored with every answer as proof of consent.
             </p>
           </div>
         )}
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#ccc]">
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--fg)]">
           <input
             type="checkbox"
             checked={schema.captcha_required}
             onChange={e => update({ captcha_required: e.target.checked })}
-            className="w-4 h-4 accent-[#059669]"
+            className="w-4 h-4 accent-[var(--tc-brand)]"
           />
           Require the "I'm not a robot" check
         </label>
@@ -669,8 +669,8 @@ export default function AdminFormBuilder() {
             this switch can be on while the widget has nothing to render. It
             used to fail silently. */}
         {schema.captcha_required && !import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
-          <p className="flex items-start gap-2 text-amber-300/90 text-xs leading-relaxed
-                        bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
+          <p className="flex items-start gap-2 text-[var(--fg-muted)] text-xs leading-relaxed
+                        bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg px-3 py-2.5">
             <AlertCircle size={14} className="flex-shrink-0 mt-px" />
             <span>
               The robot check is switched on but this site has no reCAPTCHA key,
@@ -683,7 +683,7 @@ export default function AdminFormBuilder() {
 
       {/* Success + buttons */}
       <section className={SECTION}>
-        <p className="text-white text-sm font-medium">After sending</p>
+        <p className="text-[var(--fg)] text-sm font-medium">After sending</p>
         <div>
           <label className={LABEL}>Thank-you title</label>
           <input className={INPUT} value={schema.success_title} onChange={e => update({ success_title: e.target.value })} />
@@ -709,13 +709,13 @@ export default function AdminFormBuilder() {
 
       {/* Danger zone */}
       {slug !== DEFAULT_FORM_SLUG && (
-        <section className="bg-[#140b0b] border border-red-900/30 rounded-xl p-5">
-          <p className="text-red-300/90 text-sm font-medium">Delete this form</p>
-          <p className="text-[#666] text-xs mt-1 mb-3">
+        <section className="bg-[var(--accent-soft)] border border-[var(--danger-line)] rounded-xl p-5">
+          <p className="text-[var(--danger)] text-sm font-medium">Delete this form</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-1 mb-3">
             The form and its page disappear. Answers already received stay in the inbox.
           </p>
           <button onClick={deleteForm}
-            className="flex items-center gap-2 px-3 py-2 bg-red-950/40 hover:bg-red-950/70 border border-red-900/40 rounded-lg text-xs text-red-300 transition-colors">
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--danger-soft)] hover:bg-[var(--danger-soft)] border border-[var(--danger-line)] rounded-lg text-xs text-[var(--danger)] transition-colors">
             <Trash2 size={13} /> Delete "{schema.name}"
           </button>
         </section>
@@ -725,7 +725,7 @@ export default function AdminFormBuilder() {
         <button
           onClick={save}
           disabled={saving || !dirty}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors shadow-lg"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? 'Save form' : 'Saved'}
@@ -736,8 +736,8 @@ export default function AdminFormBuilder() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}

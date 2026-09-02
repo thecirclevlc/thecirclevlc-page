@@ -24,9 +24,9 @@ import { supabase } from '../lib/supabase';
  */
 
 const KEY = 'email_notifications';
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
-const LABEL = 'block text-white text-xs font-medium tracking-wide mb-1.5';
-const HINT  = 'text-[#444] text-xs mt-1.5 font-mono leading-relaxed';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
+const LABEL = 'block text-[var(--fg)] text-xs font-medium tracking-wide mb-1.5';
+const HINT  = 'text-[var(--fg-faint)] text-xs mt-1.5 font-mono leading-relaxed';
 
 interface Config {
   provider: 'resend';
@@ -138,7 +138,7 @@ export default function AdminNotifications() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 size={20} className="text-[#444] animate-spin" />
+        <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
       </div>
     );
   }
@@ -148,24 +148,24 @@ export default function AdminNotifications() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-white text-lg font-semibold">Email notifications</h1>
-        <p className="text-[#555] text-sm mt-1">
+        <h1 className="text-[var(--fg)] text-lg font-semibold">Email notifications</h1>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Get an email the moment somebody applies, so you do not have to keep
           checking the panel.
         </p>
       </div>
 
-      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 space-y-5">
+      <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-6 space-y-5">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={config.enabled}
             onChange={e => update({ enabled: e.target.checked })}
-            className="w-4 h-4 mt-0.5 accent-[#059669]"
+            className="w-4 h-4 mt-0.5 accent-[var(--tc-brand)]"
           />
           <span>
-            <span className="block text-white text-sm">Send me an email for every application</span>
-            <span className="block text-[#555] text-xs mt-0.5">
+            <span className="block text-[var(--fg)] text-sm">Send me an email for every application</span>
+            <span className="block text-[var(--fg-muted)] text-xs mt-0.5">
               Applications are always saved in the panel, whether this is on or off.
             </span>
           </span>
@@ -186,19 +186,19 @@ export default function AdminNotifications() {
         <div>
           <label className={LABEL}>Resend API key</label>
           {secretSet && !replacing ? (
-            <div className="flex items-center gap-2 min-h-[42px] px-3 rounded-lg border border-[#1e1e1e] bg-[#0d0d0d]">
-              <KeyRound size={14} className="text-emerald-400 flex-shrink-0" />
-              <span className="text-[#888] text-sm">A key is saved</span>
+            <div className="flex items-center gap-2 min-h-[42px] px-3 rounded-lg border border-[var(--line)] bg-[var(--surface-2)]">
+              <KeyRound size={14} className="text-[var(--fg-muted)] flex-shrink-0" />
+              <span className="text-[var(--fg-muted)] text-sm">A key is saved</span>
               <button
                 onClick={() => setReplacing(true)}
-                className="ml-auto text-[#555] hover:text-white text-xs uppercase tracking-wider transition-colors"
+                className="ml-auto text-[var(--fg-muted)] hover:text-[var(--fg)] text-xs uppercase tracking-wider transition-colors"
               >
                 Replace
               </button>
               <button
                 onClick={forgetKey}
                 aria-label="Forget the key"
-                className="text-[#555] hover:text-red-400 transition-colors"
+                className="text-[var(--fg-muted)] hover:text-[var(--danger)] transition-colors"
               >
                 <Trash2 size={13} />
               </button>
@@ -216,7 +216,7 @@ export default function AdminNotifications() {
               {secretSet && (
                 <button
                   onClick={() => { setNewKey(''); setReplacing(false); }}
-                  className="text-[#555] hover:text-white text-xs mt-1.5 transition-colors"
+                  className="text-[var(--fg-muted)] hover:text-[var(--fg)] text-xs mt-1.5 transition-colors"
                 >
                   Keep the key I already had
                 </button>
@@ -230,7 +230,7 @@ export default function AdminNotifications() {
               href="https://resend.com/api-keys"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#059669] hover:underline inline-flex items-center gap-1"
+              className="text-[var(--tc-brand-ink)] hover:underline inline-flex items-center gap-1"
             >
               resend.com <ExternalLink size={10} />
             </a>
@@ -238,7 +238,7 @@ export default function AdminNotifications() {
         </div>
 
         <div>
-          <label className={LABEL}>Send from <span className="text-[#444] normal-case">(optional)</span></label>
+          <label className={LABEL}>Send from <span className="text-[var(--fg-faint)] normal-case">(optional)</span></label>
           <input
             type="text"
             className={INPUT}
@@ -252,11 +252,11 @@ export default function AdminNotifications() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 pt-2 border-t border-[#1a1a1a]">
+        <div className="flex items-center gap-3 pt-2 border-t border-[var(--line)]">
           <button
             onClick={save}
             disabled={saving || !dirty}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
@@ -266,7 +266,7 @@ export default function AdminNotifications() {
             onClick={sendTest}
             disabled={test.kind === 'sending' || !canTest || dirty}
             title={dirty ? 'Save first, then test' : undefined}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--fg)] rounded-lg text-sm transition-colors"
           >
             {test.kind === 'sending' ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             {test.kind === 'sending' ? 'Sending…' : 'Send test'}
@@ -274,19 +274,19 @@ export default function AdminNotifications() {
         </div>
 
         {test.kind === 'sent' && (
-          <p className="flex items-center gap-2 text-emerald-300 text-sm">
+          <p className="flex items-center gap-2 text-[var(--fg-muted)] text-sm">
             <CheckCircle size={14} /> Sent. Check {config.to || 'your inbox'}.
           </p>
         )}
         {test.kind === 'failed' && (
-          <p className="flex items-start gap-2 text-amber-300/90 text-xs leading-relaxed bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
+          <p className="flex items-start gap-2 text-[var(--fg-muted)] text-xs leading-relaxed bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg px-3 py-2.5">
             <AlertCircle size={14} className="flex-shrink-0 mt-px" />
             <span>{test.message}</span>
           </p>
         )}
       </section>
 
-      <p className="text-[#444] text-xs leading-relaxed">
+      <p className="text-[var(--fg-faint)] text-xs leading-relaxed">
         Nothing here can lose you an application. The form saves to the panel
         first and notifies afterwards, so if the provider is down or the key is
         wrong, the application is still waiting for you under Submissions.
@@ -295,8 +295,8 @@ export default function AdminNotifications() {
       {toast && (
         <div className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-lg text-sm shadow-2xl ${
           toast.type === 'success'
-            ? 'bg-[#064e3b] text-emerald-100 border border-emerald-500/30'
-            : 'bg-[#4c0519] text-red-100 border border-red-500/30'
+            ? 'bg-[var(--surface-3)] text-[var(--fg-muted)] border border-[var(--line-strong)]'
+            : 'bg-[var(--surface-3)] text-[var(--danger)] border border-[var(--danger-line)]'
         }`}>
           {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
           {toast.text}

@@ -14,13 +14,13 @@ import AdminHistory from './AdminHistory';
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">{label}</label>
+      <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-2">{label}</label>
       {children}
     </div>
   );
 }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#C42121]/40 transition-colors';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-4 py-2.5 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors';
 const TEXTAREA = INPUT + ' resize-none';
 
 // ── initial state ─────────────────────────────────────────────────
@@ -279,7 +279,7 @@ export default function AdminEventForm() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 size={24} className="text-[#C42121] animate-spin" />
+        <Loader2 size={24} className="text-[var(--tc-brand-ink)] animate-spin" />
       </div>
     );
   }
@@ -292,8 +292,8 @@ export default function AdminEventForm() {
       {toast && (
         <div className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-2xl text-sm font-medium transition-all ${
           toast.type === 'ok'
-            ? 'bg-green-950 border border-green-800 text-green-400'
-            : 'bg-red-950 border border-red-800 text-red-400'
+            ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+            : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
         }`}>
           {toast.type === 'ok' ? <Check size={15} /> : <X size={15} />}
           {toast.msg}
@@ -302,17 +302,17 @@ export default function AdminEventForm() {
 
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/admin/events')} className="text-[#444] hover:text-white transition-colors">
+        <button onClick={() => navigate('/admin/events')} className="text-[var(--fg-faint)] hover:text-[var(--fg)] transition-colors">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
-          <h1 className="text-white text-2xl font-bold">{isEdit ? 'Edit Event' : 'New Event'}</h1>
-          <p className="text-[#444] text-sm mt-0.5">{isEdit ? 'Update event details' : 'Fill in the details below'}</p>
+          <h1 className="text-[var(--fg)] text-2xl font-bold">{isEdit ? 'Edit Event' : 'New Event'}</h1>
+          <p className="text-[var(--fg-faint)] text-sm mt-0.5">{isEdit ? 'Update event details' : 'Fill in the details below'}</p>
             {dbId && autosaveStatus !== 'idle' && (
               <span className={`text-xs font-mono tracking-wider mt-1 ${
-                autosaveStatus === 'saving' ? 'text-yellow-500' :
-                autosaveStatus === 'saved' ? 'text-green-500' :
-                autosaveStatus === 'error' ? 'text-red-500' : 'text-[#444]'
+                autosaveStatus === 'saving' ? 'text-[var(--fg-muted)]' :
+                autosaveStatus === 'saved' ? 'text-[var(--fg-muted)]' :
+                autosaveStatus === 'error' ? 'text-[var(--danger)]' : 'text-[var(--fg-faint)]'
               }`}>
                 {autosaveStatus === 'saving' ? 'Saving...' :
                  autosaveStatus === 'saved' ? 'Saved' :
@@ -324,7 +324,7 @@ export default function AdminEventForm() {
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg text-[#888] hover:text-white text-xs transition-colors"
+            className="flex items-center gap-2 px-3 py-2 border border-[var(--line)] hover:border-[var(--line-strong)] rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg)] text-xs transition-colors"
             title="View change history"
           >
             <Clock size={13} />
@@ -336,8 +336,8 @@ export default function AdminEventForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* ── BASIC INFO ─────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Basic Info</p>
+        <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4">
+          <p className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Basic Info</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Title *">
@@ -422,44 +422,42 @@ export default function AdminEventForm() {
         </section>
 
         {/* ── LINEUP ──────────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-5">
+        <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-5">
           <div>
-            <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Lineup</p>
-            <p className="text-[#333] text-xs mt-1 font-mono">
+            <p className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Lineup</p>
+            <p className="text-[var(--fg-faint)] text-xs mt-1 font-mono">
               Select DJs and Artists from the database. They'll appear with full profiles on the event page.
             </p>
           </div>
 
           {/* DJs Selector */}
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">DJs</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-2">DJs</label>
             <EntitySelector
               table="djs"
               selected={selectedDJs}
               onChange={setSelectedDJs}
               createLink="/admin/djs/new"
               label="DJs"
-              accentColor="#C42121"
             />
           </div>
 
           {/* Artists Selector */}
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-2">Artists</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-2">Artists</label>
             <EntitySelector
               table="artists"
               selected={selectedArtists}
               onChange={setSelectedArtists}
               createLink="/admin/artists/new"
               label="Artists"
-              accentColor="#059669"
             />
           </div>
         </section>
 
         {/* ── IMAGES ─────────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-5">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Images</p>
+        <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-5">
+          <p className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Images</p>
 
           {/* Cover */}
           <Field label="Cover Image">
@@ -469,7 +467,7 @@ export default function AdminEventForm() {
                 <button
                   type="button"
                   onClick={() => set('cover_image_url', null)}
-                  className="absolute top-2 right-2 w-7 h-7 bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900"
+                  className="absolute top-2 right-2 w-7 h-7 bg-[var(--scrim)] rounded-full flex items-center justify-center text-[var(--on-accent)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)] hover:text-[var(--on-danger)]"
                 >
                   <X size={13} />
                 </button>
@@ -480,7 +478,7 @@ export default function AdminEventForm() {
                   type="button"
                   onClick={() => coverRef.current?.click()}
                   disabled={uploadingCover}
-                  className="flex items-center gap-2.5 border border-dashed border-[#222] hover:border-[#333] rounded-lg px-4 py-3 text-[#444] hover:text-[#888] text-sm transition-all"
+                  className="flex items-center gap-2.5 border border-dashed border-[var(--line-strong)] hover:border-[var(--line-strong)] rounded-lg px-4 py-3 text-[var(--fg-faint)] hover:text-[var(--fg-muted)] text-sm transition-all"
                 >
                   {uploadingCover ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                   {uploadingCover ? 'Uploading…' : 'Upload cover image'}
@@ -492,7 +490,7 @@ export default function AdminEventForm() {
 
           {/* Hero Video */}
           <Field label="Hero Video (optional)">
-            <p className="text-[#333] text-xs mb-3 font-mono">
+            <p className="text-[var(--fg-faint)] text-xs mb-3 font-mono">
               If set, replaces the cover image as the hero background on the event page. MP4 / WebM, max ~50MB.
             </p>
             {form.hero_video_url ? (
@@ -505,7 +503,7 @@ export default function AdminEventForm() {
                 <button
                   type="button"
                   onClick={() => { deleteVideo(form.hero_video_url!).catch(() => {}); set('hero_video_url', null); }}
-                  className="absolute top-2 right-2 w-7 h-7 bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900"
+                  className="absolute top-2 right-2 w-7 h-7 bg-[var(--scrim)] rounded-full flex items-center justify-center text-[var(--on-accent)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)] hover:text-[var(--on-danger)]"
                 >
                   <X size={13} />
                 </button>
@@ -516,7 +514,7 @@ export default function AdminEventForm() {
                   type="button"
                   onClick={() => videoRef.current?.click()}
                   disabled={uploadingVideo}
-                  className="flex items-center gap-2.5 border border-dashed border-[#222] hover:border-purple-500/30 rounded-lg px-4 py-3 text-[#444] hover:text-purple-400 text-sm transition-all"
+                  className="flex items-center gap-2.5 border border-dashed border-[var(--line-strong)] hover:border-[var(--line-strong)] rounded-lg px-4 py-3 text-[var(--fg-faint)] hover:text-[var(--fg-muted)] text-sm transition-all"
                 >
                   {uploadingVideo ? <Loader2 size={15} className="animate-spin" /> : <Film size={15} />}
                   {uploadingVideo ? 'Uploading video…' : 'Upload hero video'}
@@ -535,7 +533,7 @@ export default function AdminEventForm() {
                   <button
                     type="button"
                     onClick={() => removeGallery(i)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900"
+                    className="absolute top-1 right-1 w-5 h-5 bg-[var(--scrim)] rounded-full flex items-center justify-center text-[var(--on-accent)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)] hover:text-[var(--on-danger)]"
                   >
                     <X size={10} />
                   </button>
@@ -545,7 +543,7 @@ export default function AdminEventForm() {
                 type="button"
                 onClick={() => galleryRef.current?.click()}
                 disabled={uploadingGallery}
-                className="aspect-square border border-dashed border-[#222] hover:border-[#333] rounded-lg flex items-center justify-center text-[#444] hover:text-[#888] transition-all"
+                className="aspect-square border border-dashed border-[var(--line-strong)] hover:border-[var(--line-strong)] rounded-lg flex items-center justify-center text-[var(--fg-faint)] hover:text-[var(--fg-muted)] transition-all"
               >
                 {uploadingGallery ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               </button>
@@ -566,12 +564,12 @@ export default function AdminEventForm() {
                   onClick={() => set('gallery_style', opt.value)}
                   className={`flex-1 text-left px-4 py-3 rounded-lg border text-sm transition-all ${
                     form.gallery_style === opt.value
-                      ? 'border-[#C42121]/50 bg-[#C42121]/10 text-white'
-                      : 'border-[#1e1e1e] bg-[#0d0d0d] text-[#555] hover:border-[#2a2a2a] hover:text-[#888]'
+                      ? 'border-[var(--accent-line)] bg-[var(--accent-soft)] text-[var(--fg)]'
+                      : 'border-[var(--line)] bg-[var(--surface-2)] text-[var(--fg-muted)] hover:border-[var(--line-strong)] hover:text-[var(--fg-muted)]'
                   }`}
                 >
                   <div className="font-medium">{opt.label}</div>
-                  <div className="text-xs mt-0.5 text-[#333]">{opt.desc}</div>
+                  <div className="text-xs mt-0.5 text-[var(--fg-faint)]">{opt.desc}</div>
                 </button>
               ))}
             </div>
@@ -579,14 +577,14 @@ export default function AdminEventForm() {
         </section>
 
         {/* ── TAGS ─────────────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Tags</p>
+        <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-3">
+          <p className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Tags</p>
 
           <div className="flex flex-wrap gap-2 mb-2.5">
             {(form.tags ?? []).map((tag, i) => (
-              <span key={i} className="flex items-center gap-1.5 bg-[#C42121]/10 border border-[#C42121]/20 rounded-full px-3 py-1 text-xs text-[#C42121]">
+              <span key={i} className="flex items-center gap-1.5 bg-[var(--accent-soft)] border border-[var(--accent-line)] rounded-full px-3 py-1 text-xs text-[var(--tc-brand-ink)]">
                 {tag}
-                <button type="button" onClick={() => removeTag(i)} className="hover:text-red-300 transition-colors">
+                <button type="button" onClick={() => removeTag(i)} className="hover:text-[var(--danger)] transition-colors">
                   <X size={10} />
                 </button>
               </span>
@@ -600,31 +598,31 @@ export default function AdminEventForm() {
               className={INPUT + ' flex-1'} placeholder="Electronic, Immersive…"
             />
             <button type="button" onClick={addTag}
-              className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
+              className="px-3 py-2.5 bg-[var(--surface-3)] border border-[var(--line)] rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg)] text-sm transition-colors">
               Add
             </button>
           </div>
         </section>
 
         {/* ── PARTNERSHIPS ───────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-3">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Collaborations & Partners</p>
-          <p className="text-[#333] text-xs font-mono">Brands, venues, or collectives involved in this event.</p>
+        <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-3">
+          <p className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Collaborations & Partners</p>
+          <p className="text-[var(--fg-faint)] text-xs font-mono">Brands, venues, or collectives involved in this event.</p>
 
           <div className="space-y-2">
             {((form.partnerships as any[]) ?? []).map((p: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2">
+              <div key={i} className="flex items-center gap-3 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2">
                 {p.logo_url
                   ? <img src={p.logo_url} alt="" className="h-7 w-auto max-w-[80px] object-contain flex-shrink-0" />
-                  : <span className="h-7 w-10 flex-shrink-0 rounded border border-dashed border-[#222]" />}
-                <span className="text-sm text-white flex-1 truncate">{p.name}</span>
-                {p.url && <span className="text-xs text-[#444] font-mono truncate max-w-[130px]">{p.url}</span>}
-                <label className="px-2 py-1 text-xs text-[#666] hover:text-white border border-[#1e1e1e] rounded cursor-pointer transition-colors flex-shrink-0">
+                  : <span className="h-7 w-10 flex-shrink-0 rounded border border-dashed border-[var(--line-strong)]" />}
+                <span className="text-sm text-[var(--fg)] flex-1 truncate">{p.name}</span>
+                {p.url && <span className="text-xs text-[var(--fg-faint)] font-mono truncate max-w-[130px]">{p.url}</span>}
+                <label className="px-2 py-1 text-xs text-[var(--fg-muted)] hover:text-[var(--fg)] border border-[var(--line)] rounded cursor-pointer transition-colors flex-shrink-0">
                   {p.logo_url ? 'Replace' : 'Logo'}
                   <input type="file" accept="image/*" className="hidden"
                     onChange={e => uploadPartnerLogo(i, e.target.files?.[0])} />
                 </label>
-                <button type="button" onClick={() => removePartnership(i)} className="text-[#444] hover:text-red-400 transition-colors flex-shrink-0">
+                <button type="button" onClick={() => removePartnership(i)} className="text-[var(--fg-faint)] hover:text-[var(--danger)] transition-colors flex-shrink-0">
                   <X size={12} />
                 </button>
               </div>
@@ -641,26 +639,26 @@ export default function AdminEventForm() {
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPartnership(); }}}
               className={INPUT + ' flex-1'} placeholder="https://... (optional)" />
             <button type="button" onClick={addPartnership}
-              className="px-3 py-2.5 bg-[#1a1a1a] border border-[#1e1e1e] rounded-lg text-[#666] hover:text-white text-sm transition-colors">
+              className="px-3 py-2.5 bg-[var(--surface-3)] border border-[var(--line)] rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg)] text-sm transition-colors">
               Add
             </button>
           </div>
         </section>
 
         {/* ── SETTINGS ─────────────────────────────────────── */}
-        <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
-          <p className="text-[#333] text-xs tracking-[0.2em] uppercase">Settings</p>
+        <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4">
+          <p className="text-[var(--fg-faint)] text-xs tracking-[0.2em] uppercase">Settings</p>
 
           {/* Status */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white text-sm">Status</p>
-              <p className="text-[#444] text-xs mt-0.5">Published events are visible on the site</p>
+              <p className="text-[var(--fg)] text-sm">Status</p>
+              <p className="text-[var(--fg-faint)] text-xs mt-0.5">Published events are visible on the site</p>
             </div>
             <select
               value={form.status}
               onChange={e => set('status', e.target.value as 'draft' | 'published')}
-              className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
+              className="bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm focus:outline-none"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
@@ -670,16 +668,16 @@ export default function AdminEventForm() {
           {/* Featured toggle */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white text-sm">Featured</p>
-              <p className="text-[#444] text-xs mt-0.5">Highlight this event on the homepage</p>
+              <p className="text-[var(--fg)] text-sm">Featured</p>
+              <p className="text-[var(--fg-faint)] text-xs mt-0.5">Highlight this event on the homepage</p>
             </div>
             <button
               type="button"
               onClick={() => set('featured', !form.featured)}
-              className={`relative rounded-full transition-colors flex-shrink-0 ${form.featured ? 'bg-[#C42121]' : 'bg-[#1e1e1e] border border-[#2a2a2a]'}`}
+              className={`relative rounded-full transition-colors flex-shrink-0 ${form.featured ? 'bg-[var(--tc-brand)]' : 'bg-[var(--surface-3)] border border-[var(--line-strong)]'}`}
               style={{ height: '22px', width: '40px' }}
             >
-              <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-transform ${form.featured ? 'translate-x-[20px]' : 'translate-x-[3px]'}`} />
+              <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-[var(--fg)] shadow transition-transform ${form.featured ? 'translate-x-[20px]' : 'translate-x-[3px]'}`} />
             </button>
           </div>
         </section>
@@ -689,14 +687,14 @@ export default function AdminEventForm() {
           <button
             type="button"
             onClick={() => navigate('/admin/events')}
-            className="px-5 py-3 border border-[#1e1e1e] rounded-lg text-[#555] hover:text-white hover:border-[#2a2a2a] text-sm transition-all"
+            className="px-5 py-3 border border-[var(--line)] rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg)] hover:border-[var(--line-strong)] text-sm transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-[#C42121] hover:bg-[#a81c1c] disabled:opacity-40 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] px-6 py-3 rounded-lg text-sm font-medium transition-colors"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Event'}

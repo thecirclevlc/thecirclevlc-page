@@ -16,8 +16,8 @@ import {
 // ── Shared ────────────────────────────────────────────────────────
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
-const SECTION = 'bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
+const SECTION = 'bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4';
 
 const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; icon: React.ElementType }[] = [
   { value: 'instagram',  label: 'Instagram',  icon: Instagram },
@@ -51,12 +51,12 @@ function NavItemEditor({
   canDown:    boolean;
 }) {
   return (
-    <div className={`bg-[#0d0d0d] border rounded-lg p-4 space-y-3 transition-colors ${
-      item.hidden ? 'border-[#141414] opacity-50' : 'border-[#1a1a1a]'
+    <div className={`bg-[var(--surface-2)] border rounded-lg p-4 space-y-3 transition-colors ${
+      item.hidden ? 'border-[var(--line)] opacity-50' : 'border-[var(--line)]'
     }`}>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_auto] gap-3">
         <div>
-          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Label</label>
+          <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Label</label>
           <input
             type="text"
             value={item.label}
@@ -67,7 +67,7 @@ function NavItemEditor({
         </div>
 
         <div>
-          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Target</label>
+          <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Target</label>
           <div className="flex gap-2">
             <select
               value={item.mode}
@@ -108,24 +108,24 @@ function NavItemEditor({
           <button
             onClick={onMoveUp}
             disabled={!canUp}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
             aria-label="Move up"
           ><ArrowUp size={14} /></button>
           <button
             onClick={onMoveDown}
             disabled={!canDown}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] disabled:opacity-30 transition-colors"
             aria-label="Move down"
           ><ArrowDown size={14} /></button>
           <button
             onClick={() => onChange({ ...item, hidden: !item.hidden })}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-3)] transition-colors"
             aria-label={item.hidden ? 'Show on the site' : 'Hide without deleting'}
             title={item.hidden ? 'Hidden — click to show' : 'Visible — click to hide'}
           >{item.hidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
           <button
             onClick={onDelete}
-            className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
             aria-label="Delete"
           ><Trash2 size={14} /></button>
         </div>
@@ -185,8 +185,8 @@ function MenuTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-white text-lg font-semibold">Hamburger Menu</h2>
-        <p className="text-[#555] text-sm mt-1">
+        <h2 className="text-[var(--fg)] text-lg font-semibold">Hamburger Menu</h2>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Items in the full-screen menu overlay. The "Target" picker only shows pages that exist in the app.
         </p>
       </div>
@@ -206,21 +206,21 @@ function MenuTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
           />
         ))}
         {cfg.items.length === 0 && (
-          <p className="text-[#555] text-sm text-center py-6">No menu items yet.</p>
+          <p className="text-[var(--fg-muted)] text-sm text-center py-6">No menu items yet.</p>
         )}
       </div>
 
       <div className="flex justify-between items-center pt-2">
         <button
           onClick={add}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-sm text-[#ccc] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-sm text-[var(--fg)] transition-colors"
         >
           <Plus size={13} /> Add item
         </button>
         <button
           onClick={save}
           disabled={saving || !dirty}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? 'Save menu' : 'Saved'}
@@ -268,8 +268,8 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-white text-lg font-semibold">Footer</h2>
-        <p className="text-[#555] text-sm mt-1">
+        <h2 className="text-[var(--fg)] text-lg font-semibold">Footer</h2>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Brand text and links. "By Alia Studio" is fixed by contract — not editable.
         </p>
       </div>
@@ -277,26 +277,26 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
       <section className={SECTION}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Brand Name</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Brand Name</label>
             <input className={INPUT} value={cfg.brand_name} onChange={e => update({ brand_name: e.target.value })} />
           </div>
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Tagline / Location</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Tagline / Location</label>
             <input className={INPUT} value={cfg.tagline} onChange={e => update({ tagline: e.target.value })} />
           </div>
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Contact Email</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Contact Email</label>
             <input className={INPUT} type="email" value={cfg.contact_email} onChange={e => update({ contact_email: e.target.value })} />
           </div>
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Copyright Year</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Copyright Year</label>
             <input className={INPUT} value={cfg.copyright_year} onChange={e => update({ copyright_year: e.target.value })} />
           </div>
         </div>
       </section>
 
       <section className="space-y-3">
-        <p className="text-white text-sm font-medium">Footer Links</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Footer Links</p>
         {cfg.links.map((item, idx) => (
           <NavItemEditor
             routes={routes}
@@ -322,7 +322,7 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
         ))}
         <button
           onClick={() => setLinks([...cfg.links, { id: uuid(), label: 'New link', mode: 'route', route: '/' }])}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-sm text-[#ccc] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-sm text-[var(--fg)] transition-colors"
         >
           <Plus size={13} /> Add link
         </button>
@@ -332,7 +332,7 @@ function FooterTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
         <button
           onClick={save}
           disabled={saving || !dirty}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? 'Save footer' : 'Saved'}
@@ -404,14 +404,14 @@ function SocialLinksTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-white text-lg font-semibold">Social Links</h2>
-        <p className="text-[#555] text-sm mt-1">
+        <h2 className="text-[var(--fg)] text-lg font-semibold">Social Links</h2>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Icons rendered in the footer and inside the open hamburger menu overlay.
         </p>
       </div>
 
       <section className={SECTION + ' space-y-3'}>
-        <p className="text-white text-sm font-medium">Add link</p>
+        <p className="text-[var(--fg)] text-sm font-medium">Add link</p>
         <div className="flex flex-col md:flex-row gap-2">
           <select
             value={newPlatform}
@@ -429,7 +429,7 @@ function SocialLinksTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
           <button
             onClick={add}
             disabled={adding || !newUrl.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
           >
             {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
             Add
@@ -441,8 +441,8 @@ function SocialLinksTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
         {rows.map((s, idx) => {
           const Icon = SOCIAL_PLATFORMS.find(p => p.value === s.platform)?.icon ?? Globe;
           return (
-            <div key={s.id} className="flex items-center gap-3 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-3">
-              <Icon size={16} className="text-[#C42121] flex-shrink-0" />
+            <div key={s.id} className="flex items-center gap-3 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg p-3">
+              <Icon size={16} className="text-[var(--tc-brand-ink)] flex-shrink-0" />
               <select
                 value={s.platform}
                 onChange={e => updateRow(s.id, { platform: e.target.value as SocialPlatform })}
@@ -458,28 +458,28 @@ function SocialLinksTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
               />
               <button
                 onClick={() => updateRow(s.id, { visible: !s.visible })}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
                 title={s.visible ? 'Visible' : 'Hidden'}
               >
                 {s.visible ? <Eye size={14} /> : <EyeOff size={14} />}
               </button>
               <button onClick={() => move(idx, -1)} disabled={idx === 0}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white disabled:opacity-30 transition-colors">
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-30 transition-colors">
                 <ArrowUp size={14} />
               </button>
               <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white disabled:opacity-30 transition-colors">
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-30 transition-colors">
                 <ArrowDown size={14} />
               </button>
               <button onClick={() => remove(s.id)}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 transition-colors">
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] transition-colors">
                 <Trash2 size={14} />
               </button>
             </div>
           );
         })}
         {rows.length === 0 && (
-          <p className="text-[#555] text-sm text-center py-6">No social links yet.</p>
+          <p className="text-[var(--fg-muted)] text-sm text-center py-6">No social links yet.</p>
         )}
       </div>
     </div>
@@ -490,7 +490,7 @@ function SocialLinksTab({ onToast }: { onToast: (t: ToastMsg) => void }) {
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 size={20} className="text-[#444] animate-spin" />
+      <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
     </div>
   );
 }
@@ -522,21 +522,21 @@ export default function AdminNavigation() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Navigation</h1>
-        <p className="text-[#555] text-sm mt-1">
+        <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Navigation</h1>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Menu, footer and social-media icons used across the public site.
         </p>
       </div>
 
-      <div className="flex gap-1 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg p-1 w-fit">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               tab === t.id
-                ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
-                : 'text-[#555] hover:text-[#888]'
+                ? 'bg-[var(--surface-3)] text-[var(--fg)] border border-[var(--line-strong)]'
+                : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)]'
             }`}
           >
             {t.label}
@@ -552,8 +552,8 @@ export default function AdminNavigation() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}

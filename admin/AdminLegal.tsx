@@ -13,7 +13,7 @@ import { PRIVACY_DEFAULT, TERMS_DEFAULT } from '../lib/legal-defaults';
 
 interface ToastMsg { text: string; type: 'success' | 'error' }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 text-white text-sm placeholder-[#333] focus:outline-none focus:border-[#059669]/40 transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
+const INPUT = 'w-full bg-[var(--surface-2)] border border-[var(--line)] rounded-lg px-3 py-2 text-[var(--fg)] text-sm placeholder-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent-line)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
 const TEXTAREA = INPUT + ' min-h-[100px] resize-y leading-relaxed';
 
 function uuid() {
@@ -84,18 +84,18 @@ function LegalEditor({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 size={20} className="text-[#444] animate-spin" />
+        <Loader2 size={20} className="text-[var(--fg-faint)] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 space-y-4">
-        <p className="text-white text-sm font-medium">Page metadata</p>
+      <section className="bg-[var(--surface-1)] border border-[var(--line)] rounded-xl p-5 space-y-4">
+        <p className="text-[var(--fg)] text-sm font-medium">Page metadata</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Last Updated</label>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Last Updated</label>
             <input
               type="date"
               value={page.last_updated}
@@ -107,12 +107,12 @@ function LegalEditor({
               footer, terms and privacy each had one — so changing it here left
               the footer quoting the old one. Now it only shows where to go. */}
           <div>
-            <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Contact Email</label>
-            <div className="flex items-center gap-2 min-h-[42px] px-3 rounded border border-white/10 bg-white/[0.02]">
-              <span className="text-white/70 text-sm truncate">{footer.contact_email || '—'}</span>
+            <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Contact Email</label>
+            <div className="flex items-center gap-2 min-h-[42px] px-3 rounded border border-[var(--line)] bg-[var(--fg)]/[0.02]">
+              <span className="text-[var(--fg-muted)] text-sm truncate">{footer.contact_email || '—'}</span>
               <Link
                 to="/admin/navigation?tab=footer"
-                className="ml-auto flex-shrink-0 text-[11px] uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                className="ml-auto flex-shrink-0 text-[11px] uppercase tracking-wider text-[var(--fg-faint)] hover:text-[var(--fg)] transition-colors"
               >
                 Change in Footer
               </Link>
@@ -120,7 +120,7 @@ function LegalEditor({
           </div>
         </div>
         <div>
-          <label className="block text-[#555] text-xs tracking-[0.12em] uppercase mb-1.5">Intro (optional)</label>
+          <label className="block text-[var(--fg-muted)] text-xs tracking-[0.12em] uppercase mb-1.5">Intro (optional)</label>
           <textarea
             value={page.intro ?? ''}
             onChange={e => update({ intro: e.target.value })}
@@ -133,14 +133,14 @@ function LegalEditor({
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-white text-sm font-medium">Sections ({page.sections.length})</p>
-          <p className="text-[#555] text-xs font-mono">
+          <p className="text-[var(--fg)] text-sm font-medium">Sections ({page.sections.length})</p>
+          <p className="text-[var(--fg-muted)] text-xs font-mono">
             Body supports paragraph breaks (blank line), "- " bullet lists and **bold**.
           </p>
         </div>
 
         {page.sections.map((s, idx) => (
-          <div key={s.id} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4 space-y-3">
+          <div key={s.id} className="bg-[var(--surface-2)] border border-[var(--line)] rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <input
                 value={s.heading}
@@ -149,15 +149,15 @@ function LegalEditor({
                 placeholder="Section heading"
               />
               <button onClick={() => moveSection(idx, -1)} disabled={idx === 0}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white disabled:opacity-30 transition-colors">
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-30 transition-colors">
                 <ArrowUp size={14} />
               </button>
               <button onClick={() => moveSection(idx, 1)} disabled={idx === page.sections.length - 1}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-white disabled:opacity-30 transition-colors">
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-30 transition-colors">
                 <ArrowDown size={14} />
               </button>
               <button onClick={() => removeSection(idx)}
-                className="w-8 h-8 flex items-center justify-center rounded text-[#666] hover:text-red-400 transition-colors">
+                className="w-8 h-8 flex items-center justify-center rounded text-[var(--fg-muted)] hover:text-[var(--danger)] transition-colors">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -178,7 +178,7 @@ A new paragraph with **bold** words.`}
 
         <button
           onClick={addSection}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] rounded-lg text-sm text-[#ccc] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-3)] hover:bg-[var(--surface-3)] border border-[var(--line-strong)] rounded-lg text-sm text-[var(--fg)] transition-colors"
         >
           <Plus size={13} /> Add section
         </button>
@@ -188,7 +188,7 @@ A new paragraph with **bold** words.`}
         <button
           onClick={save}
           disabled={saving || !dirty}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--tc-brand)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[var(--on-accent)] rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Saving…' : dirty ? `Save ${label}` : 'Saved'}
@@ -218,21 +218,21 @@ export default function AdminLegal() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Legal Pages</h1>
-        <p className="text-[#555] text-sm mt-1">
+        <h1 className="text-2xl font-bold text-[var(--fg)] tracking-tight">Legal Pages</h1>
+        <p className="text-[var(--fg-muted)] text-sm mt-1">
           Edit the Privacy Policy and Terms &amp; Conditions content shown on the public site.
         </p>
       </div>
 
-      <div className="flex gap-1 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-[var(--surface-2)] border border-[var(--line)] rounded-lg p-1 w-fit">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               tab === t.id
-                ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
-                : 'text-[#555] hover:text-[#888]'
+                ? 'bg-[var(--surface-3)] text-[var(--fg)] border border-[var(--line-strong)]'
+                : 'text-[var(--fg-muted)] hover:text-[var(--fg-muted)]'
             }`}
           >
             {t.label}
@@ -251,8 +251,8 @@ export default function AdminLegal() {
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-medium ${
             t.type === 'success'
-              ? 'bg-emerald-900 border border-emerald-500/30 text-emerald-300'
-              : 'bg-red-900 border border-red-500/30 text-red-300'
+              ? 'bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--fg-muted)]'
+              : 'bg-[var(--danger-soft)] border border-[var(--danger-line)] text-[var(--danger)]'
           }`}>
             {t.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
             {t.text}
