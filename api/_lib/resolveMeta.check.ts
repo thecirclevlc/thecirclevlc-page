@@ -25,6 +25,9 @@ const db = {
       ? { title: 'Who We Are', seo_title: null, seo_description: 'Quiénes somos.' }
       : null;
   },
+  async form(slug: string) {
+    return slug === 'artists' ? { id: 'form_schema_artists' } : null;
+  },
 };
 
 const R = async (url: string) => resolveMeta(url, db, {});
@@ -58,6 +61,18 @@ assert.equal((await R('/past-events/no-existe')).noindex, true);
 assert.equal((await R('/djs/no-existe')).noindex, true);
 assert.equal((await R('/djs')).noindex, false);
 assert.equal((await R('/')).noindex, false);
+
+// ── 404 real solo para lo que no existe ─────────────────────────
+// noindex no es "no existe": los legales y el panel siguen con 200.
+for (const url of ['/no-existe', '/past-events/no-existe', '/djs/no-existe', '/artists/no-existe',
+                   '/form/no-existe', '/a/b/c', '/favicon.ico']) {
+  assert.equal((await R(url)).notFound, true, `${url} debe dar 404`);
+}
+for (const url of ['/', '/djs', '/form', '/form/artists', '/terms', '/privacy', '/admin', '/admin/events/1',
+                   '/past-events/vol-iv', '/djs/two-m', '/who-we-are']) {
+  assert.ok(!(await R(url)).notFound, `${url} existe`);
+}
+assert.equal((await R('/form/artists')).noindex, true, 'los formularios extra siguen fuera del índice');
 
 // ── Datos estructurados ─────────────────────────────────────────
 const ev = await R('/past-events/vol-iv');
@@ -93,7 +108,7 @@ const xss = injectMeta('<title><!--META:title-->X<!--/META:title--></title>',
                        { title: '</title><script>alert(1)</script>' });
 assert.ok(!xss.includes('<script>alert(1)'), 'el título se escapa');
 
-console.log('resolveMeta + injectMeta OK — 32 casos');
+console.log('resolveMeta + injectMeta OK — 51 casos');
 
 // ── Compartir por página, no el mismo título en todas ─────────────
 // Reproduce la precedencia de api/index.ts: los valores de meta_seo son la

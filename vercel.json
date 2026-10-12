@@ -7,6 +7,14 @@
       "includeFiles": "dist/_app.html"
     }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "thecirclevlc-page.vercel.app" }],
+      "destination": "https://www.thecirclevlc.com/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/((?!api/).*)", "destination": "/api/index" }
@@ -20,6 +28,12 @@
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    },
+    {
+      "source": "/_app.html",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" }
       ]
     },
     {

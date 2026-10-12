@@ -7,7 +7,6 @@
 
     <!-- SEO Meta Tags -->
     <meta name="description" content="<!--META:description-->An exclusive event. Request your access.<!--/META:description-->" />
-    <meta name="keywords" content="exclusive event, thecircle, limited access, invite only" />
     <meta name="author" content="THECIRCLE" />
 
     <!-- Open Graph / Facebook -->
@@ -47,6 +46,7 @@
       "url": "https://www.thecirclevlc.com/",
       "logo": "https://www.thecirclevlc.com/og-image.png",
       "email": "contact@thecirclevlc.com",
+      "sameAs": ["https://www.instagram.com/thecirclevlc/"],
       "description": "Exclusive invite-only music events in Valencia, Spain."
     }
     </script>
@@ -116,9 +116,13 @@
       #boot-mark { animation: boot-pulse 1.6s ease-in-out infinite; }
     }
     @keyframes boot-pulse { 0%, 100% { opacity: 0.35 } 50% { opacity: 0.7 } }
+    /* Heading and links for readers without JavaScript (api/index.ts).
+       Hidden so the first paint stays the bare header; React removes it. */
+    #seo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   </style>
   <body>
     <div id="root">
+      <!--META:body_extra--><!--/META:body_extra-->
       <div id="boot" aria-hidden="true">
         <div id="boot-bar">
           <svg id="boot-mark" width="34" height="34" viewBox="0 0 100 100">

@@ -54,7 +54,7 @@ const clean = (s, max = 300) =>
 
 /**
  * @param {string} rawUrl
- * @param {object} db  reader with .event(slug) .profile(kind, slug) .page(slug)
+ * @param {object} db  reader with .event(slug) .profile(kind, slug) .page(slug) .form(slug)
  * @param {object} defaults  the meta_seo row
  */
 export async function resolveMeta(rawUrl, db, defaults = {}) {
@@ -88,7 +88,7 @@ export async function resolveMeta(rawUrl, db, defaults = {}) {
   // ── /past-events/:slug ──────────────────────────────────────────
   if (seg[0] === 'past-events' && seg[1]) {
     const ev = await db.event(seg[1]);
-    if (!ev) return { ...base, noindex: true };
+    if (!ev) return { ...base, noindex: true, notFound: true };
     const date = ev.date ? new Date(ev.date + 'T00:00:00') : null;
     return {
       ...base,
@@ -116,7 +116,7 @@ export async function resolveMeta(rawUrl, db, defaults = {}) {
   if ((seg[0] === 'djs' || seg[0] === 'artists') && seg[1]) {
     const kind = seg[0] === 'djs' ? 'dj' : 'artist';
     const p = await db.profile(kind, seg[1]);
-    if (!p) return { ...base, noindex: true };
+    if (!p) return { ...base, noindex: true, notFound: true };
     const role = kind === 'dj' ? 'DJ' : 'Artist';
     return {
       ...base,
@@ -135,10 +135,16 @@ export async function resolveMeta(rawUrl, db, defaults = {}) {
     };
   }
 
+  // ── /form/:slug — another form she built (kept out of the index) ──
+  if (seg[0] === 'form' && seg[1] && seg.length === 2) {
+    const f = await db.form(seg[1]);
+    return f ? { ...base, noindex: true } : { ...base, noindex: true, notFound: true };
+  }
+
   // ── /:slug — a page the client built ────────────────────────────
   if (seg.length === 1) {
     const pg = await db.page(seg[0]);
-    if (!pg) return { ...base, noindex: true };
+    if (!pg) return { ...base, noindex: true, notFound: true };
     return {
       ...base,
       title: withSuffix(pg.seo_title || pg.title),
@@ -146,6 +152,6 @@ export async function resolveMeta(rawUrl, db, defaults = {}) {
     };
   }
 
-  // Anything else is a 404 as far as crawlers are concerned.
-  return { ...base, noindex: true };
+  // Anything else is a 404: api/index.ts answers it with status 404.
+  return { ...base, noindex: true, notFound: true };
 }
