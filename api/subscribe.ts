@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Forwards a submission to whatever CRM the client configured, using the
@@ -19,7 +20,28 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  *
  * Best-effort by design: the submission is already safely in Supabase before
  * this is ever called. A CRM outage must never cost us the applicant.
+ *
+ * The page names the form, nothing more: the CRM URL, the tags, the email
+ * field and the opt-in box are read from that form's own row here.
  */
+
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY =
+  process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '';
+
+const supabase =
+  SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const FORM_KEY = /^form_schema_[a-z0-9-]{1,60}$/;
+
+interface CrmSchema {
+  crm_post_url?:      string;
+  crm_tags?:          string;
+  crm_email_field?:   string;
+  crm_consent_field?: string;
+  fields?:            Array<{ name: string }>;
+}
 
 // Keep this list to actual mailing-list providers. Every host added here is
 // somewhere this endpoint can be made to POST by any anonymous caller, so it
@@ -133,15 +155,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const { crmPostUrl, email, fields, tags } = (req.body ?? {}) as {
-    crmPostUrl?: string;
-    email?: string;
-    fields?: Record<string, string>;
-    tags?: string;
-  };
+  const { formKey, fields } = (req.body ?? {}) as { formKey?: unknown; fields?: unknown };
+  if (typeof formKey !== 'string' || !FORM_KEY.test(formKey) || !fields || typeof fields !== 'object') {
+    return res.status(400).json({ ok: false, error: 'formKey and fields are required' });
+  }
+  if (!supabase) {
+    console.error('[subscribe] Supabase is not configured');
+    return res.status(200).json({ ok: false, error: 'CRM not configured' });
+  }
 
-  if (!crmPostUrl || !email) {
-    return res.status(400).json({ ok: false, error: 'crmPostUrl and email are required' });
+  const { data: row } = await supabase
+    .from('site_settings').select('value').eq('id', formKey).maybeSingle();
+  const schema = (row?.value ?? {}) as CrmSchema;
+  const crmPostUrl = schema.crm_post_url ?? '';
+  if (!crmPostUrl) return res.status(200).json({ ok: false, error: 'CRM not configured' });
+
+  // Only the form's own questions travel to the CRM.
+  const names = new Set((schema.fields ?? []).map(f => f.name));
+  const answers: Record<string, string> = {};
+  for (const [k, v] of Object.entries(fields as Record<string, unknown>)) {
+    if (names.has(k) && v != null && typeof v !== 'object') answers[k] = String(v);
+  }
+
+  const email = answers[schema.crm_email_field || 'email'];
+  if (!email) return res.status(400).json({ ok: false, error: 'email is required' });
+
+  // Applying is not subscribing: with an opt-in box named, only a 'yes' goes on.
+  if (schema.crm_consent_field && answers[schema.crm_consent_field] !== 'yes') {
+    return res.status(200).json({ ok: false, error: 'No newsletter consent' });
   }
 
   if (!isAllowedCrmUrl(crmPostUrl)) {
@@ -153,7 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const body = buildCrmBody(email, fields ?? {}, tags ?? '');
+  const body = buildCrmBody(email, answers, schema.crm_tags ?? '');
 
   try {
     const upstream = await fetch(toReadableEndpoint(crmPostUrl), {

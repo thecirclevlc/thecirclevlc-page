@@ -7,7 +7,6 @@ import { gsap } from 'gsap';
 import Footer from './components/Footer';
 import { useSiteBlock } from './hooks/useSiteContent';
 import AdminToolbar from './components/AdminToolbar';
-import { supabase } from './lib/supabase';
 import {
   DEFAULT_FORM_SLUG, formKeyForSlug, isFieldBlank,
   type FormSchema, type FormFieldSchema,
@@ -488,24 +487,6 @@ export default function FormPage() {
     smoothScrollTo(0, 2250);
 
     try {
-      // Verify CAPTCHA in production
-      if (captchaEnforced && import.meta.env.PROD && captchaValue) {
-        const v = await fetch('/api/verify-captcha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ captchaToken: captchaValue }),
-        });
-        const result = await v.json();
-        if (!result.success) {
-          setShowError(true); setShowCaptchaError(true);
-          setErrorMessage('The "I\'m not a robot" check did not go through. Please tick it again and resend.');
-          recaptchaRef.current?.reset(); setCaptchaValue(null);
-          setTimeout(() => { setShowError(false); setShowCaptchaError(false); setChaosLevel(0); }, 2000);
-          setSending(false);
-          return;
-        }
-      }
-
       // Build submission payload from schema-defined fields
       const data: Record<string, string> = {};
       sortedFields.forEach(f => { data[f.name] = (formData[f.name] ?? '').trim(); });
@@ -519,13 +500,26 @@ export default function FormPage() {
         data._terms_at       = new Date().toISOString();
       }
 
-      const { error } = await supabase.from('form_submissions').insert({
-        form_key: formKey,
-        data,
-        user_agent: navigator.userAgent,
+      // The server checks the captcha and stores the row in one step.
+      const r = await fetch('/api/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formKey,
+          data,
+          captchaToken: captchaEnforced ? captchaValue : undefined,
+        }),
       });
+      const result = await r.json().catch(() => ({}));
 
-      if (error) throw error;
+      if (result.error === 'captcha') {
+        setShowError(true); setShowCaptchaError(true);
+        setErrorMessage('The "I\'m not a robot" check did not go through. Please tick it again and resend.');
+        recaptchaRef.current?.reset(); setCaptchaValue(null);
+        setTimeout(() => { setShowError(false); setShowCaptchaError(false); setChaosLevel(0); }, 2000);
+        return;
+      }
+      if (!r.ok || !result.ok) throw new Error(`submit failed: ${r.status}`);
 
       // Forward to the client's CRM only AFTER the row is safely stored, and
       // never let it break the submission — she keeps the applicant either way.
@@ -533,7 +527,8 @@ export default function FormPage() {
 
       // Applying is not subscribing. When she has named an opt-in box, only
       // the people who ticked it reach the mailing list — the rest are stored
-      // exactly the same, they just do not get marketing.
+      // exactly the same, they just do not get marketing. The server applies
+      // the same rule and reads the CRM URL and tags from the form itself.
       const consentField = schema.crm_consent_field;
       const optedIn = !consentField || data[consentField] === 'yes';
 
@@ -541,12 +536,7 @@ export default function FormPage() {
         void fetch('/api/subscribe', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            crmPostUrl: schema.crm_post_url,
-            email:      crmEmail,
-            fields:     data,
-            tags:       schema.crm_tags,
-          }),
+          body: JSON.stringify({ formKey, fields: data }),
         }).catch(err => console.error('CRM forward failed (submission is saved):', err));
       }
 

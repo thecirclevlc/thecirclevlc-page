@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import EditableText from './EditableText';
-import { supabase } from '../lib/supabase';
 import { useSiteBlock } from '../hooks/useSiteContent';
 
 /**
@@ -9,9 +8,10 @@ import { useSiteBlock } from '../hooks/useSiteContent';
  * correo en la homepage)".
  *
  * Stored in `form_submissions` under its own form key, so it lands in the same
- * inbox as everything else and exports to CSV with no special case. The push to
- * her mailing list reuses /api/subscribe, which takes the public form URL she
- * pastes into the admin — no API key, and she can change provider herself.
+ * inbox as everything else and exports to CSV with no special case. It is
+ * stored through /api/submit, and the push to her mailing list reuses
+ * /api/subscribe, which reads the public form URL she pastes into the admin —
+ * no API key, and she can change provider herself.
  */
 
 export const NEWSLETTER_FORM_KEY = 'form_schema_newsletter';
@@ -51,41 +51,33 @@ export default function NewsletterBlock() {
 
     // Consent proof travels with the record: the flag, the exact wording shown,
     // and when. Required the moment this feeds a mailing list.
-    const { error } = await supabase.from('form_submissions').insert({
-      form_key: NEWSLETTER_FORM_KEY,
-      data: {
-        email: value,
-        _terms_accepted: 'yes',
-        _terms_text: copy.consent,
-        _terms_at: new Date().toISOString(),
-      },
-      user_agent: navigator.userAgent,
-    });
+    const r = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formKey: NEWSLETTER_FORM_KEY,
+        data: {
+          email: value,
+          _terms_accepted: 'yes',
+          _terms_text: copy.consent,
+          _terms_at: new Date().toISOString(),
+        },
+      }),
+    }).catch(() => null);
 
-    if (error) {
+    if (!r?.ok) {
       setState('error');
       setMessage('Something went wrong. Please try again.');
       return;
     }
 
     // Forward to her CRM if one is configured — never blocking, the address is
-    // already stored.
-    void supabase
-      .from('site_settings').select('value').eq('id', NEWSLETTER_FORM_KEY).maybeSingle()
-      .then(({ data }) => {
-        const crm = data?.value as { crm_post_url?: string; crm_tags?: string } | null;
-        if (!crm?.crm_post_url) return;
-        return fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            crmPostUrl: crm.crm_post_url,
-            email:      value,
-            fields:     { email: value },
-            tags:       crm.crm_tags ?? '',
-          }),
-        }).catch(() => {});
-      });
+    // already stored. The server knows whether there is one.
+    void fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ formKey: NEWSLETTER_FORM_KEY, fields: { email: value } }),
+    }).catch(() => {});
 
     setState('done');
     setEmail(''); setConsent(false);
