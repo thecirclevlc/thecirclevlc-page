@@ -11,7 +11,7 @@
     "check:tokens": "node scripts/check-admin-tokens.mjs"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": "22.x",
     "npm": ">=9.0.0"
   },
   "dependencies": {
