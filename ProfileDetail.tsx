@@ -10,6 +10,7 @@ import NotFound from './NotFound';
 import { supabase } from './lib/supabase';
 import { usePageTitle } from './hooks/usePageTitle';
 import { embedUrl } from './lib/embedUrl';
+import EmbedFrame from './components/EmbedFrame';
 import {
   PROFILE_SOCIAL_KEYS,
   type DJ, type ArtistWithCategory, type Event as DBEvent,
@@ -272,11 +273,7 @@ export default function ProfileDetail({ type }: Props) {
                       <figure key={v.id}>
                         <div className="relative w-full aspect-video border border-primary/15 bg-black">
                           {embed.kind === 'iframe' ? (
-                            <iframe
-                              src={embed.src} title={v.title || embed.title} loading="lazy"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen className="absolute inset-0 w-full h-full"
-                            />
+                            <EmbedFrame src={embed.src} title={v.title || embed.title} label={embed.title} />
                           ) : (
                             <video src={embed.src} controls playsInline className="absolute inset-0 w-full h-full object-contain" />
                           )}

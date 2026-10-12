@@ -35,15 +35,15 @@ export function embedUrl(raw: string): Embed | null {
   // ── YouTube ─────────────────────────────────────────────────────
   if (host === 'youtu.be') {
     const id = url.pathname.slice(1).split('/')[0];
-    return id ? { kind: 'iframe', src: `https://www.youtube.com/embed/${id}`, title: 'YouTube video' } : null;
+    return id ? { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${id}`, title: 'YouTube video' } : null;
   }
   if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
     if (url.pathname === '/watch') {
       const id = url.searchParams.get('v');
-      return id ? { kind: 'iframe', src: `https://www.youtube.com/embed/${id}`, title: 'YouTube video' } : null;
+      return id ? { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${id}`, title: 'YouTube video' } : null;
     }
     const m = url.pathname.match(/^\/(embed|shorts|live)\/([^/]+)/);
-    if (m) return { kind: 'iframe', src: `https://www.youtube.com/embed/${m[2]}`, title: 'YouTube video' };
+    if (m) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${m[2]}`, title: 'YouTube video' };
     return null;
   }
 

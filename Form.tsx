@@ -722,6 +722,13 @@ export default function FormPage() {
                     theme="dark"
                   />
                 </motion.div>
+                <p className="mt-3 max-w-md text-center text-[11px] font-mono text-fg/40 leading-relaxed">
+                  This site is protected by reCAPTCHA and the Google{' '}
+                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-primary">Privacy Policy</a>{' '}
+                  and{' '}
+                  <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-primary">Terms of Service</a>{' '}
+                  apply.
+                </p>
                 {showCaptchaError && (
                   <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-[#ff0000] text-sm font-mono mt-4 tracking-wider uppercase">
                     Please complete the security verification

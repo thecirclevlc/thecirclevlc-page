@@ -18,6 +18,7 @@ import { linkTarget, type LinkTarget } from '../lib/blockLink';
 import { sizedImage, sizedSrcSet } from '../lib/imageUrl';
 import { supabase } from '../lib/supabase';
 import { embedUrl } from '../lib/embedUrl';
+import EmbedFrame from './EmbedFrame';
 import { formPath, ratioClass, type PageBlock } from '../lib/database.types';
 
 /**
@@ -238,14 +239,7 @@ function VideoBlock({ block }: { block: Extract<PageBlock, { type: 'video' }> })
       <div className="max-w-4xl">
         <div className="relative w-full aspect-video border border-primary/15 bg-black">
           {embed.kind === 'iframe' ? (
-            <iframe
-              src={embed.src}
-              title={embed.title}
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            />
+            <EmbedFrame src={embed.src} title={embed.title} label={embed.title} />
           ) : (
             <video src={embed.src} controls playsInline className="absolute inset-0 w-full h-full object-contain" />
           )}
