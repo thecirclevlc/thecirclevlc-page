@@ -42,7 +42,7 @@ with checks as (
           'get_integration', 'save_integration', 'clear_integration_secret',
           'send_notification_email', 'test_notification', 'notification_result')
         and a.privilege_type = 'EXECUTE'
-        and pg_get_userbyid(a.grantee) in ('public', 'anon')
+        and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')   -- 0 = PUBLIC
     )
 
   union all
@@ -156,6 +156,24 @@ with checks as (
   select
     '10· public.admins tiene al menos una persona',
     exists (select 1 from public.admins)
+
+  union all
+
+  -- 11 · Nadie más llama a las RPC del panel. Desde un disparador o desde
+  --      otra función no hay sesión de admin: darían 'forbidden' y, si es el
+  --      aviso del formulario, se perdería cada envío.
+  select
+    '11· ninguna otra función llama a las RPC del panel',
+    not exists (
+      select 1 from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname not in ('pg_catalog', 'information_schema')
+        and not (n.nspname = 'public' and p.proname in (
+          'get_integration', 'save_integration', 'clear_integration_secret',
+          'test_notification', 'notification_result'))
+        and coalesce(p.prosrc, '')
+          ~* '\m(get_integration|save_integration|clear_integration_secret|test_notification|notification_result)\s*\('
+    )
 )
 select comprobacion, case when pasa then 'PASS' else 'FAIL ❌' end as resultado
 from checks

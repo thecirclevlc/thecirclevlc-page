@@ -21,12 +21,27 @@
 --      EXECUTE para public/anon/authenticated (los triggers siguen
 --      funcionando). update_updated_at_column(): search_path = ''.
 --   Lo que cambia queda copiado en public._backup_20261012 para revertir.
+--   Antes de cambiar nada se para (sin tocar nada) si admins está vacía, si
+--   otra función llama a las RPC del bloque 3 o si una política abierta al
+--   público mezcla la sesión con OR.
 --
 -- PRERREQUISITOS (en este orden)
 --   a) Registro desactivado: Authentication → Sign In / Providers →
 --      "Allow new users to sign up" = off.
---   b) Probarlo antes en una rama de Supabase con un usuario de prueba que
---      NO esté en admins.
+--   b) Leer en producción, solo con SELECT, lo que se va a cambiar. Una rama
+--      de Supabase no sirve: se crea desde supabase/migrations, que solo
+--      tiene estos dos archivos, sin las tablas, políticas ni funciones vivas.
+--        select schemaname, tablename, policyname, roles, cmd, qual, with_check
+--        from pg_policies where schemaname in ('public', 'storage') order by 1, 2, 3;
+--        select p.proname, pg_get_functiondef(p.oid) from pg_proc p
+--        join pg_namespace n on n.oid = p.pronamespace
+--        where n.nspname = 'public' and p.proname in ('notify_new_submission',
+--          'send_notification_email', 'get_integration', 'save_integration',
+--          'clear_integration_secret', 'test_notification', 'notification_result');
+--        select jobname, command from cron.job;   -- solo si pg_cron está activo
+--      Ningún disparador, función ni cron debe llamar a las cinco RPC del
+--      bloque 3, y ninguna política TO public debe ser "x OR sesión". La
+--      parada de abajo es la segunda red, no la primera.
 --   c) Comparar la función viva con la del repo:
 --        select pg_get_functiondef('public.log_audit_changes()'::regprocedure);
 --      Si no coincide con supabase-schema.sql, ajustar el bloque 4.
@@ -100,6 +115,49 @@ do $$
 begin
   if not exists (select 1 from public.admins) then
     raise exception 'public.admins está vacía: rellena el bloque SEED antes de aplicar. No se ha tocado ninguna política.';
+  end if;
+end $$;
+
+-- Dos casos que el bloque 2 y el 3 romperían sin avisar:
+--   a) Otra función llama a una de las RPC del bloque 3 (p. ej. el disparador
+--      notify_new_submission): sin sesión de admin daría 'forbidden' y cada
+--      envío del formulario fallaría. pg_cron no se mira aquí (ver
+--      PRERREQUISITOS b).
+--   b) Una política abierta al público con OR (status = 'published' OR
+--      auth.role() = 'authenticated') quedaría is_admin() AND (…) y el
+--      público perdería esa lectura. Las TO authenticated no se paran: pasar
+--      a "solo admins" es justo lo que se busca, y con el registro
+--      desactivado no hay otros usuarios.
+do $$
+declare
+  callers  text;
+  or_rules text;
+begin
+  select string_agg(p.oid::regprocedure::text, ', ') into callers
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname not in ('pg_catalog', 'information_schema')
+    and not (n.nspname = 'public' and p.proname in ('get_integration', 'save_integration',
+             'clear_integration_secret', 'test_notification', 'notification_result'))
+    and coalesce(p.prosrc, '')
+      ~* '\m(get_integration|save_integration|clear_integration_secret|test_notification|notification_result)\s*\(';
+
+  select string_agg(format('%s.%s · %s', schemaname, tablename, policyname), ', ') into or_rules
+  from pg_policies
+  where schemaname in ('public', 'storage')
+    and roles && array['public', 'anon']::name[]
+    and (
+      coalesce(qual, '') || ' ' || coalesce(with_check, '')
+        ~* 'auth\.role\(\)(\s+as\s+\w+\))?\s*=\s*''authenticated'''
+      or coalesce(qual, '') || ' ' || coalesce(with_check, '')
+        ~* 'auth\.uid\(\)(\s+as\s+\w+\))?\s+is\s+not\s+null'
+    )
+    and coalesce(qual, '') || coalesce(with_check, '') not like '%is_admin()%'
+    and coalesce(qual, '') || ' ' || coalesce(with_check, '') ~* '\mor\M';
+
+  if callers is not null or or_rules is not null then
+    raise exception E'Parada: no se ha tocado ninguna política ni función.\n  Funciones que llaman a las RPC del panel: %\n  Políticas abiertas al público con OR: %\nCorrígelas a mano (o adapta esta migración) antes de aplicar.',
+      coalesce(callers, '-'), coalesce(or_rules, '-');
   end if;
 end $$;
 
