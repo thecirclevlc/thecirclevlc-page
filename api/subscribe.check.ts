@@ -1,7 +1,7 @@
 // Check ejecutable de la lista blanca de destinos CRM:
 //   node api/subscribe.check.ts
 import assert from 'node:assert/strict';
-import { isAllowedCrmUrl, buildCrmBody, toReadableEndpoint, parseJsonpReplies } from './subscribe.ts';
+import { isAllowedCrmUrl, buildCrmBody, toReadableEndpoint, parseJsonpReplies, hasConsent } from './subscribe.ts';
 
 // Lo que la clienta pegará de verdad.
 assert.ok(isAllowedCrmUrl('https://thecircle.us1.list-manage.com/subscribe/post?u=abc&id=123'));
@@ -133,4 +133,15 @@ assert.deepEqual(parseJsonpReplies('<!DOCTYPE html><html>…'), []);
 assert.deepEqual(parseJsonpReplies(''), []);
 assert.deepEqual(parseJsonpReplies(undefined as any), []);
 
-console.log('subscribe OK — 51 casos');
+// Consentimiento: sin casilla de opt-in configurada, pasa.
+assert.equal(hasConsent('form_schema_join', '', { email: 'a@b.co' }), true);
+// Form.tsx manda la casilla: decide ella, marcada o no.
+assert.equal(hasConsent('form_schema_join', 'optIn', { optIn: 'yes' }), true);
+assert.equal(hasConsent('form_schema_join', 'optIn', { optIn: 'no' }), false);
+assert.equal(hasConsent('form_schema_newsletter', 'optIn', { optIn: 'no', _terms_accepted: 'yes' }), false);
+// La caja de la home no manda la casilla: vale su única casilla, y solo ahí.
+assert.equal(hasConsent('form_schema_newsletter', 'optIn', { email: 'a@b.co', _terms_accepted: 'yes' }), true);
+assert.equal(hasConsent('form_schema_newsletter', 'optIn', { email: 'a@b.co' }), false);
+assert.equal(hasConsent('form_schema_join', 'optIn', { email: 'a@b.co', _terms_accepted: 'yes' }), false);
+
+console.log('subscribe OK — 58 casos');

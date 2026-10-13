@@ -35,6 +35,20 @@ const supabase =
 
 const FORM_KEY = /^form_schema_[a-z0-9-]{1,60}$/;
 
+/**
+ * Applying is not subscribing: with an opt-in box named, only a 'yes' goes on.
+ *
+ * Form.tsx always sends every question, an unticked box as 'no', so an answer
+ * there decides. The home newsletter box never sends that field: its one
+ * checkbox is the mailing-list consent itself, recorded as `_terms_accepted`
+ * like in the stored row, and it counts only for the newsletter form.
+ */
+export function hasConsent(formKey: string, consentField: string | undefined, fields: Record<string, unknown>): boolean {
+  if (!consentField) return true;
+  if (fields[consentField] != null) return fields[consentField] === 'yes';
+  return formKey === 'form_schema_newsletter' && fields._terms_accepted === 'yes';
+}
+
 interface CrmSchema {
   crm_post_url?:      string;
   crm_tags?:          string;
@@ -180,8 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const email = answers[schema.crm_email_field || 'email'];
   if (!email) return res.status(400).json({ ok: false, error: 'email is required' });
 
-  // Applying is not subscribing: with an opt-in box named, only a 'yes' goes on.
-  if (schema.crm_consent_field && answers[schema.crm_consent_field] !== 'yes') {
+  if (!hasConsent(formKey, schema.crm_consent_field, fields as Record<string, unknown>)) {
     return res.status(200).json({ ok: false, error: 'No newsletter consent' });
   }
 

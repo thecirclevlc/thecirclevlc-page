@@ -34,6 +34,16 @@ const CAPTCHA_HOST = 'www.thecirclevlc.com';
 /** The home-page newsletter box has no captcha widget; see the handler. */
 const NEWSLETTER_KEY = 'form_schema_newsletter';
 
+/**
+ * The questions of DEFAULT_FORM_SCHEMA (lib/formSchema.ts), which /form shows
+ * whenever `form_schema_join` is missing or has no `fields`. That file pulls in
+ * the browser client, so it cannot be imported here; submit.check.ts keeps the
+ * two lists equal.
+ */
+export const DEFAULT_FIELDS = [
+  'fullName', 'age', 'whereFrom', 'instagram', 'email', 'artist', 'unexpected', 'expectations',
+];
+
 export const FORM_KEY = /^form_schema_[a-z0-9-]{1,60}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const MAX_BYTES = 20_000;
@@ -53,6 +63,25 @@ export function cleanData(raw: unknown, fieldNames: string[]): Record<string, st
     out[k] = String(v).slice(0, MAX_VALUE);
   }
   return out;
+}
+
+/**
+ * The form as the page renders it: Form.tsx merges the stored row over
+ * DEFAULT_FORM_SCHEMA, so a row without `fields` shows the default questions
+ * and one without `captcha_required` shows the captcha. Without a row only
+ * /form (the join form) and the home box exist; any other slug is a 404 page.
+ */
+export function resolveSchema(formKey: string, stored: unknown): { fields: string[]; captcha: boolean } | null {
+  if (!stored || typeof stored !== 'object') {
+    if (formKey === 'form_schema_join') return { fields: DEFAULT_FIELDS, captcha: true };
+    if (formKey === NEWSLETTER_KEY)     return { fields: ['email'], captcha: true };
+    return null;
+  }
+  const v = stored as { fields?: unknown; captcha_required?: boolean | null };
+  return {
+    fields:  Array.isArray(v.fields) ? v.fields.map(f => (f as { name: string }).name) : DEFAULT_FIELDS,
+    captcha: v.captcha_required ?? true,
+  };
 }
 
 async function captchaPasses(token: string, secret: string): Promise<boolean> {
@@ -88,27 +117,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { data: row } = await supabase
+    const { data: row, error: readError } = await supabase
       .from('site_settings').select('value').eq('id', formKey).maybeSingle();
-    // The home box keeps working even if its form row is ever deleted.
-    const schema = (row?.value ?? (formKey === NEWSLETTER_KEY ? { fields: [{ name: 'email' }] } : undefined)) as
-      { fields?: Array<{ name: string }>; captcha_required?: boolean } | undefined;
+    // A failed read is not a missing row: it must not fall back to defaults.
+    if (readError) throw readError;
+    const schema = resolveSchema(formKey, row?.value);
     if (!schema) return res.status(404).json({ ok: false, error: 'Unknown form' });
-
-    const clean = cleanData(data, (schema.fields ?? []).map(f => f.name));
-    if (!clean || Object.keys(clean).length === 0) {
-      return res.status(400).json({ ok: false, error: 'Empty submission' });
-    }
 
     // ponytail: the home newsletter box shows no captcha, so it may skip it —
     // but then it can only leave an email. Its abuse ceiling is a rate limit
     // on /api/* in Vercel Firewall; a widget in the box would remove it.
     const homeNewsletter = formKey === NEWSLETTER_KEY && !captchaToken;
+
+    const clean = cleanData(data, homeNewsletter ? ['email'] : schema.fields);
+    if (!clean || Object.keys(clean).length === 0) {
+      return res.status(400).json({ ok: false, error: 'Empty submission' });
+    }
     if (homeNewsletter && !EMAIL.test(clean.email ?? '')) {
       return res.status(400).json({ ok: false, error: 'Invalid email' });
     }
 
-    if (schema.captcha_required && !homeNewsletter) {
+    if (schema.captcha && !homeNewsletter) {
       const secret = process.env.RECAPTCHA_SECRET_KEY;
       if (!secret) {
         console.error('[submit] RECAPTCHA_SECRET_KEY is not configured');

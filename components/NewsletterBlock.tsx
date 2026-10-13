@@ -72,11 +72,15 @@ export default function NewsletterBlock() {
     }
 
     // Forward to her CRM if one is configured — never blocking, the address is
-    // already stored. The server knows whether there is one.
+    // already stored. The server knows whether there is one. The ticked box
+    // is the mailing-list consent, so it travels too.
     void fetch('/api/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ formKey: NEWSLETTER_FORM_KEY, fields: { email: value } }),
+      body: JSON.stringify({
+        formKey: NEWSLETTER_FORM_KEY,
+        fields: { email: value, _terms_accepted: 'yes' },
+      }),
     }).catch(() => {});
 
     setState('done');
