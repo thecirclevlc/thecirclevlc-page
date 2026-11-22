@@ -180,7 +180,7 @@ export default function ImageLightbox({ images, initialIndex, isOpen, onClose }:
                 onClick={() => goTo(i)}
                 aria-label={`Show image ${i + 1}`}
                 aria-current={i === currentIndex}
-                className="relative flex-shrink-0 cursor-pointer focus:outline-none"
+                className="relative flex-shrink-0 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
               >
                 <img
                   src={img}
