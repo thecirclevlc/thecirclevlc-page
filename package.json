@@ -31,7 +31,7 @@
     "@types/node": "^22.14.0",
     "@vercel/node": "^5.5.15",
     "@vitejs/plugin-react": "^5.0.0",
-    "@vitejs/plugin-react-swc": "^4.2.3",
+    "@vitejs/plugin-react-swc": "^4.3.3",
     "tailwindcss": "^4.3.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
