@@ -1,7 +1,7 @@
 // Standalone smoke test — run with: node scripts/test-inject-meta.mjs
 // Exits non-zero on failure.
 
-import { injectMeta, escapeHtml } from '../api/_lib/injectMeta.mjs';
+import { injectMeta, escapeHtml, seoBody } from '../api/_lib/injectMeta.mjs';
 
 let failures = 0;
 function assertEq(label, actual, expected) {
@@ -84,6 +84,17 @@ assertEq('escape amp', escapeHtml('A & B'), 'A &amp; B');
     out,
     '<meta content="THE CIRCLE">',
   );
+}
+
+// 8. No-JS body: heading, summary and links, escaped, injected raw
+{
+  const html = '<div id="root"><!--META:body_extra--><!--/META:body_extra--><div id="boot"></div></div>';
+  const out  = injectMeta(html, { body_extra: seoBody({ title: 'DJs <b>', description: 'A & B' }) });
+  assertEq('seo body h1 escaped', out.includes('<h1>DJs &lt;b&gt;</h1>'), true);
+  assertEq('seo body p escaped', out.includes('<p>A &amp; B</p>'), true);
+  assertEq('seo body nav', out.includes('<a href="/past-events">Past Events</a>'), true);
+  assertEq('seo body before boot', out.indexOf('id="seo"') < out.indexOf('id="boot"'), true);
+  assertEq('seo body no p without description', seoBody({ title: 'T' }).includes('<p>'), false);
 }
 
 if (failures > 0) {

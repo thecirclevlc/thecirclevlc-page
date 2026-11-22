@@ -37,8 +37,10 @@ function urlTag(loc: string, lastmod?: string, priority?: string) {
 }
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
-  const today = new Date().toISOString().slice(0, 10);
-  const urls: string[] = STATIC_PATHS.map(p => urlTag(p, today, p === '/' ? '1.0' : '0.8'));
+  // No lastmod for the fixed pages: there is no honest date for them, and
+  // "today" on every request teaches Google to ignore lastmod site-wide —
+  // including the real updated_at dates on events and profiles below.
+  const urls: string[] = STATIC_PATHS.map(p => urlTag(p, undefined, p === '/' ? '1.0' : '0.8'));
 
   if (supabase) {
     try {

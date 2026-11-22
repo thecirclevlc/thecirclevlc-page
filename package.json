@@ -11,7 +11,7 @@
     "check:tokens": "node scripts/check-admin-tokens.mjs"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": "22.x",
     "npm": ">=9.0.0"
   },
   "dependencies": {
@@ -24,7 +24,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-google-recaptcha": "^3.1.0",
-    "react-router-dom": "^7.10.0"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",

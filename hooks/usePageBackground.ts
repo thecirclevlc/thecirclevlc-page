@@ -5,6 +5,7 @@ import type { PageBackground, PageKey } from '../lib/database.types';
 interface UsePageBackgroundResult {
   bgUrl:    string | null;
   bgType:   'none' | 'image' | 'video';
+  bgPoster: string | null;
   loading:  boolean;
 }
 
@@ -18,6 +19,7 @@ export function usePageBackground(page: PageKey): UsePageBackgroundResult {
   const [result, setResult] = useState<UsePageBackgroundResult>({
     bgUrl:   null,
     bgType:  'none',
+    bgPoster: null,
     loading: true,
   });
 
@@ -35,6 +37,7 @@ export function usePageBackground(page: PageKey): UsePageBackgroundResult {
         setResult({
           bgUrl:   bg?.bg_url  ?? null,
           bgType:  bg?.bg_type ?? 'none',
+          bgPoster: bg?.bg_poster ?? null,
           loading: false,
         });
       }, () => {

@@ -1,0 +1,39 @@
+-- =====================================================================
+-- 20261012120100_form_submissions_insert_servidor.sql
+--
+-- ESTADO: NO APLICADA (revisada el 2026-11-22). Va después de
+-- 20261012120000 y solo con los tres prerrequisitos de abajo cumplidos.
+-- Se puede repetir: "drop policy if exists" y "revoke" no fallan.
+-- Aunque la política viva tuviera otro nombre, el revoke de INSERT a anon
+-- basta para cerrar el INSERT directo (los permisos se miran antes que RLS).
+-- En ese caso la fila 5 de supabase-security.check.sql sigue en FAIL porque
+-- la política sobra: borrarla a mano con su nombre real.
+--
+-- QUÉ HACE
+--   Quita el INSERT directo de visitantes en public.form_submissions: borra
+--   la política "Public insert submissions" y el permiso INSERT de anon. Las
+--   candidaturas y el newsletter de la home pasan a entrar solo por
+--   /api/submit, que comprueba el captcha en el servidor e inserta con
+--   SUPABASE_SERVICE_ROLE_KEY (service_role no pasa por RLS).
+--
+-- PRERREQUISITOS (no aplicar antes: la web dejaría de recoger solicitudes)
+--   a) SUPABASE_SERVICE_ROLE_KEY configurada en Vercel (Production).
+--   b) Desplegado en producción el código con /api/submit.
+--   c) Una solicitud real enviada desde https://www.thecirclevlc.com/form y
+--      otra desde el newsletter de la home, y las dos visibles en
+--      /admin/submissions.
+--
+-- CÓMO VERIFICAR
+--   - supabase-security.check.sql, fila 5 → PASS.
+--   - Un POST anónimo directo a /rest/v1/form_submissions con la anon key
+--     devuelve 401/403.
+--   - Repetir el envío de (c): sigue entrando.
+--
+-- CÓMO REVERTIR
+--   grant insert on public.form_submissions to anon;
+--   create policy "Public insert submissions" on public.form_submissions
+--     for insert with check (true);
+-- =====================================================================
+
+drop policy if exists "Public insert submissions" on public.form_submissions;
+revoke insert on public.form_submissions from anon;

@@ -66,11 +66,37 @@ export function escapeHtml(input) {
  * Keys injected as raw HTML rather than escaped text.
  *
  * `head_extra` carries a <script type="application/ld+json"> block and an
- * optional robots meta. Running it through escapeHtml would turn the whole
- * thing into visible text; the caller is responsible for building it safely
- * with jsonLdScript() below.
+ * optional robots meta; `body_extra` carries seoBody(). Running them through
+ * escapeHtml would turn the whole thing into visible text; the caller is
+ * responsible for building them safely with jsonLdScript() and seoBody().
  */
-const RAW_KEYS = new Set(['head_extra']);
+const RAW_KEYS = new Set(['head_extra', 'body_extra']);
+
+/** The site's own top-level pages, linked from the no-JavaScript body. */
+const NAV = [
+  ['/', 'Home'],
+  ['/past-events', 'Past Events'],
+  ['/djs', 'DJs'],
+  ['/artists', 'Artists'],
+  ['/form', 'Request Access'],
+];
+
+/**
+ * The page's heading, summary and main links as plain HTML, for crawlers and
+ * previews that do not run JavaScript. It goes inside #root, so React removes
+ * it on its first render exactly as it removes #boot; index.html keeps it
+ * visually hidden so the first paint does not change.
+ *
+ * @param {{ title?: string, description?: string }} meta
+ * @returns {string}
+ */
+export function seoBody({ title, description }) {
+  return '<div id="seo">'
+    + `<h1>${escapeHtml(String(title ?? ''))}</h1>`
+    + (description ? `<p>${escapeHtml(String(description))}</p>` : '')
+    + `<nav>${NAV.map(([href, label]) => `<a href="${href}">${label}</a>`).join(' ')}</nav>`
+    + '</div>';
+}
 
 /**
  * Serialises a value into a <script type="application/ld+json"> block.

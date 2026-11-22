@@ -580,7 +580,7 @@ export default function TheCircleApp() {
   const { data: homeLayout } = useSiteBlock<HomeLayout>(HOME_LAYOUT_KEY, DEFAULT_HOME_LAYOUT);
   // Her own photo or video behind the opening circle. 'none' keeps the
   // animated shader that has always been there.
-  const { bgUrl: homeBgUrl, bgType: homeBgType } = usePageBackground('page_home');
+  const { bgUrl: homeBgUrl, bgType: homeBgType, bgPoster: homeBgPoster } = usePageBackground('page_home');
   const background = theme.background ?? DEFAULT_BACKGROUND;
   const navigate = useNavigate();
 
@@ -723,6 +723,7 @@ export default function TheCircleApp() {
               <HeroMedia
                 videoUrl={homeBgType === 'video' ? homeBgUrl : null}
                 imageUrl={homeBgType === 'image' ? homeBgUrl : null}
+                posterUrl={homeBgPoster}
                 priority
                 overlayClass="bg-gradient-to-t from-bg/90 via-bg/50 to-bg/70"
               />

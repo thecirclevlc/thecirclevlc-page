@@ -7,12 +7,14 @@ import { validatePageSlug } from './database.types.ts';
 const src = (raw: string) => embedUrl(raw)?.src ?? null;
 
 // ── YouTube: las formas que la clienta va a copiar de verdad ─────
-const YT = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+const YT = 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ';
 assert.equal(src('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), YT);
 assert.equal(src('https://youtube.com/watch?v=dQw4w9WgXcQ'), YT);
 assert.equal(src('https://youtu.be/dQw4w9WgXcQ'), YT);
 assert.equal(src('https://m.youtube.com/watch?v=dQw4w9WgXcQ'), YT);
 assert.equal(src('https://www.youtube.com/shorts/dQw4w9WgXcQ'), YT);
+// Un enlace que ya era nocookie se queda en nocookie.
+assert.equal(src('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ'), YT);
 // Con lista de reproducción y marca de tiempo pegados, que es lo normal.
 assert.equal(src('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PL123&t=42s'), YT);
 // Espacios al copiar y pegar.
@@ -54,4 +56,4 @@ assert.ok(validatePageSlug(''), 'vacío no vale');
 assert.ok(validatePageSlug('about', ['about']));
 assert.equal(validatePageSlug('about', ['contact']), null);
 
-console.log('embedUrl + slugs OK — 30 casos');
+console.log('embedUrl + slugs OK — 31 casos');

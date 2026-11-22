@@ -41,7 +41,7 @@ export default function PastEvents() {
   const [events, setEvents]       = useState<CardEvent[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
-  const { bgUrl, bgType }         = usePageBackground('page_events');
+  const { bgUrl, bgType, bgPoster }         = usePageBackground('page_events');
   const { title: heroTitle, subtitle: heroSubtitle, setContent: setEventsContent } = useSiteContent('content_events_hero');
   const { data: ctaData, setData: setCtaData } = useSiteBlock<CtaBlock>('content_cta_events', {
     title: "DON'T MISS THE NEXT CHAPTER",
@@ -98,6 +98,7 @@ export default function PastEvents() {
             <HeroMedia
               videoUrl={bgType === 'video' ? bgUrl : null}
               imageUrl={bgType === 'image' ? bgUrl : null}
+              posterUrl={bgPoster}
               overlayClass="bg-gradient-to-t from-bg/90 via-bg/50 to-bg/70"
             />
           )}

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 // @ts-ignore — .mjs imports are fine at runtime; tsc may not resolve types
-import { injectMeta, jsonLdScript } from './_lib/injectMeta.mjs';
+import { injectMeta, jsonLdScript, seoBody } from './_lib/injectMeta.mjs';
 // @ts-ignore
 import { resolveMeta, SITE_URL } from './_lib/resolveMeta.mjs';
 
@@ -43,28 +43,40 @@ async function readBaseHtml(): Promise<string> {
  * renders — it just gets the site defaults instead of its own title.
  */
 const db = {
+  // A failed query throws, so the handler serves the plain shell with 200
+  // instead of answering 404 for a page that exists.
   async event(slug: string) {
     if (!supabase) return null;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('events')
       .select('title, event_number, date, venue, description, short_description, cover_image_url')
       .eq('slug', slug).eq('status', 'published').maybeSingle();
+    if (error) throw error;
     return data;
   },
   async profile(kind: 'dj' | 'artist', slug: string) {
     if (!supabase) return null;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from(kind === 'dj' ? 'djs' : 'artists')
       .select('name, bio, photo_url, genres, based_in')
       .eq('slug', slug).maybeSingle();
+    if (error) throw error;
     return data;
   },
   async page(slug: string) {
     if (!supabase) return null;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('pages')
       .select('title, seo_title, seo_description')
       .eq('slug', slug).eq('status', 'published').maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  async form(slug: string) {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('site_settings').select('id').eq('id', `form_schema_${slug}`).maybeSingle();
+    if (error) throw error;
     return data;
   },
 };
@@ -124,11 +136,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(shareImage ? { og_image: shareImage, twitter_image: shareImage } : {}),
       ...(defaults.favicon_url ? { favicon: defaults.favicon_url } : {}),
       head_extra:          head,
+      body_extra:          seoBody(meta),
     });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-    return res.status(200).send(finalHtml);
+    // Same page either way — the app draws its own "not found" — but a
+    // missing URL now says so to crawlers instead of a 200 with noindex.
+    return res.status(meta.notFound ? 404 : 200).send(finalHtml);
   } catch (err) {
     // Metadata is a nice-to-have; the page is not. Serve the shell.
     console.error('[ssr] meta resolution failed, serving shell:', err);
