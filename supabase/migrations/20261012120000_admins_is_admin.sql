@@ -2,9 +2,12 @@
 -- 20261012120000_admins_is_admin.sql
 --
 -- ESTADO: NO APLICADA (revisada el 2026-11-22). Nadie la ha ejecutado en
--- producción. Se aplica a mano en el SQL editor, entera y de una vez: el
--- editor manda el texto como una sola consulta, así que cualquier RAISE
--- deshace todo lo anterior y no queda nada a medias.
+-- producción (ni en local: no hay Postgres a mano, así que tampoco se ha
+-- probado la sintaxis). Se aplica a mano en el SQL editor, entera y de una
+-- vez. Las paradas van antes de tocar ninguna política o función, y se puede
+-- repetir sin daño (ver SE PUEDE REPETIR). Sin comprobar: que el editor la
+-- ejecute como una sola transacción y un RAISE deshaga también la tabla
+-- admins y la copia; si no, esas dos quedan creadas, sin más cambios.
 --
 -- QUÉ HACE
 --   1. Crea public.admins (lista de usuarios con acceso al panel) y
@@ -58,8 +61,9 @@
 --   - Primero, que la clienta no se queda fuera (tiene que salir su email):
 --       select u.email, a.created_at from public.admins a
 --       join auth.users u on u.id = a.user_id;
---     Ejecutarla justo después del bloque SEED y antes del resto. La
---     migración también los lista en un NOTICE, pero el SQL editor no
+--     Si falta alguien, el SQL editor nunca se queda fuera (no pasa por
+--     RLS): insert into public.admins (user_id) values ('<user_id>');
+--     La migración también los lista en un NOTICE, pero el SQL editor no
 --     siempre enseña los NOTICE: la comprobación es esta SELECT.
 --   - supabase-security.check.sql: todas las filas PASS (la 5 solo tras la
 --     migración 20261012120100).
