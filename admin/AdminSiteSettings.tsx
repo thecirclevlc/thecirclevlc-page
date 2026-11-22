@@ -4,7 +4,7 @@ import {
   Plus, GripVertical, Pencil, Check, X, Eye, Save,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { uploadImage, uploadVideo, deleteImage } from '../lib/imageUpload';
+import { uploadImage, uploadVideo, deleteImage, videoPoster } from '../lib/imageUpload';
 import { slugify } from '../lib/slugify';
 import type {
   PageBackground,
@@ -87,6 +87,7 @@ function PageSection({ config, onToast }: PageSectionProps) {
     try {
       const url = await uploadImage(file, 'page-backgrounds');
       if (bg.bg_url) await deleteImage(bg.bg_url).catch(() => {});
+      if (bg.bg_poster) await deleteImage(bg.bg_poster).catch(() => {});
       await save({ bg_url: url, bg_type: 'image' });
     } catch (err: any) {
       onToast({ text: err.message ?? 'Upload failed', type: 'error' });
@@ -102,8 +103,12 @@ function PageSection({ config, onToast }: PageSectionProps) {
     setUploading(true);
     try {
       const url = await uploadVideo(file, 'page-backgrounds/videos');
+      // Optional: if the frame can't be captured the video saves as before.
+      const frame = await videoPoster(file);
+      const poster = frame ? await uploadImage(frame, 'page-backgrounds').catch(() => null) : null;
       if (bg.bg_url) await deleteImage(bg.bg_url).catch(() => {});
-      await save({ bg_url: url, bg_type: 'video' });
+      if (bg.bg_poster) await deleteImage(bg.bg_poster).catch(() => {});
+      await save({ bg_url: url, bg_type: 'video', bg_poster: poster });
     } catch (err: any) {
       onToast({ text: err.message ?? 'Upload failed', type: 'error' });
     } finally {
@@ -114,6 +119,7 @@ function PageSection({ config, onToast }: PageSectionProps) {
 
   const handleRemove = async () => {
     if (bg.bg_url) await deleteImage(bg.bg_url).catch(() => {});
+    if (bg.bg_poster) await deleteImage(bg.bg_poster).catch(() => {});
     await save({ bg_url: null, bg_type: 'none' });
   };
 

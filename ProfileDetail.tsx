@@ -275,7 +275,7 @@ export default function ProfileDetail({ type }: Props) {
                           {embed.kind === 'iframe' ? (
                             <EmbedFrame src={embed.src} title={v.title || embed.title} label={embed.title} />
                           ) : (
-                            <video src={embed.src} controls playsInline className="absolute inset-0 w-full h-full object-contain" />
+                            <video src={embed.src} controls playsInline preload="metadata" className="absolute inset-0 w-full h-full object-contain" />
                           )}
                         </div>
                         {v.title && (

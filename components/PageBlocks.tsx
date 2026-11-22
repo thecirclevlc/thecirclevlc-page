@@ -241,7 +241,7 @@ function VideoBlock({ block }: { block: Extract<PageBlock, { type: 'video' }> })
           {embed.kind === 'iframe' ? (
             <EmbedFrame src={embed.src} title={embed.title} label={embed.title} />
           ) : (
-            <video src={embed.src} controls playsInline className="absolute inset-0 w-full h-full object-contain" />
+            <video src={embed.src} controls playsInline preload="metadata" className="absolute inset-0 w-full h-full object-contain" />
           )}
         </div>
         {block.caption && (

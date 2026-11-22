@@ -203,6 +203,8 @@ export type SubmissionStatus = 'new' | 'reviewed' | 'accepted' | 'rejected';
 export interface PageBackground {
   bg_url:  string | null;
   bg_type: 'none' | 'image' | 'video';
+  /** First frame of the video, captured on upload. Only for bg_type 'video'. */
+  bg_poster?: string | null;
 }
 
 export interface SiteSettings {

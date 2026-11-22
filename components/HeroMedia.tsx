@@ -39,6 +39,13 @@ const HeroMedia: React.FC<HeroMediaProps> = ({
   priority  = false,
   overlayClass = 'bg-gradient-to-t from-bg via-bg/60 to-transparent',
 }) => {
+  const poster = posterUrl ?? imageUrl ?? undefined;
+  // Reduced motion or Save-Data: no autoplaying video and the file is never
+  // fetched. The poster stays; with no poster, only the overlay remains.
+  const still = typeof window !== 'undefined' && (
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
+  );
   const hasVideo = !!videoUrl;
   const hasImage = !!imageUrl;
 
@@ -48,11 +55,11 @@ const HeroMedia: React.FC<HeroMediaProps> = ({
     <>
       {/* ── Media layer ───────────────────────────────── */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {hasVideo ? (
+        {hasVideo ? (still && !poster) ? null : (
           <video
-            src={videoUrl!}
-            poster={posterUrl ?? imageUrl ?? undefined}
-            autoPlay
+            src={still ? undefined : videoUrl!}
+            poster={poster}
+            autoPlay={!still}
             loop
             muted
             playsInline

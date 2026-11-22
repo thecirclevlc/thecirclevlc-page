@@ -421,7 +421,7 @@ export default function FormPage() {
   // Whether a captcha can be shown at all. Without the site key the widget
   // never renders, so requiring it would lock everyone out of the form.
   // Her own photo or video behind the form, same control the other pages have.
-  const { bgUrl: pageBgUrl, bgType: pageBgType } = usePageBackground('page_form');
+  const { bgUrl: pageBgUrl, bgType: pageBgType, bgPoster: pageBgPoster } = usePageBackground('page_form');
 
   const captchaAvailable = Boolean(import.meta.env.VITE_RECAPTCHA_SITE_KEY);
   const captchaEnforced  = schema.captcha_required && captchaAvailable;
@@ -581,6 +581,7 @@ export default function FormPage() {
           <HeroMedia
             videoUrl={pageBgType === 'video' ? pageBgUrl : null}
             imageUrl={pageBgType === 'image' ? pageBgUrl : null}
+            posterUrl={pageBgPoster}
             priority
             overlayClass="bg-gradient-to-t from-bg/90 via-bg/60 to-bg/80"
           />
@@ -636,6 +637,7 @@ export default function FormPage() {
           <HeroMedia
             videoUrl={pageBgType === 'video' ? pageBgUrl : null}
             imageUrl={pageBgType === 'image' ? pageBgUrl : null}
+            posterUrl={pageBgPoster}
             priority
             overlayClass="bg-gradient-to-t from-bg/90 via-bg/60 to-bg/80"
           />

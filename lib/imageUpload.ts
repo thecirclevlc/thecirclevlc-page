@@ -131,6 +131,38 @@ export async function uploadVideo(file: File, folder = 'videos'): Promise<string
 }
 
 /**
+ * First frame of a video file as a JPEG, for the <video poster>. With a poster
+ * the hero's first paint is a small image, not the whole video. Resolves null
+ * on any failure: the video is then saved without a poster, as before.
+ */
+export function videoPoster(file: File): Promise<File | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    const done = (f: File | null) => { clearTimeout(timer); URL.revokeObjectURL(url); resolve(f); };
+    const timer = setTimeout(() => done(null), 10000);
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.onerror = () => done(null);
+    video.onloadeddata = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !canvas.width) return done(null);
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob(
+        (b) => done(b ? new File([b], 'poster.jpg', { type: 'image/jpeg' }) : null),
+        'image/jpeg',
+        0.85,
+      );
+    };
+    video.src = url;
+  });
+}
+
+/**
  * Deletes a media file from Supabase Storage by its public URL.
  * Works for both images and videos.
  * @param url - The full public URL of the file

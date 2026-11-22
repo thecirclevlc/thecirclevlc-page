@@ -143,7 +143,7 @@ export default function DJs() {
   const [djs, setDJs]     = useState<DJ[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
-  const { bgUrl, bgType }     = usePageBackground('page_djs');
+  const { bgUrl, bgType, bgPoster }     = usePageBackground('page_djs');
   const { title: heroTitle, subtitle: heroSubtitle, setContent: setDjsContent } = useSiteContent('content_djs_hero');
   // El nombre real de la página de eventos, no una copia escrita a mano.
   const { title: eventsTitle } = useSiteContent('content_events_hero');
@@ -214,6 +214,7 @@ export default function DJs() {
             <HeroMedia
               videoUrl={bgType === 'video' ? bgUrl : null}
               imageUrl={bgType === 'image' ? bgUrl : null}
+              posterUrl={bgPoster}
               overlayClass="bg-gradient-to-t from-bg/90 via-bg/50 to-bg/70"
             />
           )}
