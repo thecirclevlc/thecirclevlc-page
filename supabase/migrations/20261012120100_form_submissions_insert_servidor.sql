@@ -1,6 +1,13 @@
 -- =====================================================================
 -- 20261012120100_form_submissions_insert_servidor.sql
 --
+-- ESTADO: NO APLICADA (revisada el 2026-11-22). Va después de
+-- 20261012120000 y solo con los tres prerrequisitos de abajo cumplidos.
+-- Se puede repetir: "drop policy if exists" y "revoke" no fallan.
+-- Aunque la política viva tuviera otro nombre, el revoke de INSERT a anon
+-- basta para cerrar el INSERT directo (los permisos se miran antes que RLS);
+-- la fila 5 de supabase-security.check.sql lo confirma.
+--
 -- QUÉ HACE
 --   Quita el INSERT directo de visitantes en public.form_submissions: borra
 --   la política "Public insert submissions" y el permiso INSERT de anon. Las

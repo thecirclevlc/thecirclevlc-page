@@ -1,6 +1,11 @@
 -- =====================================================================
 -- 20261012120000_admins_is_admin.sql
 --
+-- ESTADO: NO APLICADA (revisada el 2026-11-22). Nadie la ha ejecutado en
+-- producción. Se aplica a mano en el SQL editor, entera y de una vez: el
+-- editor manda el texto como una sola consulta, así que cualquier RAISE
+-- deshace todo lo anterior y no queda nada a medias.
+--
 -- QUÉ HACE
 --   1. Crea public.admins (lista de usuarios con acceso al panel) y
 --      public.is_admin(), SECURITY DEFINER con search_path = ''.
@@ -50,9 +55,14 @@
 --      Sin él la migración se para antes de tocar ninguna política.
 --
 -- CÓMO VERIFICAR
+--   - Primero, que la clienta no se queda fuera (tiene que salir su email):
+--       select u.email, a.created_at from public.admins a
+--       join auth.users u on u.id = a.user_id;
+--     La migración también lista esos emails en un NOTICE antes de tocar nada.
 --   - supabase-security.check.sql: todas las filas PASS (la 5 solo tras la
 --     migración 20261012120100).
---   - Con el usuario de prueba no admin: select de form_submissions → 0 filas;
+--   - Opcional, con un usuario de prueba no admin (Authentication → Add user,
+--     funciona con el registro desactivado; borrarlo después): select de form_submissions → 0 filas;
 --     update de events → 0 filas; rpc('get_integration') → error forbidden.
 --   - La clienta entra en /admin, edita, ve candidaturas y "Enviar prueba".
 --   - La web pública sigue cargando sin sesión.
@@ -69,8 +79,21 @@
 --     end loop;
 --   end $$;
 --   (log_audit_changes vuelve a su versión con la sección del schema.)
---   Después: drop function public.is_admin(); drop table public.admins;
+--   Los permisos que se quitaron no están en la copia. Si hiciera falta
+--   devolverlos (no debería: los disparadores no los necesitan):
+--     do $$ declare f record; begin
+--       for f in select p.oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--         where n.nspname = 'public' and p.proname = 'send_notification_email' loop
+--         execute format('grant execute on function %s to authenticated', f.oid::regprocedure);
+--       end loop; end $$;
+--   Después, en este orden (is_admin() no se puede borrar mientras alguna
+--   política la use): drop function public.is_admin(); drop table public.admins;
 --   drop table public._backup_20261012;
+--
+-- SE PUEDE REPETIR
+--   Sí. La tabla y la copia usan "if not exists", las políticas y RPC que ya
+--   llevan is_admin() se saltan (y no se vuelven a copiar), y los grant/revoke
+--   no fallan si ya están.
 -- =====================================================================
 
 
@@ -116,6 +139,10 @@ begin
   if not exists (select 1 from public.admins) then
     raise exception 'public.admins está vacía: rellena el bloque SEED antes de aplicar. No se ha tocado ninguna política.';
   end if;
+  -- Quien no salga aquí pierde el panel en cuanto termine la migración.
+  raise notice 'Admins con acceso al panel: %',
+    (select string_agg(coalesce(u.email, a.user_id::text), ', ')
+     from public.admins a left join auth.users u on u.id = a.user_id);
 end $$;
 
 -- Dos casos que el bloque 2 y el 3 romperían sin avisar:
