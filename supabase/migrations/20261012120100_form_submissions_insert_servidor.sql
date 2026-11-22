@@ -5,8 +5,9 @@
 -- 20261012120000 y solo con los tres prerrequisitos de abajo cumplidos.
 -- Se puede repetir: "drop policy if exists" y "revoke" no fallan.
 -- Aunque la política viva tuviera otro nombre, el revoke de INSERT a anon
--- basta para cerrar el INSERT directo (los permisos se miran antes que RLS);
--- la fila 5 de supabase-security.check.sql lo confirma.
+-- basta para cerrar el INSERT directo (los permisos se miran antes que RLS).
+-- En ese caso la fila 5 de supabase-security.check.sql sigue en FAIL porque
+-- la política sobra: borrarla a mano con su nombre real.
 --
 -- QUÉ HACE
 --   Quita el INSERT directo de visitantes en public.form_submissions: borra

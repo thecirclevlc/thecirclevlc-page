@@ -89,6 +89,9 @@ with checks as (
       where schemaname = 'public' and tablename = 'form_submissions'
         and cmd in ('INSERT', 'ALL')
         and roles && array['public', 'anon']::name[]
+        -- Una política FOR ALL de admins (sin TO, así que roles = public)
+        -- no abre nada a visitantes.
+        and coalesce(qual, '') || coalesce(with_check, '') not like '%is_admin()%'
     )
     and not has_table_privilege('anon', 'public.form_submissions', 'INSERT')
 

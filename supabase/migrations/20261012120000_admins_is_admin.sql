@@ -58,7 +58,9 @@
 --   - Primero, que la clienta no se queda fuera (tiene que salir su email):
 --       select u.email, a.created_at from public.admins a
 --       join auth.users u on u.id = a.user_id;
---     La migración también lista esos emails en un NOTICE antes de tocar nada.
+--     Ejecutarla justo después del bloque SEED y antes del resto. La
+--     migración también los lista en un NOTICE, pero el SQL editor no
+--     siempre enseña los NOTICE: la comprobación es esta SELECT.
 --   - supabase-security.check.sql: todas las filas PASS (la 5 solo tras la
 --     migración 20261012120100).
 --   - Opcional, con un usuario de prueba no admin (Authentication → Add user,
@@ -86,6 +88,9 @@
 --         where n.nspname = 'public' and p.proname = 'send_notification_email' loop
 --         execute format('grant execute on function %s to authenticated', f.oid::regprocedure);
 --       end loop; end $$;
+--   No hace falta deshacer el search_path = '' de update_updated_at_column()
+--   ni el revoke de log_audit_changes(): los disparadores siguen igual. Si se
+--   quiere:  alter function public.update_updated_at_column() reset search_path;
 --   Después, en este orden (is_admin() no se puede borrar mientras alguna
 --   política la use): drop function public.is_admin(); drop table public.admins;
 --   drop table public._backup_20261012;
