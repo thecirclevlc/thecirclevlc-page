@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "^22.14.0",
+    "@types/node": "^26.6.6",
     "@vercel/node": "^5.5.15",
     "@vitejs/plugin-react": "^5.0.0",
     "@vitejs/plugin-react-swc": "^4.2.3",
